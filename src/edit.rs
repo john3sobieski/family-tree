@@ -119,6 +119,20 @@ pub fn new_person(tree: &mut Tree) -> PersonId {
     id
 }
 
+/// Делает `parent` родителем `child`. Максимум два родителя; второй родитель
+/// автоматически становится партнёром первого (мать и отец рядом на схеме).
+pub(crate) fn link_parent(tree: &mut Tree, parent: PersonId, child: PersonId) -> Result<(), String> {
+    let existing = tree.parents_of(child);
+    if existing.len() >= 2 {
+        return Err("У человека уже есть два родителя".to_string());
+    }
+    tree.add_parent_child(parent, child).map_err(|e| e.to_string())?;
+    if existing.len() == 1 {
+        let _ = tree.add_partners(existing[0], parent); // уже партнёры — не страшно
+    }
+    Ok(())
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Rel {
     Parent,
@@ -483,9 +497,9 @@ pub fn editor(
             }
             Action::Link(rel, o) => {
                 let r = match rel {
-                    Rel::Parent => tree.add_parent_child(o, id),
-                    Rel::Partner => tree.add_partners(id, o),
-                    Rel::Child => tree.add_parent_child(id, o),
+                    Rel::Parent => link_parent(tree, o, id),
+                    Rel::Partner => tree.add_partners(id, o).map_err(|e| e.to_string()),
+                    Rel::Child => link_parent(tree, id, o),
                 };
                 match r {
                     Ok(()) => {
@@ -493,29 +507,39 @@ pub fn editor(
                         ch.relayout = true;
                         st.rel_search.clear();
                     }
-                    Err(e) => errors.push(e.to_string()),
+                    Err(e) => errors.push(e),
                 }
             }
             Action::New(rel) => {
-                let nid = tree.add_person(Person::new("Новый", "человек"));
+                let (first, last) = match rel {
+                    Rel::Parent => ("Новый", "родитель"),
+                    Rel::Partner => ("Новый", "партнёр"),
+                    Rel::Child => ("Новый", "ребёнок"),
+                };
+                let nid = tree.add_person(Person::new(first, last));
                 let r = match rel {
-                    Rel::Parent => tree.add_parent_child(nid, id),
-                    Rel::Partner => tree.add_partners(id, nid),
+                    Rel::Parent => link_parent(tree, nid, id),
+                    Rel::Partner => tree.add_partners(id, nid).map_err(|e| e.to_string()),
                     Rel::Child => {
-                        let r = tree.add_parent_child(id, nid);
+                        let r = link_parent(tree, id, nid);
                         // Если у человека один партнёр — он тоже родитель ребёнка.
-                        if partners.len() == 1 {
-                            let _ = tree.add_parent_child(partners[0], nid);
+                        if r.is_ok() && partners.len() == 1 {
+                            let _ = link_parent(tree, partners[0], nid);
                         }
                         r
                     }
                 };
-                if let Err(e) = r {
-                    errors.push(e.to_string());
+                match r {
+                    Ok(()) => {
+                        ch.dirty = true;
+                        ch.relayout = true;
+                        // Выбор НЕ меняется: можно подряд добавить мать и отца к одному человеку.
+                    }
+                    Err(e) => {
+                        tree.remove_person(nid);
+                        errors.push(e);
+                    }
                 }
-                ch.dirty = true;
-                ch.relayout = true;
-                ch.select = Some(nid);
             }
             Action::SetRoot => {
                 tree.root = Some(id);
@@ -535,4 +559,53 @@ pub fn editor(
         ch.error = Some(errors.join("; "));
     }
     ch
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::layout::{compute, LayoutConfig};
+
+    #[test]
+    fn two_parents_are_partners_above_child() {
+        let mut t = Tree::new();
+        let me = t.add_person(Person::new("Я", "Я"));
+        t.root = Some(me);
+        let mom = t.add_person(Person::new("Мать", "М"));
+        let dad = t.add_person(Person::new("Отец", "О"));
+        link_parent(&mut t, mom, me).unwrap();
+        link_parent(&mut t, dad, me).unwrap();
+        assert_eq!(t.parents_of(me).len(), 2);
+        assert!(t.children_of(me).is_empty());
+        assert!(t.partners_of(mom).contains(&dad));
+        let l = compute(&t, &LayoutConfig::default());
+        let (pm, pd, pme) = (l.pos_of(mom).unwrap(), l.pos_of(dad).unwrap(), l.pos_of(me).unwrap());
+        assert!(pm.y < pme.y && pd.y < pme.y); // родители выше
+        assert!((pm.y - pd.y).abs() < 0.01); // в одном ряду
+        assert!(pm.x != pd.x);
+    }
+
+    #[test]
+    fn third_parent_is_rejected() {
+        let mut t = Tree::new();
+        let me = t.add_person(Person::new("Я", "Я"));
+        for n in ["А", "Б"] {
+            let p = t.add_person(Person::new(n, n));
+            link_parent(&mut t, p, me).unwrap();
+        }
+        let x = t.add_person(Person::new("В", "В"));
+        assert!(link_parent(&mut t, x, me).is_err());
+        assert_eq!(t.parents_of(me).len(), 2);
+    }
+
+    #[test]
+    fn child_of_person_goes_below() {
+        let mut t = Tree::new();
+        let me = t.add_person(Person::new("Я", "Я"));
+        t.root = Some(me);
+        let kid = t.add_person(Person::new("Р", "Р"));
+        link_parent(&mut t, me, kid).unwrap();
+        let l = compute(&t, &LayoutConfig::default());
+        assert!(l.pos_of(kid).unwrap().y > l.pos_of(me).unwrap().y);
+    }
 }
