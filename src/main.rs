@@ -3,6 +3,7 @@
 
 mod app;
 mod assoc;
+mod chrome;
 #[allow(dead_code)]
 mod container;
 mod demo;
@@ -16,6 +17,7 @@ mod media;
 mod model;
 mod person_window;
 mod search;
+mod theme;
 mod view;
 
 use eframe::egui;
@@ -27,7 +29,10 @@ fn main() -> eframe::Result {
 
     let mut viewport = egui::ViewportBuilder::default()
         .with_inner_size([1200.0, 800.0])
-        .with_title("Семейное дерево");
+        .with_title("Семейное дерево")
+        .with_decorations(false)
+        .with_min_inner_size([900.0, 560.0])
+        .with_maximized(true);
     if let Ok(img) = image::load_from_memory(include_bytes!("../assets/icon.png")) {
         let img = img.to_rgba8();
         let (width, height) = img.dimensions();
@@ -40,6 +45,9 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Семейное дерево",
         options,
-        Box::new(move |_cc| Ok(Box::new(app::FamTreeApp::new(path)))),
+        Box::new(move |cc| {
+            theme::apply(&cc.egui_ctx);
+            Ok(Box::new(app::FamTreeApp::new(path)))
+        }),
     )
 }

@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
 use crate::assoc;
+use crate::chrome;
+use crate::theme;
 use crate::container::{self, MediaStore};
 use crate::demo;
 use crate::edit::{self, EditState, ListAction};
@@ -275,57 +277,65 @@ impl eframe::App for FamTreeApp {
             ctx.memory_mut(|m| m.request_focus(egui::Id::new(search::FIELD_ID)));
         }
 
-        egui::TopBottomPanel::top("top").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                if ui.button("Новое").clicked() {
-                    self.request(ctx, Guarded::New);
-                }
-                if ui.button("Открыть…").clicked() {
+        chrome::title_bar(ctx, &self.file_label(), self.dirty);
+        chrome::window_border(ctx);
+
+        egui::TopBottomPanel::top("toolbar").exact_height(48.0).frame(theme::bar_frame(14.0, 6.0)).show(ctx, |ui| {
+            ui.horizontal_centered(|ui| {
+                if ui.button("Открыть").clicked() {
                     self.request(ctx, Guarded::Open);
                 }
-                if ui.button("Сохранить").clicked() {
+                if theme::primary_button(ui, "Сохранить").clicked() {
                     self.save();
                 }
-                if ui.button("Сохранить как…").clicked() {
-                    self.save_as();
-                }
-                ui.separator();
-                if ui.button("Демо").clicked() {
-                    self.request(ctx, Guarded::Demo);
-                }
-                if ui.button("Демо ×1000").clicked() {
-                    self.request(ctx, Guarded::BigDemo);
-                }
-                let linked = self.assoc_linked;
-                let label = if linked { "✔ .famtree" } else { "Связать .famtree" };
-                let hint = if linked {
-                    "Файлы .famtree открываются этим приложением. Клик — отвязать."
-                } else {
-                    "Открывать файлы .famtree двойным кликом (без прав администратора)"
-                };
-                if ui.button(label).on_hover_text(hint).clicked() {
-                    let r = if linked { assoc::unregister() } else { assoc::register() };
-                    match r {
-                        Ok(()) => self.status.clear(),
-                        Err(e) => self.status = format!("Ассоциация .famtree: {e}"),
+                ui.menu_button("Файл", |ui| {
+                    if ui.button("Новое").clicked() {
+                        self.request(ctx, Guarded::New);
+                        ui.close_menu();
                     }
-                    self.assoc_linked = assoc::is_registered();
-                }
-                ui.separator();
+                    if ui.button("Сохранить как…").clicked() {
+                        self.save_as();
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                    if ui.button("Демо").clicked() {
+                        self.request(ctx, Guarded::Demo);
+                        ui.close_menu();
+                    }
+                    if ui.button("Демо ×1000").clicked() {
+                        self.request(ctx, Guarded::BigDemo);
+                        ui.close_menu();
+                    }
+                    ui.separator();
+                    let linked = self.assoc_linked;
+                    let label = if linked { "Отвязать .famtree от приложения" } else { "Открывать .famtree двойным кликом" };
+                    if ui.button(label).clicked() {
+                        let r = if linked { assoc::unregister() } else { assoc::register() };
+                        match r {
+                            Ok(()) => self.status.clear(),
+                            Err(e) => self.status = format!("Ассоциация .famtree: {e}"),
+                        }
+                        self.assoc_linked = assoc::is_registered();
+                        ui.close_menu();
+                    }
+                });
+
+                ui.add_space(12.0);
                 ui.selectable_value(&mut self.mode, Mode::View, "Просмотр");
                 ui.selectable_value(&mut self.mode, Mode::Edit, "Редакция");
                 ui.selectable_value(&mut self.mode, Mode::List, "Список");
-                ui.separator();
-                if self.mode == Mode::View && ui.button("По размеру").clicked() {
-                    self.view.fitted = false;
-                }
-                if self.mode != Mode::List {
-                    ui.separator();
-                    if let Some(id) = search::show(ui, &mut self.search, &self.tree, &self.layout) {
-                        self.selected = Some(id);
-                        self.view.fly_to(id, true);
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if self.mode != Mode::List {
+                        if let Some(id) = search::show(ui, &mut self.search, &self.tree, &self.layout) {
+                            self.selected = Some(id);
+                            self.view.fly_to(id, true);
+                        }
                     }
-                }
+                    if self.mode == Mode::View && ui.button("По размеру").clicked() {
+                        self.view.fitted = false;
+                    }
+                });
             });
         });
 
@@ -337,29 +347,26 @@ impl eframe::App for FamTreeApp {
             self.list.invalidate();
         }
 
-        egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
-            ui.horizontal(|ui| {
+        egui::TopBottomPanel::bottom("status").exact_height(26.0).frame(theme::bar_frame(14.0, 3.0)).show(ctx, |ui| {
+            ui.horizontal_centered(|ui| {
+                let dim = |t: String| egui::RichText::new(t).small().color(theme::MUTED);
                 match &self.path {
-                    Some(p) => ui.label(format!("Файл: {}", p.display())),
-                    None => ui.label("Новое дерево"),
+                    Some(p) => ui.label(dim(p.display().to_string())),
+                    None => ui.label(dim("Новое дерево".into())),
                 };
-                ui.separator();
-                ui.label(format!(
-                    "Людей: {}, на схеме: {}",
+                ui.label(dim(format!(
+                    "·  Людей: {}  ·  на схеме: {}",
                     self.tree.persons.len(),
                     self.layout.nodes.len()
-                ));
+                )));
                 if let Some(name) = self.selected_name() {
-                    ui.separator();
-                    ui.label(format!("Выбран: {name}"));
+                    ui.label(dim(format!("·  Выбран: {name}")));
                 }
                 if self.dirty {
-                    ui.separator();
-                    ui.label("● не сохранено");
+                    ui.label(egui::RichText::new("●  не сохранено").small().color(theme::TEXT));
                 }
                 if !self.status.is_empty() {
-                    ui.separator();
-                    ui.colored_label(egui::Color32::RED, &self.status);
+                    ui.label(egui::RichText::new(&self.status).small().color(theme::DANGER));
                 }
             });
         });

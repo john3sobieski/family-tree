@@ -142,7 +142,7 @@ impl PersonWindow {
         }
         ui.add_space(6.0);
         ui.label(RichText::new(format!("Фото: {}", photos.len())).weak());
-        let accent = ui.visuals().selection.bg_fill;
+        let accent = crate::theme::ACCENT;
         ui.horizontal_wrapped(|ui| {
             for (i, (hash, _)) in photos.iter().enumerate() {
                 let tex = self.thumb_texture(ui.ctx(), store, hash);

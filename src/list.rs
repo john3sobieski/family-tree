@@ -300,7 +300,7 @@ pub fn show(
                 let (rect, resp) = ui.allocate_exact_size(Vec2::new(total_w, ROW_H), Sense::click());
                 let painter = ui.painter().clone();
                 if selected == Some(id) {
-                    painter.rect_filled(rect, 0.0, ui.visuals().selection.bg_fill.linear_multiply(0.6));
+                    painter.rect_filled(rect, 0.0, crate::theme::SELECT_BG);
                 } else if resp.hovered() {
                     painter.rect_filled(rect, 0.0, ui.visuals().widgets.hovered.bg_fill);
                 } else if i % 2 == 1 {

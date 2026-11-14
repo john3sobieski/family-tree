@@ -296,7 +296,7 @@ impl ViewState {
         let ctx = ui.ctx().clone();
         let card_bg = visuals.widgets.noninteractive.bg_fill;
         let card_stroke = visuals.widgets.noninteractive.bg_stroke;
-        let accent = visuals.selection.bg_fill;
+        let accent = crate::theme::ACCENT;
         let text_color = visuals.text_color();
         let ph_fg = visuals.widgets.noninteractive.bg_stroke.color;
         let ph_bg = visuals.faint_bg_color;
@@ -323,8 +323,8 @@ impl ViewState {
             }
             let Some(person) = tree.persons.get(&n.id) else { continue };
 
-            painter.rect_filled(card, 4.0 * zoom, card_bg);
-            painter.rect_stroke(card, 4.0 * zoom, stroke);
+            painter.rect_filled(card, 8.0 * zoom, card_bg);
+            painter.rect_stroke(card, 8.0 * zoom, stroke);
 
             // Фото 3:4.
             let pad = PHOTO_PAD * zoom;
