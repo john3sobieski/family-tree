@@ -4,6 +4,7 @@ use crate::container::{self, MediaStore};
 use crate::demo;
 use crate::edit::{self, EditState, ListAction};
 use crate::layout::{self, Layout, LayoutConfig};
+use crate::list::{self, ListState};
 use crate::model::{PersonId, Tree};
 use crate::person_window::{PersonWindow, WindowEvent};
 use crate::view::ViewState;
@@ -35,6 +36,7 @@ pub struct FamTreeApp {
     /// Окно человека открыто (только в режиме «Просмотр»).
     pub open_window: bool,
     pub edit: EditState,
+    pub list: ListState,
 }
 
 impl FamTreeApp {
@@ -54,6 +56,7 @@ impl FamTreeApp {
             person_win: PersonWindow::default(),
             open_window: false,
             edit: EditState::default(),
+            list: ListState::default(),
         };
         if let Some(p) = path {
             app.open_file(p);
@@ -79,6 +82,7 @@ impl FamTreeApp {
         self.selected = None;
         self.person_win.reset();
         self.edit.reset();
+        self.list.reset();
         self.open_window = false;
         self.view.reset();
         self.relayout();
@@ -176,8 +180,12 @@ impl eframe::App for FamTreeApp {
             });
         });
 
-        if self.mode != Mode::View {
+        if self.mode == Mode::Edit {
             self.open_window = false;
+        }
+        if self.mode != Mode::List {
+            // В списке данные пересчитаются заново после правок в других режимах.
+            self.list.invalidate();
         }
 
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
@@ -265,7 +273,11 @@ impl eframe::App for FamTreeApp {
                 }
             }
             Mode::List => {
-                ui.centered_and_justified(|ui| ui.label("Режим списка — скоро"));
+                let clicked = list::show(ui, &mut self.list, &self.tree, &self.store, self.selected);
+                if clicked.is_some() {
+                    self.selected = clicked;
+                    self.open_window = true;
+                }
             }
         });
 

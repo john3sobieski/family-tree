@@ -385,7 +385,7 @@ fn years_word(n: i32) -> &'static str {
 }
 
 /// Сегодняшняя дата (UTC) без внешних крейтов.
-fn today() -> (i32, u8, u8) {
+pub(crate) fn today() -> (i32, u8, u8) {
     let secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)

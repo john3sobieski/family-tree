@@ -8,6 +8,7 @@ mod demo;
 mod edit;
 #[allow(dead_code)]
 mod layout;
+mod list;
 #[allow(dead_code)]
 mod media;
 #[allow(dead_code)]
