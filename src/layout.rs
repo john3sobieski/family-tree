@@ -474,6 +474,102 @@ fn place(
     unit_left + cfg.card_w / 2.0
 }
 
+fn new_out() -> Out {
+    Out { nodes: Vec::new(), units: Vec::new(), edges: Vec::new(), placed_under: HashMap::new() }
+}
+
+fn row_key(y: f32) -> i64 {
+    (y * 10.0).round() as i64
+}
+
+/// Сдвиг куска вправо от всего, что уже размещено.
+fn right_dx(piece: &Out, out: &Out, cfg: &LayoutConfig) -> f32 {
+    let Some(min_x) = piece.nodes.iter().map(|n| n.pos.x).reduce(f32::min) else { return 0.0 };
+    let Some(max_x) = out.nodes.iter().map(|n| n.pos.x).reduce(f32::max) else { return 0.0 };
+    (max_x + cfg.card_w + cfg.h_gap * 3.0) - min_x
+}
+
+/// Желаемый сдвиг куска: родители над ребёнком, который уже стоит, либо кусок (ребёнок)
+/// под родителем, который уже стоит. `None` — кусок ни с чем не связан.
+fn desired_dx(piece: &Out, adj: &Adj, placed: &HashMap<PersonId, Pt>) -> Option<f32> {
+    for n in &piece.nodes {
+        for &c in adj.children(n.id) {
+            if let Some(cp) = placed.get(&c) {
+                let ucx = piece
+                    .units
+                    .iter()
+                    .find(|u| u.members.contains(&n.id))
+                    .map(|u| u.center.x)
+                    .unwrap_or(n.pos.x);
+                return Some(cp.x - ucx);
+            }
+        }
+        for &par in adj.parents(n.id) {
+            if let Some(pp) = placed.get(&par) {
+                return Some(pp.x - n.pos.x);
+            }
+        }
+    }
+    None
+}
+
+fn conflicts(piece: &Out, dx: f32, occ: &HashMap<i64, Vec<(f32, f32)>>, cfg: &LayoutConfig) -> bool {
+    let half = cfg.card_w / 2.0 + cfg.h_gap / 2.0;
+    piece.nodes.iter().any(|n| {
+        occ.get(&row_key(n.pos.y)).map_or(false, |v| {
+            let (lo, hi) = (n.pos.x + dx - half, n.pos.x + dx + half);
+            v.iter().any(|&(a, b)| lo < b && a < hi)
+        })
+    })
+}
+
+/// Ближайший к `desired` сдвиг без наложений (шагаем вправо/влево).
+fn free_dx(piece: &Out, desired: f32, occ: &HashMap<i64, Vec<(f32, f32)>>, cfg: &LayoutConfig) -> Option<f32> {
+    if !conflicts(piece, desired, occ, cfg) {
+        return Some(desired);
+    }
+    let step = cfg.card_w / 2.0;
+    for k in 1..=800 {
+        for sign in [1.0_f32, -1.0] {
+            let d = desired + sign * step * k as f32;
+            if !conflicts(piece, d, occ, cfg) {
+                return Some(d);
+            }
+        }
+    }
+    None
+}
+
+fn merge_piece(
+    out: &mut Out,
+    occ: &mut HashMap<i64, Vec<(f32, f32)>>,
+    placed: &mut HashMap<PersonId, Pt>,
+    piece: Out,
+    dx: f32,
+    cfg: &LayoutConfig,
+) {
+    let base = out.units.len();
+    let half = cfg.card_w / 2.0 + cfg.h_gap / 2.0;
+    for n in piece.nodes {
+        let pos = Pt { x: n.pos.x + dx, y: n.pos.y };
+        occ.entry(row_key(pos.y)).or_default().push((pos.x - half, pos.x + half));
+        placed.insert(n.id, pos);
+        out.nodes.push(PlacedPerson { id: n.id, pos });
+    }
+    for mut u in piece.units {
+        u.center.x += dx;
+        out.units.push(u);
+    }
+    for mut e in piece.edges {
+        e.from.x += dx;
+        e.to.x += dx;
+        out.edges.push(e);
+    }
+    for (k, v) in piece.placed_under {
+        out.placed_under.insert(k, v + base);
+    }
+}
+
 /// Кандидаты порога «лесенки» при автоподборе (в единицах раскладки).
 const HANG_STEPS: [usize; 12] = [0, 3, 5, 8, 13, 20, 30, 40, 60, 90, 121, 364];
 
@@ -520,25 +616,20 @@ fn compute_with(
     hang_max: usize,
 ) -> Layout {
     let mut visited: HashSet<PersonId> = HashSet::new();
-    let mut out = Out {
-        nodes: Vec::new(),
-        units: Vec::new(),
-        edges: Vec::new(),
-        placed_under: HashMap::new(),
-    };
 
-    // Деревья нескольких верхних предков стоят рядом друг с другом.
-    let mut left = 0.0_f32;
-    let mut place_top = |top: PersonId, visited: &mut HashSet<PersonId>, out: &mut Out| {
+    // 1) Каждое дерево от верхнего предка строится отдельным «куском» (координаты от нуля).
+    let mut pieces: Vec<Out> = Vec::new();
+    let build_piece = |top: PersonId, visited: &mut HashSet<PersonId>, pieces: &mut Vec<Out>| {
         if visited.contains(&top) {
             return;
         }
         let node = build(tree, adj, cfg, hang_max, top, visited);
-        place(&node, left, cfg, gens, out);
-        left += node.width + cfg.h_gap * 3.0;
+        let mut o = new_out();
+        place(&node, 0.0, cfg, gens, &mut o);
+        pieces.push(o);
     };
     for &top in starts.iter().chain(deferred.iter()) {
-        place_top(top, &mut visited, &mut out);
+        build_piece(top, &mut visited, &mut pieces);
     }
     // Родители тех, кто уже на схеме (например, родители супруга/супруги), тоже показываем:
     // иначе ветка «не подвязывается».
@@ -559,8 +650,42 @@ fn compute_with(
             break;
         }
         for t in extra {
-            place_top(t, &mut visited, &mut out);
+            build_piece(t, &mut visited, &mut pieces);
         }
+    }
+
+    // 2) Куски собираются вместе: первый — с корнем («я») — остаётся как есть, остальные
+    // ставятся так, чтобы родители оказались прямо над ребёнком (или ребёнок под родителями);
+    // если место занято — сдвигаются к ближайшему свободному.
+    let mut out = new_out();
+    let mut occ: HashMap<i64, Vec<(f32, f32)>> = HashMap::new();
+    let mut placed_pos: HashMap<PersonId, Pt> = HashMap::new();
+    if !pieces.is_empty() {
+        let first = tree
+            .root
+            .and_then(|r| pieces.iter().position(|o| o.nodes.iter().any(|n| n.id == r)))
+            .unwrap_or(0);
+        let piece = pieces.remove(first);
+        merge_piece(&mut out, &mut occ, &mut placed_pos, piece, 0.0, cfg);
+    }
+    while !pieces.is_empty() {
+        let mut chosen: Option<(usize, f32)> = None;
+        for (i, o) in pieces.iter().enumerate() {
+            if let Some(d) = desired_dx(o, adj, &placed_pos) {
+                chosen = Some((i, d));
+                break;
+            }
+        }
+        let (idx, dx) = match chosen {
+            Some((i, desired)) => {
+                let dx = free_dx(&pieces[i], desired, &occ, cfg)
+                    .unwrap_or_else(|| right_dx(&pieces[i], &out, cfg));
+                (i, dx)
+            }
+            None => (0, right_dx(&pieces[0], &out, cfg)),
+        };
+        let piece = pieces.remove(idx);
+        merge_piece(&mut out, &mut occ, &mut placed_pos, piece, dx, cfg);
     }
 
     // Связи родитель → ребёнок, которые не вошли в «дерево под единицей»

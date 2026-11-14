@@ -117,7 +117,12 @@ impl FamTreeApp {
 
     /// Пересчитать раскладку (после изменения дерева).
     pub fn relayout(&mut self) {
+        let before = self.layout.nodes.len();
         self.layout = layout::compute(&self.tree, &self.layout_cfg);
+        // Появились/исчезли люди — показать всю схему целиком, чтобы новое не уезжало за экран.
+        if self.layout.nodes.len() != before {
+            self.view.fitted = false;
+        }
     }
 
     /// Выполнить действие, которое заменяет дерево; если есть несохранённые правки —
