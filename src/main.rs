@@ -2,6 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 #[allow(dead_code)]
+mod container;
+#[allow(dead_code)]
 mod model;
 
 use eframe::egui;
