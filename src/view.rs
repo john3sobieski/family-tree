@@ -27,12 +27,23 @@ pub struct ViewState {
     pub pan: Vec2,
     /// false → при следующем кадре вписать дерево в окно.
     pub fitted: bool,
+    /// Человек, выделенный рамкой (выбранный).
+    pub highlight: Option<PersonId>,
+    /// Показать этого человека по центру при следующем кадре.
+    pub pending_center: Option<PersonId>,
     textures: HashMap<String, Option<TextureHandle>>,
 }
 
 impl Default for ViewState {
     fn default() -> Self {
-        ViewState { zoom: 1.0, pan: Vec2::ZERO, fitted: false, textures: HashMap::new() }
+        ViewState {
+            zoom: 1.0,
+            pan: Vec2::ZERO,
+            fitted: false,
+            highlight: None,
+            pending_center: None,
+            textures: HashMap::new(),
+        }
     }
 }
 
@@ -42,6 +53,8 @@ impl ViewState {
         self.zoom = 1.0;
         self.pan = Vec2::ZERO;
         self.fitted = false;
+        self.highlight = None;
+        self.pending_center = None;
         self.textures.clear();
     }
 
@@ -119,6 +132,13 @@ impl ViewState {
         if !self.fitted {
             self.fit(rect, layout);
             self.fitted = true;
+        }
+        if let Some(id) = self.pending_center.take() {
+            if let Some(p) = layout.pos_of(id) {
+                let z = self.zoom.max(0.6);
+                self.zoom = z;
+                self.pan = Vec2::new(rect.width() / 2.0 - p.x * z, rect.height() / 2.0 - p.y * z);
+            }
         }
 
         // Ввод: перетаскивание — сдвиг, колесо/щипок — масштаб вокруг курсора.
@@ -221,7 +241,7 @@ impl ViewState {
             if is_hover {
                 hovered_id = Some(n.id);
             }
-            let stroke = if is_hover { Stroke::new(2.5_f32, accent) } else { card_stroke };
+            let stroke = if is_hover || self.highlight == Some(n.id) { Stroke::new(2.5_f32, accent) } else { card_stroke };
 
             if zoom < DETAIL_ZOOM {
                 painter.rect_filled(card, 2.0, card_bg);

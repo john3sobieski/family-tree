@@ -226,6 +226,25 @@ impl Tree {
         Ok(())
     }
 
+    /// Убирает связь родитель → ребёнок. `false`, если такой связи не было.
+    pub fn remove_parent_child(&mut self, parent: PersonId, child: PersonId) -> bool {
+        let before = self.relations.len();
+        self.relations.retain(|r| {
+            !matches!(r, Relation::ParentChild { parent: p, child: c } if *p == parent && *c == child)
+        });
+        self.relations.len() != before
+    }
+
+    /// Убирает связь партнёров. `false`, если такой связи не было.
+    pub fn remove_partners(&mut self, a: PersonId, b: PersonId) -> bool {
+        let before = self.relations.len();
+        self.relations.retain(|r| {
+            !matches!(r, Relation::Partners { a: x, b: y, .. }
+                if (*x == a && *y == b) || (*x == b && *y == a))
+        });
+        self.relations.len() != before
+    }
+
     pub fn parents_of(&self, id: PersonId) -> Vec<PersonId> {
         self.relations
             .iter()
@@ -291,6 +310,17 @@ impl Tree {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remove_relations() {
+        let (mut t, dad, mom, kid) = sample();
+        assert!(t.remove_parent_child(dad, kid));
+        assert!(!t.remove_parent_child(dad, kid));
+        assert!(t.parents_of(kid).iter().all(|p| *p != dad));
+        assert!(t.remove_partners(mom, dad));
+        assert!(!t.remove_partners(dad, mom));
+        assert!(t.partners_of(dad).is_empty());
+    }
 
     fn sample() -> (Tree, PersonId, PersonId, PersonId) {
         let mut t = Tree::new();

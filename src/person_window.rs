@@ -200,7 +200,7 @@ impl PersonWindow {
     }
 }
 
-fn load_texture(
+pub(crate) fn load_texture(
     ctx: &egui::Context,
     store: &MediaStore,
     kind: MediaKind,
@@ -227,7 +227,7 @@ fn photo_list(p: &Person) -> Vec<(String, String)> {
     v
 }
 
-fn full_name(p: &Person) -> String {
+pub(crate) fn full_name(p: &Person) -> String {
     let s = format!("{} {}", p.first_name.trim(), p.last_name.trim());
     let s = s.trim();
     if s.is_empty() {
@@ -325,7 +325,7 @@ pub fn format_date(d: &PartialDate) -> Option<String> {
 }
 
 /// «1958–2020», «р. 1985», «…»; для ссылок на родственников.
-fn format_years(p: &Person) -> String {
+pub(crate) fn format_years(p: &Person) -> String {
     match (p.birth.year, p.death.year) {
         (Some(b), Some(d)) => format!("{b}–{d}"),
         (Some(b), None) => format!("р. {b}"),

@@ -5,6 +5,7 @@ mod app;
 #[allow(dead_code)]
 mod container;
 mod demo;
+mod edit;
 #[allow(dead_code)]
 mod layout;
 #[allow(dead_code)]
