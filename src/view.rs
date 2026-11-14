@@ -21,6 +21,24 @@ const LOADS_PER_FRAME: usize = 6;
 /// Отступ фото внутри карточки (в единицах мира).
 const PHOTO_PAD: f32 = 4.0;
 
+/// Плавный перелёт камеры: центр (в мире) и масштаб интерполируются по времени.
+#[derive(Clone, Copy)]
+struct Anim {
+    t0: f64,
+    dur: f64,
+    from_zoom: f32,
+    to_zoom: f32,
+    from_c: Pos2,
+    to_c: Pos2,
+    /// Насколько «отъехать» в середине пути (для дальних перелётов).
+    arc: f32,
+}
+
+/// Масштаб, к которому подлетает камера (карточка хорошо видна).
+const FLY_ZOOM: f32 = 0.9;
+/// Сколько секунд пульсирует подсветка найденного человека.
+const FLASH_SECS: f64 = 3.0;
+
 pub struct ViewState {
     pub zoom: f32,
     /// Смещение мира относительно левого верхнего угла области (в пикселях).
@@ -31,6 +49,11 @@ pub struct ViewState {
     pub highlight: Option<PersonId>,
     /// Показать этого человека по центру при следующем кадре.
     pub pending_center: Option<PersonId>,
+    /// Вместе с перелётом включить пульсирующую подсветку.
+    pending_flash: bool,
+    anim: Option<Anim>,
+    /// Пульсирующая подсветка: (кто, время старта).
+    flash: Option<(PersonId, f64)>,
     textures: HashMap<String, Option<TextureHandle>>,
 }
 
@@ -42,6 +65,9 @@ impl Default for ViewState {
             fitted: false,
             highlight: None,
             pending_center: None,
+            pending_flash: false,
+            anim: None,
+            flash: None,
             textures: HashMap::new(),
         }
     }
@@ -55,10 +81,20 @@ impl ViewState {
         self.fitted = false;
         self.highlight = None;
         self.pending_center = None;
+        self.pending_flash = false;
+        self.anim = None;
+        self.flash = None;
         self.textures.clear();
     }
 
+    /// Плавно перелететь камерой к человеку (`flash` — ещё и подсветить).
+    pub fn fly_to(&mut self, id: PersonId, flash: bool) {
+        self.pending_center = Some(id);
+        self.pending_flash = flash;
+    }
+
     fn fit(&mut self, rect: Rect, layout: &Layout) {
+        self.anim = None;
         let b = layout.bounds;
         let bw = (b.max.x - b.min.x).max(1.0);
         let bh = (b.max.y - b.min.y).max(1.0);
@@ -133,17 +169,37 @@ impl ViewState {
             self.fit(rect, layout);
             self.fitted = true;
         }
+        let now = ui.input(|i| i.time);
         if let Some(id) = self.pending_center.take() {
+            let flash = std::mem::take(&mut self.pending_flash);
             if let Some(p) = layout.pos_of(id) {
-                let z = self.zoom.max(0.6);
-                self.zoom = z;
-                self.pan = Vec2::new(rect.width() / 2.0 - p.x * z, rect.height() / 2.0 - p.y * z);
+                let from_c = Pos2::new(
+                    (rect.width() / 2.0 - self.pan.x) / self.zoom,
+                    (rect.height() / 2.0 - self.pan.y) / self.zoom,
+                );
+                let to_c = Pos2::new(p.x, p.y);
+                // Расстояние в «экранах» (при текущем масштабе).
+                let dist = (to_c - from_c).length() * self.zoom / rect.width().max(1.0);
+                let arc = dist.min(6.0).ln_1p() * 0.6;
+                self.anim = Some(Anim {
+                    t0: now,
+                    dur: (0.55 + 0.25 * dist.min(6.0).ln_1p() as f64).min(1.4),
+                    from_zoom: self.zoom,
+                    to_zoom: FLY_ZOOM,
+                    from_c,
+                    to_c,
+                    arc,
+                });
+                if flash {
+                    self.flash = Some((id, now));
+                }
             }
         }
 
         // Ввод: перетаскивание — сдвиг, колесо/щипок — масштаб вокруг курсора.
         if response.dragged() {
             self.pan += response.drag_delta();
+            self.anim = None;
         }
         if response.hovered() {
             let (scroll, zoom_delta, ptr) =
@@ -152,7 +208,24 @@ impl ViewState {
             if (factor - 1.0).abs() > 1e-4 {
                 if let Some(p) = ptr {
                     self.zoom_at(rect, p, factor);
+                    self.anim = None;
                 }
+            }
+        }
+        // Шаг анимации камеры.
+        if let Some(a) = self.anim {
+            let t = (((now - a.t0) / a.dur).clamp(0.0, 1.0)) as f32;
+            let e = t * t * (3.0 - 2.0 * t);
+            let lz = a.from_zoom.ln() + (a.to_zoom.ln() - a.from_zoom.ln()) * e
+                - a.arc * (std::f32::consts::PI * e).sin();
+            let z = lz.exp().clamp(MIN_ZOOM, MAX_ZOOM);
+            let c = a.from_c + (a.to_c - a.from_c) * e;
+            self.zoom = z;
+            self.pan = Vec2::new(rect.width() / 2.0 - c.x * z, rect.height() / 2.0 - c.y * z);
+            if t >= 1.0 {
+                self.anim = None;
+            } else {
+                ui.ctx().request_repaint();
             }
         }
 
@@ -296,6 +369,31 @@ impl ViewState {
             }
         }
 
+        // Пульсирующая подсветка найденного человека.
+        if let Some((fid, t0)) = self.flash {
+            let age = now - t0;
+            match layout.pos_of(fid) {
+                Some(p) if age < FLASH_SECS => {
+                    let fade = (1.0 - age / FLASH_SECS) as f32;
+                    let card = Rect::from_min_max(
+                        s(p.x - cfg.card_w / 2.0, p.y - cfg.card_h / 2.0),
+                        s(p.x + cfg.card_w / 2.0, p.y + cfg.card_h / 2.0),
+                    );
+                    for k in 0..2 {
+                        let phase = ((age * 1.1 + k as f64 * 0.5) % 1.0) as f32;
+                        let alpha = ((1.0 - phase) * fade * 255.0) as u8;
+                        let color = Color32::from_rgba_unmultiplied(255, 170, 0, alpha);
+                        painter.rect_stroke(
+                            card.expand(phase * 45.0 * zoom),
+                            (6.0 + phase * 20.0) * zoom,
+                            Stroke::new(3.0_f32, color),
+                        );
+                    }
+                    ctx.request_repaint();
+                }
+                _ => self.flash = None,
+            }
+        }
         if pending {
             ctx.request_repaint();
         }

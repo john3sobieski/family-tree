@@ -7,6 +7,7 @@ use crate::layout::{self, Layout, LayoutConfig};
 use crate::list::{self, ListState};
 use crate::model::{PersonId, Tree};
 use crate::person_window::{PersonWindow, WindowEvent};
+use crate::search::{self, SearchState};
 use crate::view::ViewState;
 use eframe::egui;
 use std::path::PathBuf;
@@ -37,6 +38,7 @@ pub struct FamTreeApp {
     pub open_window: bool,
     pub edit: EditState,
     pub list: ListState,
+    pub search: SearchState,
 }
 
 impl FamTreeApp {
@@ -57,6 +59,7 @@ impl FamTreeApp {
             open_window: false,
             edit: EditState::default(),
             list: ListState::default(),
+            search: SearchState::default(),
         };
         if let Some(p) = path {
             app.open_file(p);
@@ -83,6 +86,7 @@ impl FamTreeApp {
         self.person_win.reset();
         self.edit.reset();
         self.list.reset();
+        self.search.clear();
         self.open_window = false;
         self.view.reset();
         self.relayout();
@@ -128,7 +132,7 @@ impl FamTreeApp {
     /// Выделить человека и показать его на схеме.
     fn select_and_show(&mut self, id: PersonId) {
         self.selected = Some(id);
-        self.view.pending_center = Some(id);
+        self.view.fly_to(id, false);
     }
 
     fn selected_name(&self) -> Option<String> {
@@ -141,6 +145,10 @@ impl eframe::App for FamTreeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::S)) {
             self.save();
+        }
+
+        if self.mode != Mode::List && ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::F)) {
+            ctx.memory_mut(|m| m.request_focus(egui::Id::new(search::FIELD_ID)));
         }
 
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
@@ -176,6 +184,13 @@ impl eframe::App for FamTreeApp {
                 ui.separator();
                 if self.mode == Mode::View && ui.button("По размеру").clicked() {
                     self.view.fitted = false;
+                }
+                if self.mode != Mode::List {
+                    ui.separator();
+                    if let Some(id) = search::show(ui, &mut self.search, &self.tree, &self.layout) {
+                        self.selected = Some(id);
+                        self.view.fly_to(id, true);
+                    }
                 }
             });
         });
