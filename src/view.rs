@@ -158,6 +158,14 @@ impl ViewState {
             )) {
                 continue;
             }
+            if e.hang {
+                // «Лесенка»: вниз по общей линии, затем вбок к карточке.
+                painter.add(egui::Shape::line(
+                    vec![s(e.from.x, e.from.y), s(e.from.x, e.to.y), s(e.to.x, e.to.y)],
+                    line,
+                ));
+                continue;
+            }
             let mid_y = (e.from.y + e.to.y) / 2.0;
             painter.add(egui::Shape::line(
                 vec![s(e.from.x, e.from.y), s(e.from.x, mid_y), s(e.to.x, mid_y), s(e.to.x, e.to.y)],

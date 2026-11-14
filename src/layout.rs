@@ -26,6 +26,17 @@ pub struct LayoutConfig {
     pub partner_gap: f32,
     /// Зазор между поколениями.
     pub v_gap: f32,
+    /// «Лесенка»: сдвиг вправо для каждого уровня потомков, подвешенных столбиком.
+    pub hang_indent: f32,
+    /// «Лесенка»: зазор между строками столбика.
+    pub hang_gap: f32,
+    /// Вручную: поддеревья из ≤ N единиц подвешиваются столбиком (0 — выкл.).
+    /// Используется, только если `auto_compact == false`.
+    pub hang_max: usize,
+    /// Автоматически подбирать компактность, чтобы схема не была слишком широкой.
+    pub auto_compact: bool,
+    /// Желаемое отношение ширины к высоте схемы (чем меньше — тем «выше» дерево).
+    pub target_aspect: f32,
 }
 
 impl Default for LayoutConfig {
@@ -36,6 +47,11 @@ impl Default for LayoutConfig {
             h_gap: 30.0,
             partner_gap: 12.0,
             v_gap: 90.0,
+            hang_indent: 36.0,
+            hang_gap: 28.0,
+            hang_max: 0,
+            auto_compact: true,
+            target_aspect: 1.6,
         }
     }
 }
@@ -60,6 +76,8 @@ pub struct Unit {
 pub struct Edge {
     pub from: Pt,
     pub to: Pt,
+    /// `true` — связь «лесенки»: вниз по линии x = from.x, затем вбок к to.
+    pub hang: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -130,6 +148,19 @@ struct BuildNode {
     members: Vec<PersonId>,
     children: Vec<BuildNode>,
     width: f32,
+    /// Число единиц в поддереве (включая эту).
+    count: usize,
+    /// Поддерево рисуется «лесенкой» (столбиком), а не вширь.
+    hang: bool,
+}
+
+/// Ширина поддерева, если подвесить его «лесенкой».
+fn outline_width(cfg: &LayoutConfig, node: &BuildNode) -> f32 {
+    let mut w = unit_width(cfg, node.members.len());
+    for c in &node.children {
+        w = w.max(cfg.hang_indent + outline_width(cfg, c));
+    }
+    w
 }
 
 fn unit_width(cfg: &LayoutConfig, k: usize) -> f32 {
@@ -193,6 +224,7 @@ fn build(
     tree: &Tree,
     adj: &Adj,
     cfg: &LayoutConfig,
+    hang_max: usize,
     id: PersonId,
     visited: &mut HashSet<PersonId>,
 ) -> BuildNode {
@@ -219,11 +251,18 @@ fn build(
     let mut children = Vec::new();
     for c in kids {
         if !visited.contains(&c) {
-            children.push(build(tree, adj, cfg, c, visited));
+            children.push(build(tree, adj, cfg, hang_max, c, visited));
         }
     }
-    let width = unit_width(cfg, members.len()).max(children_width(cfg, &children));
-    BuildNode { members, children, width }
+    let count = 1 + children.iter().map(|c| c.count).sum::<usize>();
+    let mut node = BuildNode { members, children, width: 0.0, count, hang: false };
+    if hang_max > 0 && !node.children.is_empty() && count <= hang_max {
+        node.hang = true;
+        node.width = outline_width(cfg, &node);
+    } else {
+        node.width = unit_width(cfg, node.members.len()).max(children_width(cfg, &node.children));
+    }
+    node
 }
 
 struct Out {
@@ -236,8 +275,43 @@ fn row_y(cfg: &LayoutConfig, depth: usize) -> f32 {
     depth as f32 * (cfg.card_h + cfg.v_gap) + cfg.card_h / 2.0
 }
 
+/// Размещает поддерево «лесенкой»: потомки идут столбиком под человеком,
+/// каждый следующий уровень сдвинут вправо. `y` — центр карточки этого человека.
+/// Возвращает y последней занятой строки.
+fn place_hang(node: &BuildNode, left: f32, y: f32, cfg: &LayoutConfig, out: &mut Out) -> f32 {
+    let uw = unit_width(cfg, node.members.len());
+    for (i, m) in node.members.iter().enumerate() {
+        let x = left + cfg.card_w / 2.0 + i as f32 * (cfg.card_w + cfg.partner_gap);
+        out.nodes.push(PlacedPerson { id: *m, pos: Pt { x, y } });
+    }
+    out.units.push(Unit {
+        members: node.members.clone(),
+        center: Pt { x: left + uw / 2.0, y },
+        width: uw,
+    });
+
+    let pitch = cfg.card_h + cfg.hang_gap;
+    let spine_x = left + cfg.hang_indent / 2.0;
+    let child_left = left + cfg.hang_indent;
+    let mut last_y = y;
+    for child in &node.children {
+        let cy = last_y + pitch;
+        out.edges.push(Edge {
+            from: Pt { x: spine_x, y: y + cfg.card_h / 2.0 },
+            to: Pt { x: child_left, y: cy - cfg.card_h / 2.0 + cfg.card_w * 2.0 / 3.0 },
+            hang: true,
+        });
+        last_y = place_hang(child, child_left, cy, cfg, out);
+    }
+    last_y
+}
+
 /// Размещает поддерево; возвращает x центра карточки основного человека.
 fn place(node: &BuildNode, left: f32, depth: usize, cfg: &LayoutConfig, out: &mut Out) -> f32 {
+    if node.hang {
+        place_hang(node, left, row_y(cfg, depth), cfg, out);
+        return left + cfg.card_w / 2.0;
+    }
     let cx = left + node.width / 2.0;
     let y = row_y(cfg, depth);
     let uw = unit_width(cfg, node.members.len());
@@ -261,24 +335,64 @@ fn place(node: &BuildNode, left: f32, depth: usize, cfg: &LayoutConfig, out: &mu
         out.edges.push(Edge {
             from: Pt { x: cx, y: y + cfg.card_h / 2.0 },
             to: Pt { x: anchor_x, y: child_top },
+            hang: false,
         });
         child_left += child.width + cfg.h_gap;
     }
     unit_left + cfg.card_w / 2.0
 }
 
+/// Кандидаты порога «лесенки» при автоподборе (в единицах раскладки).
+const HANG_STEPS: [usize; 12] = [0, 3, 5, 8, 13, 20, 30, 40, 60, 90, 121, 364];
+
 pub fn compute(tree: &Tree, cfg: &LayoutConfig) -> Layout {
     let adj = Adj::new(tree);
+    let tops = pick_tops(tree, &adj);
+    if !cfg.auto_compact {
+        return compute_with(tree, &adj, &tops, cfg, cfg.hang_max);
+    }
+    // Берём наименее компактную раскладку, у которой схема не шире целевых пропорций;
+    // если такой нет — самую «высокую» из всех.
+    let mut best: Option<(f32, Layout)> = None;
+    for &h in HANG_STEPS.iter() {
+        let l = compute_with(tree, &adj, &tops, cfg, h);
+        let w = l.bounds.max.x - l.bounds.min.x;
+        let ht = l.bounds.max.y - l.bounds.min.y;
+        if ht <= 0.0 || l.nodes.is_empty() {
+            return l;
+        }
+        let aspect = w / ht;
+        if aspect <= cfg.target_aspect {
+            return l;
+        }
+        let better = match &best {
+            Some((a, _)) => aspect < *a,
+            None => true,
+        };
+        if better {
+            best = Some((aspect, l));
+        }
+    }
+    best.map(|(_, l)| l).unwrap_or_default()
+}
+
+fn compute_with(
+    tree: &Tree,
+    adj: &Adj,
+    tops: &[PersonId],
+    cfg: &LayoutConfig,
+    hang_max: usize,
+) -> Layout {
     let mut visited: HashSet<PersonId> = HashSet::new();
     let mut out = Out { nodes: Vec::new(), units: Vec::new(), edges: Vec::new() };
 
     // Деревья нескольких верхних предков стоят рядом друг с другом.
     let mut left = 0.0_f32;
-    for top in pick_tops(tree, &adj) {
+    for &top in tops {
         if visited.contains(&top) {
             continue;
         }
-        let node = build(tree, &adj, cfg, top, &mut visited);
+        let node = build(tree, adj, cfg, hang_max, top, &mut visited);
         place(&node, left, 0, cfg, &mut out);
         left += node.width + cfg.h_gap * 3.0;
     }
@@ -323,6 +437,10 @@ mod tests {
     use crate::model::Person;
     use std::collections::BTreeMap;
 
+    fn plain() -> LayoutConfig {
+        LayoutConfig { auto_compact: false, hang_max: 0, ..LayoutConfig::default() }
+    }
+
     fn add(t: &mut Tree, name: &str, birth: Option<i32>) -> PersonId {
         let mut p = Person::new(name, "Т");
         p.birth.year = birth;
@@ -344,7 +462,7 @@ mod tests {
 
     #[test]
     fn empty_tree() {
-        let l = compute(&Tree::new(), &LayoutConfig::default());
+        let l = compute(&Tree::new(), &plain());
         assert!(l.nodes.is_empty());
         assert!(l.edges.is_empty());
         assert!(l.unplaced.is_empty());
@@ -352,7 +470,7 @@ mod tests {
 
     #[test]
     fn couple_with_two_kids() {
-        let cfg = LayoutConfig::default();
+        let cfg = plain();
         let mut t = Tree::new();
         let dad = add(&mut t, "Папа", Some(1960));
         let mom = add(&mut t, "Мама", Some(1962));
@@ -386,7 +504,7 @@ mod tests {
 
     #[test]
     fn three_generations_no_overlap() {
-        let cfg = LayoutConfig::default();
+        let cfg = plain();
         let mut t = Tree::new();
         let root = add(&mut t, "Дед", Some(1930));
         let babushka = add(&mut t, "Бабка", Some(1932));
@@ -426,7 +544,7 @@ mod tests {
         let stranger = add(&mut t, "Чужой", None);
         t.add_parent_child(a, b).unwrap();
         t.root = Some(a);
-        let l = compute(&t, &LayoutConfig::default());
+        let l = compute(&t, &plain());
         assert_eq!(l.nodes.len(), 2);
         assert_eq!(l.unplaced, vec![stranger]);
         assert!(l.pos_of(stranger).is_none());
@@ -439,14 +557,14 @@ mod tests {
         let parent = add(&mut t, "Родитель", None);
         t.add_parent_child(parent, kid).unwrap();
         // root не задан; у kid (id=1) есть родитель, значит корень — parent.
-        let l = compute(&t, &LayoutConfig::default());
+        let l = compute(&t, &plain());
         let (pp, pk) = (l.pos_of(parent).unwrap(), l.pos_of(kid).unwrap());
         assert!(pk.y > pp.y);
     }
 
     #[test]
     fn root_is_me_shows_ancestors_siblings_and_cousins() {
-        let cfg = LayoutConfig::default();
+        let cfg = plain();
         let mut t = Tree::new();
         let gpa = add(&mut t, "Дед", Some(1930));
         let gma = add(&mut t, "Бабка", Some(1932));
@@ -478,7 +596,7 @@ mod tests {
 
     #[test]
     fn both_parental_sides_are_placed_side_by_side() {
-        let cfg = LayoutConfig::default();
+        let cfg = plain();
         let mut t = Tree::new();
         let pg = add(&mut t, "Дед по папе", Some(1930));
         let mg = add(&mut t, "Дед по маме", Some(1932));
@@ -499,9 +617,62 @@ mod tests {
         assert_no_overlap(&l, &cfg);
     }
 
+    fn ternary(n: usize) -> Tree {
+        let mut t = Tree::new();
+        let root = add(&mut t, "Корень", Some(1800));
+        t.root = Some(root);
+        let mut queue = std::collections::VecDeque::from([root]);
+        while t.persons.len() < n {
+            let p = queue.pop_front().unwrap();
+            for _ in 0..3 {
+                if t.persons.len() >= n {
+                    break;
+                }
+                let c = add(&mut t, "П", None);
+                t.add_parent_child(p, c).unwrap();
+                queue.push_back(c);
+            }
+        }
+        t
+    }
+
+    #[test]
+    fn hanging_makes_layout_narrower_and_taller() {
+        let t = ternary(1000);
+        let flat = compute(&t, &plain());
+        let hung = compute(&t, &LayoutConfig { auto_compact: false, hang_max: 13, ..plain() });
+        assert_eq!(hung.nodes.len(), 1000);
+        assert!(hung.unplaced.is_empty());
+        assert_eq!(hung.edges.len(), 999);
+        assert_no_overlap(&hung, &plain());
+        let fw = flat.bounds.max.x - flat.bounds.min.x;
+        let hw = hung.bounds.max.x - hung.bounds.min.x;
+        let fh = flat.bounds.max.y - flat.bounds.min.y;
+        let hh = hung.bounds.max.y - hung.bounds.min.y;
+        assert!(hw < fw / 3.0, "ширина должна сильно уменьшиться: {hw} vs {fw}");
+        assert!(hh > fh, "высота должна вырасти");
+    }
+
+    #[test]
+    fn auto_compact_keeps_small_tree_and_compacts_big_one() {
+        let cfg = LayoutConfig::default();
+        // Небольшое дерево остаётся обычным: нет ни одной связи «лесенкой».
+        let small = compute(&ternary(4), &cfg);
+        assert!(small.edges.iter().all(|e| !e.hang));
+        // Большое — получает «лесенки» и становится заметно ближе к экранным пропорциям.
+        let t = ternary(1000);
+        let big = compute(&t, &cfg);
+        let flat = compute(&t, &plain());
+        assert_eq!(big.nodes.len(), 1000);
+        assert!(big.edges.iter().any(|e| e.hang));
+        assert_no_overlap(&big, &cfg);
+        let aspect = |l: &Layout| (l.bounds.max.x - l.bounds.min.x) / (l.bounds.max.y - l.bounds.min.y);
+        assert!(aspect(&big) < aspect(&flat) / 4.0);
+    }
+
     #[test]
     fn large_tree_all_placed_without_overlap() {
-        let cfg = LayoutConfig::default();
+        let cfg = plain();
         let mut t = Tree::new();
         let root = add(&mut t, "Корень", Some(1800));
         t.root = Some(root);
