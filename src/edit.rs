@@ -138,6 +138,8 @@ enum Rel {
     Parent,
     Partner,
     Child,
+    /// Только для «＋ Брат/сестра» (в списках связей не используется).
+    Sibling,
 }
 
 enum Action {
@@ -407,6 +409,9 @@ pub fn editor(
             if ui.button("＋ Ребёнок").clicked() {
                 actions.push(Action::New(Rel::Child));
             }
+            if ui.button("＋ Брат/сестра").clicked() {
+                actions.push(Action::New(Rel::Sibling));
+            }
         });
 
         ui.add_space(6.0);
@@ -491,6 +496,7 @@ pub fn editor(
                     Rel::Parent => tree.remove_parent_child(o, id),
                     Rel::Partner => tree.remove_partners(id, o),
                     Rel::Child => tree.remove_parent_child(id, o),
+                    Rel::Sibling => false,
                 };
                 ch.dirty = true;
                 ch.relayout = true;
@@ -500,6 +506,7 @@ pub fn editor(
                     Rel::Parent => link_parent(tree, o, id),
                     Rel::Partner => tree.add_partners(id, o).map_err(|e| e.to_string()),
                     Rel::Child => link_parent(tree, id, o),
+                    Rel::Sibling => Err("Нельзя связать так".to_string()),
                 };
                 match r {
                     Ok(()) => {
@@ -515,7 +522,13 @@ pub fn editor(
                     Rel::Parent => ("Новый", "родитель"),
                     Rel::Partner => ("Новый", "партнёр"),
                     Rel::Child => ("Новый", "ребёнок"),
+                    Rel::Sibling => ("Новый", "брат/сестра"),
                 };
+                let my_parents = tree.parents_of(id);
+                if rel == Rel::Sibling && my_parents.is_empty() {
+                    errors.push("Чтобы добавить брата/сестру, сначала добавьте родителя".to_string());
+                    continue;
+                }
                 let nid = tree.add_person(Person::new(first, last));
                 let r = match rel {
                     Rel::Parent => link_parent(tree, nid, id),
@@ -525,6 +538,17 @@ pub fn editor(
                         // Если у человека один партнёр — он тоже родитель ребёнка.
                         if r.is_ok() && partners.len() == 1 {
                             let _ = link_parent(tree, partners[0], nid);
+                        }
+                        r
+                    }
+                    Rel::Sibling => {
+                        // Те же родители, что и у выбранного (второй станет партнёром первого).
+                        let mut r = Ok(());
+                        for p in &my_parents {
+                            if let Err(e) = link_parent(tree, *p, nid) {
+                                r = Err(e);
+                                break;
+                            }
                         }
                         r
                     }
