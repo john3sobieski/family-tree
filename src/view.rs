@@ -289,7 +289,7 @@ impl ViewState {
     }
 }
 
-fn draw_placeholder(painter: &Painter, r: Rect, fg: Color32, bg: Color32) {
+pub(crate) fn draw_placeholder(painter: &Painter, r: Rect, fg: Color32, bg: Color32) {
     painter.rect_filled(r, 0.0, bg);
     let clip = painter.with_clip_rect(r);
     let cx = r.center().x;

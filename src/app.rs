@@ -4,6 +4,7 @@ use crate::container::{self, MediaStore};
 use crate::demo;
 use crate::layout::{self, Layout, LayoutConfig};
 use crate::model::{PersonId, Tree};
+use crate::person_window::{PersonWindow, WindowEvent};
 use crate::view::ViewState;
 use eframe::egui;
 use std::path::PathBuf;
@@ -27,8 +28,9 @@ pub struct FamTreeApp {
     pub status: String,
     pub mode: Mode,
     pub view: ViewState,
-    /// Человек, по карточке которого кликнули (откроется окно — шаг 8).
+    /// Человек, по карточке которого кликнули (открыто его окно).
     pub selected: Option<PersonId>,
+    pub person_win: PersonWindow,
 }
 
 impl FamTreeApp {
@@ -45,6 +47,7 @@ impl FamTreeApp {
             mode: Mode::View,
             view: ViewState::default(),
             selected: None,
+            person_win: PersonWindow::default(),
         };
         if let Some(p) = path {
             app.open_file(p);
@@ -68,6 +71,7 @@ impl FamTreeApp {
         self.path = path;
         self.dirty = false;
         self.selected = None;
+        self.person_win.reset();
         self.view.reset();
         self.relayout();
     }
@@ -150,5 +154,14 @@ impl eframe::App for FamTreeApp {
                 ui.centered_and_justified(|ui| ui.label("Режим списка — скоро"));
             }
         });
+
+        // Большое окно человека (по клику на карточку).
+        if let Some(id) = self.selected {
+            match self.person_win.show(ctx, &self.tree, &self.store, id) {
+                WindowEvent::Close => self.selected = None,
+                WindowEvent::Goto(other) => self.selected = Some(other),
+                WindowEvent::None => {}
+            }
+        }
     }
 }

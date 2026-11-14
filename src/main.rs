@@ -11,6 +11,7 @@ mod layout;
 mod media;
 #[allow(dead_code)]
 mod model;
+mod person_window;
 mod view;
 
 use eframe::egui;
