@@ -1,26 +1,25 @@
 // Без консольного окна в release-сборке на Windows.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod app;
 #[allow(dead_code)]
 mod container;
+mod demo;
+#[allow(dead_code)]
+mod layout;
 #[allow(dead_code)]
 mod media;
 #[allow(dead_code)]
 mod model;
+mod view;
 
 use eframe::egui;
-
-struct FamTreeApp;
-
-impl eframe::App for FamTreeApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Семейное дерево");
-        });
-    }
-}
+use std::path::PathBuf;
 
 fn main() -> eframe::Result {
+    // Двойной клик по .famtree передаёт путь первым аргументом.
+    let path: Option<PathBuf> = std::env::args_os().nth(1).map(PathBuf::from);
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1200.0, 800.0])
@@ -30,6 +29,6 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Семейное дерево",
         options,
-        Box::new(|_cc| Ok(Box::new(FamTreeApp))),
+        Box::new(move |_cc| Ok(Box::new(app::FamTreeApp::new(path)))),
     )
 }
