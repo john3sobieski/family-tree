@@ -221,7 +221,7 @@ impl ViewState {
             if is_hover {
                 hovered_id = Some(n.id);
             }
-            let stroke = if is_hover { Stroke::new(2.5, accent) } else { card_stroke };
+            let stroke = if is_hover { Stroke::new(2.5_f32, accent) } else { card_stroke };
 
             if zoom < DETAIL_ZOOM {
                 painter.rect_filled(card, 2.0, card_bg);

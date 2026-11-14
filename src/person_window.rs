@@ -156,9 +156,9 @@ impl PersonWindow {
                     }
                 };
                 if i == self.current {
-                    ui.painter().rect_stroke(resp.rect, 0.0, egui::Stroke::new(2.5, accent));
+                    ui.painter().rect_stroke(resp.rect, 0.0_f32, egui::Stroke::new(2.5_f32, accent));
                 } else if resp.hovered() {
-                    ui.painter().rect_stroke(resp.rect, 0.0, egui::Stroke::new(1.5, accent));
+                    ui.painter().rect_stroke(resp.rect, 0.0_f32, egui::Stroke::new(1.5_f32, accent));
                 }
                 if resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                     self.current = i;
