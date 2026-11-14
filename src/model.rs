@@ -123,8 +123,8 @@ fn first_id() -> PersonId {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Tree {
     pub version: u32,
-    /// Корень отображения: один из родителей пользователя
-    /// (его партнёр подтягивается через связи).
+    /// «Я» — сам пользователь. Схема строится от верхних предков этого человека
+    /// (родители, дяди, кузены и т.д. попадают на неё автоматически).
     #[serde(default)]
     pub root: Option<PersonId>,
     #[serde(default = "first_id")]
