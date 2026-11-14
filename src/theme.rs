@@ -22,9 +22,9 @@ fn wv(bg: Color32, weak: Color32, stroke: Color32, fg: Color32) -> egui::style::
     egui::style::WidgetVisuals {
         bg_fill: bg,
         weak_bg_fill: weak,
-        bg_stroke: Stroke::new(1.0, stroke),
+        bg_stroke: Stroke::new(1.0_f32, stroke),
         rounding: Rounding::same(R),
-        fg_stroke: Stroke::new(1.0, fg),
+        fg_stroke: Stroke::new(1.0_f32, fg),
         expansion: 0.0,
     }
 }
@@ -39,7 +39,7 @@ pub fn apply(ctx: &egui::Context) {
     v.extreme_bg_color = BG; // фон схемы и полей ввода
     v.faint_bg_color = Color32::from_rgb(14, 14, 14);
     v.code_bg_color = SURFACE2;
-    v.window_stroke = Stroke::new(1.0, BORDER);
+    v.window_stroke = Stroke::new(1.0_f32, BORDER);
     v.window_rounding = Rounding::same(10.0);
     v.menu_rounding = Rounding::same(8.0);
     v.window_shadow.color = Color32::TRANSPARENT;
@@ -47,7 +47,7 @@ pub fn apply(ctx: &egui::Context) {
     v.hyperlink_color = TEXT;
     v.error_fg_color = DANGER;
     v.selection.bg_fill = SELECT_BG;
-    v.selection.stroke = Stroke::new(1.0, TEXT);
+    v.selection.stroke = Stroke::new(1.0_f32, TEXT);
 
     v.widgets.noninteractive = wv(SURFACE, SURFACE, BORDER, TEXT_DIM);
     v.widgets.inactive = wv(SURFACE2, SURFACE2, BORDER, TEXT_DIM);

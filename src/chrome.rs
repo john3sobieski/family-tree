@@ -27,7 +27,7 @@ pub fn title_bar(ctx: &egui::Context, file: &str, dirty: bool) {
             let logo = Rect::from_min_size(pos2(rect.left() + 14.0, rect.center().y - 9.0), vec2(18.0, 18.0));
             p.rect_filled(logo, 5.0, theme::ACCENT);
             let c = logo.center();
-            let k = Stroke::new(1.5, theme::BG);
+            let k = Stroke::new(1.5_f32, theme::BG);
             p.line_segment([pos2(c.x, c.y - 3.0), pos2(c.x, c.y + 1.0)], k);
             p.line_segment([pos2(c.x - 4.0, c.y + 1.0), pos2(c.x + 4.0, c.y + 1.0)], k);
             for dx in [-4.0_f32, 0.0, 4.0] {
@@ -47,7 +47,7 @@ pub fn title_bar(ctx: &egui::Context, file: &str, dirty: bool) {
             );
 
             // Кнопки окна справа: [—][□][×].
-            let icon = Stroke::new(1.2, theme::TEXT);
+            let icon = Stroke::new(1.2_f32, theme::TEXT);
             for i in 0..3 {
                 let r = Rect::from_min_size(
                     pos2(rect.right() - BTN_W * (3 - i) as f32, rect.top()),
@@ -62,13 +62,17 @@ pub fn title_bar(ctx: &egui::Context, file: &str, dirty: bool) {
                 let c = r.center();
                 let p = ui.painter();
                 match i {
-                    0 => p.line_segment([pos2(c.x - 5.0, c.y), pos2(c.x + 5.0, c.y)], icon),
+                    0 => {
+                        p.line_segment([pos2(c.x - 5.0, c.y), pos2(c.x + 5.0, c.y)], icon);
+                    }
                     1 if maximized => {
                         p.rect_stroke(Rect::from_min_size(pos2(c.x - 5.0, c.y - 2.0), vec2(7.0, 7.0)), 0.0_f32, icon);
                         p.line_segment([pos2(c.x - 2.0, c.y - 5.0), pos2(c.x + 5.0, c.y - 5.0)], icon);
                         p.line_segment([pos2(c.x + 5.0, c.y - 5.0), pos2(c.x + 5.0, c.y + 2.0)], icon);
                     }
-                    1 => p.rect_stroke(Rect::from_center_size(c, vec2(10.0, 10.0)), 0.0_f32, icon),
+                    1 => {
+                        p.rect_stroke(Rect::from_center_size(c, vec2(10.0, 10.0)), 0.0_f32, icon);
+                    }
                     _ => {
                         p.line_segment([pos2(c.x - 5.0, c.y - 5.0), pos2(c.x + 5.0, c.y + 5.0)], icon);
                         p.line_segment([pos2(c.x - 5.0, c.y + 5.0), pos2(c.x + 5.0, c.y - 5.0)], icon);
@@ -92,5 +96,5 @@ pub fn window_border(ctx: &egui::Context) {
         return;
     }
     let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Foreground, Id::new("window-border")));
-    painter.rect_stroke(ctx.screen_rect(), 0.0_f32, Stroke::new(1.0, theme::BORDER_HI));
+    painter.rect_stroke(ctx.screen_rect(), 0.0_f32, Stroke::new(1.0_f32, theme::BORDER_HI));
 }
