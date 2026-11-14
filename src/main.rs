@@ -4,6 +4,8 @@
 #[allow(dead_code)]
 mod container;
 #[allow(dead_code)]
+mod media;
+#[allow(dead_code)]
 mod model;
 
 use eframe::egui;
