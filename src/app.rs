@@ -19,6 +19,16 @@ pub enum Mode {
     List,
 }
 
+/// Действие, которое выбросит текущее дерево — перед ним спрашиваем про несохранённое.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Guarded {
+    Close,
+    New,
+    Open,
+    Demo,
+    BigDemo,
+}
+
 pub struct FamTreeApp {
     pub tree: Tree,
     pub store: MediaStore,
@@ -39,6 +49,11 @@ pub struct FamTreeApp {
     pub edit: EditState,
     pub list: ListState,
     pub search: SearchState,
+    /// Ждёт ответа в окне «Сохранить изменения?».
+    pub pending: Option<Guarded>,
+    /// Выход подтверждён — не перехватывать закрытие окна.
+    allow_close: bool,
+    last_title: String,
 }
 
 impl FamTreeApp {
@@ -60,6 +75,9 @@ impl FamTreeApp {
             edit: EditState::default(),
             list: ListState::default(),
             search: SearchState::default(),
+            pending: None,
+            allow_close: false,
+            last_title: String::new(),
         };
         if let Some(p) = path {
             app.open_file(p);
@@ -95,6 +113,98 @@ impl FamTreeApp {
     /// Пересчитать раскладку (после изменения дерева).
     pub fn relayout(&mut self) {
         self.layout = layout::compute(&self.tree, &self.layout_cfg);
+    }
+
+    /// Выполнить действие, которое заменяет дерево; если есть несохранённые правки —
+    /// сначала спросить пользователя.
+    pub fn request(&mut self, ctx: &egui::Context, a: Guarded) {
+        if self.dirty {
+            self.pending = Some(a);
+        } else {
+            self.perform(ctx, a);
+        }
+    }
+
+    fn perform(&mut self, ctx: &egui::Context, a: Guarded) {
+        self.pending = None;
+        match a {
+            Guarded::Close => {
+                self.allow_close = true;
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+            Guarded::New => self.set_tree(Tree::new(), MediaStore::new(), None),
+            Guarded::Open => {
+                if let Some(p) = rfd::FileDialog::new()
+                    .add_filter("Семейное дерево", &["famtree"])
+                    .pick_file()
+                {
+                    self.open_file(p);
+                }
+            }
+            Guarded::Demo => self.set_tree(demo::sample_tree(), MediaStore::new(), None),
+            Guarded::BigDemo => self.set_tree(demo::big_tree(1000), MediaStore::new(), None),
+        }
+    }
+
+    fn file_label(&self) -> String {
+        match &self.path {
+            Some(p) => p
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| p.display().to_string()),
+            None => "Новое дерево".to_string(),
+        }
+    }
+
+    /// Окно «Сохранить изменения?» (поверх всего, пока не ответят).
+    fn confirm_dialog(&mut self, ctx: &egui::Context) {
+        let Some(action) = self.pending else { return };
+        #[derive(PartialEq)]
+        enum Choice {
+            None,
+            Save,
+            Discard,
+            Cancel,
+        }
+        let mut choice = Choice::None;
+        let name = self.file_label();
+        egui::Window::new("Несохранённые изменения")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                ui.label(format!("В «{name}» есть несохранённые изменения. Сохранить их?"));
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    if ui.button("Сохранить").clicked() {
+                        choice = Choice::Save;
+                    }
+                    if ui.button("Не сохранять").clicked() {
+                        choice = Choice::Discard;
+                    }
+                    if ui.button("Отмена").clicked() {
+                        choice = Choice::Cancel;
+                    }
+                });
+            });
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            choice = Choice::Cancel;
+        }
+        match choice {
+            Choice::None => {}
+            Choice::Cancel => self.pending = None,
+            Choice::Discard => {
+                self.dirty = false;
+                self.perform(ctx, action);
+            }
+            Choice::Save => {
+                self.save();
+                // Если сохранение не удалось или диалог «Сохранить как» закрыли — остаёмся.
+                if !self.dirty {
+                    self.perform(ctx, action);
+                }
+            }
+        }
     }
 
     /// Сохранить в текущий файл (или спросить путь).
@@ -143,6 +253,17 @@ impl FamTreeApp {
 
 impl eframe::App for FamTreeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Закрытие окна с несохранённым: отменяем и спрашиваем.
+        if ctx.input(|i| i.viewport().close_requested()) && self.dirty && !self.allow_close {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            self.pending = Some(Guarded::Close);
+        }
+        // Заголовок окна: имя файла и «*» при несохранённых правках.
+        let title = format!("{}{} — Семейное дерево", self.file_label(), if self.dirty { " *" } else { "" });
+        if title != self.last_title {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
+            self.last_title = title;
+        }
         if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::S)) {
             self.save();
         }
@@ -154,15 +275,10 @@ impl eframe::App for FamTreeApp {
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Новое").clicked() {
-                    self.set_tree(Tree::new(), MediaStore::new(), None);
+                    self.request(ctx, Guarded::New);
                 }
                 if ui.button("Открыть…").clicked() {
-                    if let Some(p) = rfd::FileDialog::new()
-                        .add_filter("Семейное дерево", &["famtree"])
-                        .pick_file()
-                    {
-                        self.open_file(p);
-                    }
+                    self.request(ctx, Guarded::Open);
                 }
                 if ui.button("Сохранить").clicked() {
                     self.save();
@@ -172,10 +288,10 @@ impl eframe::App for FamTreeApp {
                 }
                 ui.separator();
                 if ui.button("Демо").clicked() {
-                    self.set_tree(demo::sample_tree(), MediaStore::new(), None);
+                    self.request(ctx, Guarded::Demo);
                 }
                 if ui.button("Демо ×1000").clicked() {
-                    self.set_tree(demo::big_tree(1000), MediaStore::new(), None);
+                    self.request(ctx, Guarded::BigDemo);
                 }
                 ui.separator();
                 ui.selectable_value(&mut self.mode, Mode::View, "Просмотр");
@@ -304,5 +420,7 @@ impl eframe::App for FamTreeApp {
                 WindowEvent::None => {}
             }
         }
+
+        self.confirm_dialog(ctx);
     }
 }
