@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app;
+mod assoc;
 #[allow(dead_code)]
 mod container;
 mod demo;
@@ -24,10 +25,16 @@ fn main() -> eframe::Result {
     // Двойной клик по .famtree передаёт путь первым аргументом.
     let path: Option<PathBuf> = std::env::args_os().nth(1).map(PathBuf::from);
 
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size([1200.0, 800.0])
+        .with_title("Семейное дерево");
+    if let Ok(img) = image::load_from_memory(include_bytes!("../assets/icon.png")) {
+        let img = img.to_rgba8();
+        let (width, height) = img.dimensions();
+        viewport = viewport.with_icon(egui::IconData { rgba: img.into_raw(), width, height });
+    }
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1200.0, 800.0])
-            .with_title("Семейное дерево"),
+        viewport,
         ..Default::default()
     };
     eframe::run_native(

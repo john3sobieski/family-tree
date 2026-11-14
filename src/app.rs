@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::assoc;
 use crate::container::{self, MediaStore};
 use crate::demo;
 use crate::edit::{self, EditState, ListAction};
@@ -39,6 +40,7 @@ pub struct FamTreeApp {
     pub layout: Layout,
     pub layout_cfg: LayoutConfig,
     pub status: String,
+    assoc_linked: bool,
     pub mode: Mode,
     pub view: ViewState,
     /// Человек, по карточке которого кликнули (открыто его окно).
@@ -67,6 +69,7 @@ impl FamTreeApp {
             layout: Layout::default(),
             layout_cfg: LayoutConfig::default(),
             status: String::new(),
+            assoc_linked: assoc::is_registered(),
             mode: Mode::View,
             view: ViewState::default(),
             selected: None,
@@ -292,6 +295,21 @@ impl eframe::App for FamTreeApp {
                 }
                 if ui.button("Демо ×1000").clicked() {
                     self.request(ctx, Guarded::BigDemo);
+                }
+                let linked = self.assoc_linked;
+                let label = if linked { "✔ .famtree" } else { "Связать .famtree" };
+                let hint = if linked {
+                    "Файлы .famtree открываются этим приложением. Клик — отвязать."
+                } else {
+                    "Открывать файлы .famtree двойным кликом (без прав администратора)"
+                };
+                if ui.button(label).on_hover_text(hint).clicked() {
+                    let r = if linked { assoc::unregister() } else { assoc::register() };
+                    match r {
+                        Ok(()) => self.status.clear(),
+                        Err(e) => self.status = format!("Ассоциация .famtree: {e}"),
+                    }
+                    self.assoc_linked = assoc::is_registered();
                 }
                 ui.separator();
                 ui.selectable_value(&mut self.mode, Mode::View, "Просмотр");
