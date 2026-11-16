@@ -259,42 +259,60 @@ fn compute_gens(tree: &Tree, adj: &Adj) -> HashMap<PersonId, i32> {
         }
     }
 
-    // Опускаем «свободные» пары/одиночек без родителей вплотную к их детям.
-    let mut done: HashSet<PersonId> = HashSet::new();
-    for &id in tree.persons.keys() {
-        if done.contains(&id) || adj.parents.contains_key(&id) {
-            continue;
-        }
-        let mut comp = vec![id];
-        let mut seen: HashSet<PersonId> = HashSet::from([id]);
-        let mut i = 0;
-        while i < comp.len() {
-            for &p in adj.partners(comp[i]) {
-                if tree.persons.contains_key(&p) && seen.insert(p) {
-                    comp.push(p);
+    // Выравнивание по рядам (до устойчивого состояния, числа только растут):
+    // 1) дети одних родителей — в одном ряду (братья/сёстры рядом);
+    // 2) партнёры — в одном ряду;
+    // 3) родители вплотную над самым нижним ребёнком (а не у самого верха схемы);
+    // 4) ребёнок строго ниже родителя.
+    // Раньше опускались только пары без родителей, и новые братья/сёстры человека,
+    // чей партнёр стоит глубоко, оставались у верхнего края — линия уходила вверх.
+    let guard = tree.persons.len() * 4 + 8;
+    for _ in 0..guard {
+        let mut changed = false;
+        for (parent, kids) in adj.children.iter() {
+            let Some(&gp) = gn.get(parent) else { continue };
+            let mut top = i32::MIN;
+            for k in kids {
+                if let Some(&g) = gn.get(k) {
+                    top = top.max(g);
                 }
             }
-            i += 1;
-        }
-        for m in &comp {
-            done.insert(*m);
-        }
-        if comp.iter().any(|m| adj.parents.contains_key(m)) {
-            continue;
-        }
-        let min_child = comp
-            .iter()
-            .flat_map(|m| adj.children(*m).iter())
-            .filter_map(|c| gn.get(c))
-            .min()
-            .copied();
-        if let Some(mc) = min_child {
-            let g = mc - 1;
-            if g > gn.get(&comp[0]).copied().unwrap_or(0) {
-                for m in &comp {
-                    gn.insert(*m, g);
+            if top == i32::MIN {
+                continue;
+            }
+            let want = top.max(gp + 1);
+            for k in kids {
+                if let Some(g) = gn.get_mut(k) {
+                    if *g < want {
+                        *g = want;
+                        changed = true;
+                    }
                 }
             }
+            if let Some(g) = gn.get_mut(parent) {
+                if *g < want - 1 {
+                    *g = want - 1;
+                    changed = true;
+                }
+            }
+        }
+        for r in &tree.relations {
+            if let Relation::Partners { a, b, .. } = r {
+                if let (Some(&ga), Some(&gb)) = (gn.get(a), gn.get(b)) {
+                    let m = ga.max(gb);
+                    if ga != m {
+                        gn.insert(*a, m);
+                        changed = true;
+                    }
+                    if gb != m {
+                        gn.insert(*b, m);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        if !changed {
+            break;
         }
     }
     gn
@@ -1808,5 +1826,50 @@ mod tests {
                 assert_eq!(x(p) < x(q), x(c) < x(d), "порядок верхних пар = порядок их детей");
             }
         }
+    }
+
+    #[test]
+    fn siblings_of_a_deep_partner_stay_in_her_row() {
+        // Мама пришла со стороны и стоит глубоко (рядом с папой). Её родители и новые
+        // братья/сёстры должны быть в её ряду и над ней, а не у верхнего края схемы.
+        let cfg = plain();
+        let mut t = Tree::new();
+        let gp1 = add(&mut t, "Прадед", Some(1880));
+        let gp2 = add(&mut t, "Прабабка", Some(1882));
+        t.add_partners(gp1, gp2).unwrap();
+        let gf = add(&mut t, "Дед", Some(1905));
+        let dad = add(&mut t, "Папа", Some(1935));
+        for p in [gp1, gp2] {
+            t.add_parent_child(p, gf).unwrap();
+        }
+        t.add_parent_child(gf, dad).unwrap();
+        let mom = add(&mut t, "Мама", Some(1938));
+        t.add_partners(dad, mom).unwrap();
+        let (m1, m2) = pair(&mut t, 1910);
+        let mut sibs = Vec::new();
+        for i in 0..2 {
+            let s = add(&mut t, "Брат", Some(1930 + i));
+            for p in [m1, m2] {
+                t.add_parent_child(p, s).unwrap();
+            }
+            sibs.push(s);
+        }
+        for p in [m1, m2] {
+            t.add_parent_child(p, mom).unwrap();
+        }
+        let me = add(&mut t, "Я", Some(1965));
+        for p in [dad, mom] {
+            t.add_parent_child(p, me).unwrap();
+        }
+        t.root = Some(me);
+        let l = compute(&t, &cfg);
+        assert!(l.unplaced.is_empty());
+        assert_no_overlap(&l, &cfg);
+        let y = |id: PersonId| l.pos_of(id).unwrap().y;
+        for &s in &sibs {
+            assert_eq!(y(s), y(mom), "братья мамы в её ряду");
+        }
+        assert!(y(m1) < y(mom));
+        assert!(y(m1) > y(gp1), "родители мамы не у самого верха");
     }
 }
