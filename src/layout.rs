@@ -12,7 +12,7 @@
 //! Результат — только координаты (центры карточек); отрисовка — в `ui`.
 
 use crate::model::{PersonId, Relation, Tree};
-use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Pt {
@@ -87,6 +87,9 @@ pub struct Edge {
     pub to: Pt,
     /// `true` — связь «лесенки»: вниз по линии x = from.x, затем вбок к to.
     pub hang: bool,
+    /// Высота горизонтальной «шины» (для обычных связей). Шины разных семей,
+    /// перекрывающиеся по x, разводятся по высоте (`assign_buses`).
+    pub bus: f32,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -513,6 +516,10 @@ struct Out {
     placed_under: HashMap<PersonId, usize>,
     /// Где в этом куске стоит «призрак» (место якоря).
     anchor: Option<Pt>,
+    /// Дети, чья связь нарисована «лесенкой» (`Edge.hang`) — в общем цикле связей их пропускаем.
+    hang_kids: HashSet<PersonId>,
+    /// Люди из «лесенок»: их единицы не двигаем (см. `settle_tops`).
+    pinned: HashSet<PersonId>,
 }
 
 fn row_y(cfg: &LayoutConfig, depth: usize) -> f32 {
@@ -525,6 +532,7 @@ fn row_y(cfg: &LayoutConfig, depth: usize) -> f32 {
 fn place_hang(node: &BuildNode, left: f32, y: f32, cfg: &LayoutConfig, out: &mut Out) -> f32 {
     let uw = unit_width(cfg, node.members.len());
     let unit_idx = out.units.len();
+    out.pinned.insert(node.members[0]);
     for (i, m) in node.members.iter().enumerate() {
         let x = left + cfg.card_w / 2.0 + i as f32 * (cfg.card_w + cfg.partner_gap);
         out.nodes.push(PlacedPerson { id: *m, pos: Pt { x, y } });
@@ -545,8 +553,10 @@ fn place_hang(node: &BuildNode, left: f32, y: f32, cfg: &LayoutConfig, out: &mut
             from: Pt { x: spine_x, y: y + cfg.card_h / 2.0 },
             to: Pt { x: child_left, y: cy - cfg.card_h / 2.0 + cfg.card_w * 2.0 / 3.0 },
             hang: true,
+            bus: 0.0,
         });
         out.placed_under.insert(child.members[child.main], unit_idx);
+        out.hang_kids.insert(child.members[child.main]);
         last_y = place_hang(child, child_left, cy, cfg, out);
     }
     last_y
@@ -596,14 +606,9 @@ fn place(
             child_left += child.width + cfg.h_gap;
             continue;
         }
-        let child_top = row_y(cfg, gen_of(gens, child.members[0])) - cfg.card_h / 2.0;
+        // Линии родитель → ребёнок строятся в самом конце по итоговым координатам.
         out.placed_under.insert(child.members[child.main], unit_idx);
-        let anchor_x = place(child, child_left, cfg, gens, out);
-        out.edges.push(Edge {
-            from: Pt { x: cx, y: y + cfg.card_h / 2.0 },
-            to: Pt { x: anchor_x, y: child_top },
-            hang: false,
-        });
+        place(child, child_left, cfg, gens, out);
         child_left += child.width + cfg.h_gap;
     }
     unit_left + cfg.card_w / 2.0 + node.main as f32 * (cfg.card_w + cfg.partner_gap)
@@ -616,6 +621,8 @@ fn new_out() -> Out {
         edges: Vec::new(),
         placed_under: HashMap::new(),
         anchor: None,
+        hang_kids: HashSet::new(),
+        pinned: HashSet::new(),
     }
 }
 
@@ -693,6 +700,8 @@ fn merge_piece(
     for (k, v) in piece.placed_under {
         out.placed_under.insert(k, v + base);
     }
+    out.hang_kids.extend(piece.hang_kids);
+    out.pinned.extend(piece.pinned);
 }
 
 /// Накопленная схема: уже поставленные куски + служебные индексы.
@@ -773,6 +782,219 @@ fn attach_in_laws(cx: &Ctx, visited: &mut HashSet<PersonId>, acc: &mut Acc) {
     }
 }
 
+/// Подвигает по горизонтали «верхние» единицы (у них на схеме нет родителей):
+/// каждая встаёт над своими детьми, а порядок в ряду совпадает с порядком детей.
+/// Раньше такие семьи ставились жадно, по очереди, и поздние уезжали за все остальные —
+/// линии пересекались и сливались в одну. Идём снизу вверх, чтобы дети были уже на местах.
+/// Единицы с родителями (и «лесенки») не двигаем — они служат стенами.
+fn settle_tops(out: &mut Out, adj: &Adj, cfg: &LayoutConfig) {
+    let node_idx: HashMap<PersonId, usize> =
+        out.nodes.iter().enumerate().map(|(i, n)| (n.id, i)).collect();
+    let movable: Vec<bool> = out
+        .units
+        .iter()
+        .map(|u| u.members.iter().all(|m| !out.placed_under.contains_key(m) && !out.pinned.contains(m)))
+        .collect();
+    let mut rows: BTreeMap<i64, Vec<usize>> = BTreeMap::new();
+    for (i, u) in out.units.iter().enumerate() {
+        rows.entry(row_key(u.center.y)).or_default().push(i);
+    }
+    for (_, idxs) in rows.iter().rev() {
+        let mut order: Vec<usize> = idxs.clone();
+        order.sort_by(|&a, &b| {
+            out.units[a]
+                .center
+                .x
+                .partial_cmp(&out.units[b].center.x)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        let mut k = 0;
+        while k < order.len() {
+            if !movable[order[k]] {
+                k += 1;
+                continue;
+            }
+            let mut e = k;
+            while e < order.len() && movable[order[e]] {
+                e += 1;
+            }
+            // Соседи-«стены» слева и справа от серии подвижных единиц.
+            let lo = if k > 0 {
+                let u = &out.units[order[k - 1]];
+                Some(u.center.x + u.width / 2.0 + cfg.h_gap)
+            } else {
+                None
+            };
+            let hi = if e < order.len() {
+                let u = &out.units[order[e]];
+                Some(u.center.x - u.width / 2.0 - cfg.h_gap)
+            } else {
+                None
+            };
+            relax_run(out, adj, &node_idx, &order[k..e], lo, hi, cfg);
+            k = e;
+        }
+    }
+}
+
+/// Расставляет серию подвижных единиц одного ряда: порядок — по желаемому x (над детьми),
+/// минимальные сдвиги без наложений (isotonic regression, метод PAV).
+fn relax_run(
+    out: &mut Out,
+    adj: &Adj,
+    node_idx: &HashMap<PersonId, usize>,
+    run: &[usize],
+    lo: Option<f32>,
+    hi: Option<f32>,
+    cfg: &LayoutConfig,
+) {
+    // (единица, ширина, желаемый x, текущий x)
+    let mut items: Vec<(usize, f32, f32, f32)> = Vec::with_capacity(run.len());
+    for &ui in run {
+        let u = &out.units[ui];
+        let (mut mn, mut mx) = (f32::MAX, f32::MIN);
+        for m in &u.members {
+            for c in adj.children(*m) {
+                if let Some(&ni) = node_idx.get(c) {
+                    let x = out.nodes[ni].pos.x;
+                    mn = mn.min(x);
+                    mx = mx.max(x);
+                }
+            }
+        }
+        let want = if mn <= mx { (mn + mx) / 2.0 } else { u.center.x };
+        items.push((ui, u.width, want, u.center.x));
+    }
+    items.sort_by(|a, b| {
+        a.2.partial_cmp(&b.2)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then(a.3.partial_cmp(&b.3).unwrap_or(std::cmp::Ordering::Equal))
+    });
+    let n = items.len();
+    if n == 0 {
+        return;
+    }
+    // off[i] — минимальное расстояние от первой единицы до i-й; тогда условие
+    // «x[i+1] - x[i] >= зазор» превращается в «y[i] = x[i] - off[i] не убывает».
+    let mut off = vec![0.0_f32; n];
+    for i in 1..n {
+        off[i] = off[i - 1] + (items[i - 1].1 + items[i].1) / 2.0 + cfg.h_gap;
+    }
+    let mut blocks: Vec<(f32, usize)> = Vec::new();
+    for i in 0..n {
+        blocks.push((items[i].2 - off[i], 1));
+        while blocks.len() >= 2 {
+            let (s2, c2) = blocks[blocks.len() - 1];
+            let (s1, c1) = blocks[blocks.len() - 2];
+            let (m1, m2) = (s1 / (c1 as f32), s2 / (c2 as f32));
+            if m1 > m2 {
+                blocks.truncate(blocks.len() - 2);
+                blocks.push((s1 + s2, c1 + c2));
+            } else {
+                break;
+            }
+        }
+    }
+    let mut xs: Vec<f32> = Vec::with_capacity(n);
+    for &(sum, cnt) in &blocks {
+        let y = sum / cnt as f32;
+        for _ in 0..cnt {
+            xs.push(y);
+        }
+    }
+    for i in 0..n {
+        xs[i] += off[i];
+    }
+    // Не выходим за соседние «стены».
+    if let Some(lo) = lo {
+        let left = xs[0] - items[0].1 / 2.0;
+        if left < lo {
+            let d = lo - left;
+            for x in xs.iter_mut() {
+                *x += d;
+            }
+        }
+    }
+    if let Some(hi) = hi {
+        let right = xs[n - 1] + items[n - 1].1 / 2.0;
+        if right > hi {
+            let d = right - hi;
+            for x in xs.iter_mut() {
+                *x -= d;
+            }
+        }
+    }
+    for i in 0..n {
+        let ui = items[i].0;
+        let dx = xs[i] - out.units[ui].center.x;
+        if dx.abs() < 0.01 {
+            continue;
+        }
+        out.units[ui].center.x += dx;
+        let members = out.units[ui].members.clone();
+        for m in members {
+            if let Some(&ni) = node_idx.get(&m) {
+                out.nodes[ni].pos.x += dx;
+            }
+        }
+    }
+}
+
+/// Разводит по высоте «шины» разных семей, которые перекрываются по x
+/// (в одной паре рядов), чтобы линии не сливались в одну.
+fn assign_buses(edges: &mut [Edge], cfg: &LayoutConfig) {
+    let mut groups: BTreeMap<(i64, i64), BTreeMap<i64, Vec<usize>>> = BTreeMap::new();
+    for (i, e) in edges.iter().enumerate() {
+        if e.hang {
+            continue;
+        }
+        groups
+            .entry((row_key(e.from.y), row_key(e.to.y)))
+            .or_default()
+            .entry(row_key(e.from.x))
+            .or_default()
+            .push(i);
+    }
+    for (_, fams) in groups {
+        let mut spans: Vec<(f32, f32, Vec<usize>)> = Vec::new();
+        for (_, idx) in fams {
+            let (mut lo, mut hi) = (f32::MAX, f32::MIN);
+            for &i in &idx {
+                let e = &edges[i];
+                lo = lo.min(e.from.x).min(e.to.x);
+                hi = hi.max(e.from.x).max(e.to.x);
+            }
+            spans.push((lo, hi, idx));
+        }
+        spans.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        let mut lane_end: Vec<f32> = Vec::new();
+        let mut lanes: Vec<usize> = Vec::with_capacity(spans.len());
+        for sp in &spans {
+            match lane_end.iter().position(|&end| end + 6.0 < sp.0) {
+                Some(l) => {
+                    lane_end[l] = sp.1;
+                    lanes.push(l);
+                }
+                None => {
+                    lane_end.push(sp.1);
+                    lanes.push(lane_end.len() - 1);
+                }
+            }
+        }
+        let total = lane_end.len();
+        if total < 2 {
+            continue;
+        }
+        let step = (cfg.v_gap * 0.7 / total as f32).min(14.0);
+        for (sp, &lane) in spans.iter().zip(lanes.iter()) {
+            let offset = (lane as f32 - (total - 1) as f32 / 2.0) * step;
+            for &i in &sp.2 {
+                edges[i].bus += offset;
+            }
+        }
+    }
+}
+
 /// Кандидаты порога «лесенки» при автоподборе (в единицах раскладки).
 const HANG_STEPS: [usize; 12] = [0, 3, 5, 8, 13, 20, 30, 40, 60, 90, 121, 364];
 
@@ -848,9 +1070,10 @@ fn compute_with(
     }
 
     let mut out = acc.out;
+    settle_tops(&mut out, adj, cfg);
 
-    // Связи родитель → ребёнок, которые не вошли в «дерево под единицей»
-    // (ребёнок стоит рядом с партнёром в чужой единице): рисуем отдельной линией.
+    // Связи родитель → ребёнок строим по итоговым координатам (после `settle_tops`).
+    // «Лесенки» уже имеют свои линии (`hang_kids`) — их пропускаем.
     let mut unit_of: HashMap<PersonId, usize> = HashMap::new();
     for (i, u) in out.units.iter().enumerate() {
         for m in &u.members {
@@ -866,19 +1089,20 @@ fn compute_with(
             let (Some(&pu), Some(&ci)) = (unit_of.get(parent), node_idx.get(child)) else {
                 continue;
             };
-            if out.placed_under.get(child) == Some(&pu) || !seen_cross.insert((pu, *child)) {
+            if (out.hang_kids.contains(child) && out.placed_under.get(child) == Some(&pu))
+                || !seen_cross.insert((pu, *child))
+            {
                 continue;
             }
             let u = &out.units[pu];
             let c = out.nodes[ci].pos;
-            cross.push(Edge {
-                from: Pt { x: u.center.x, y: u.center.y + cfg.card_h / 2.0 },
-                to: Pt { x: c.x, y: c.y - cfg.card_h / 2.0 },
-                hang: false,
-            });
+            let from = Pt { x: u.center.x, y: u.center.y + cfg.card_h / 2.0 };
+            let to = Pt { x: c.x, y: c.y - cfg.card_h / 2.0 };
+            cross.push(Edge { from, to, hang: false, bus: (from.y + to.y) / 2.0 });
         }
     }
     out.edges.extend(cross);
+    assign_buses(&mut out.edges, cfg);
 
     let unplaced: Vec<PersonId> = tree
         .persons
@@ -1496,6 +1720,93 @@ mod tests {
         for &k in &me_side {
             assert_eq!(y(k), y(me_side[0]));
             assert!(y(k) > y(dad));
+        }
+    }
+
+    /// Пара партнёров (оба без родителей).
+    fn pair(t: &mut Tree, year: i32) -> (PersonId, PersonId) {
+        let a = add(t, "Он", Some(year));
+        let b = add(t, "Она", Some(year + 2));
+        t.add_partners(a, b).unwrap();
+        (a, b)
+    }
+
+    #[test]
+    fn great_grandparents_of_in_law_lines_keep_order_over_their_children() {
+        // Две супружеские пары (Е+Ал и Альб+Яд), у каждого из четверых свои родители,
+        // дети пар женаты друг на друге. Четыре верхние пары стоят в одном ряду
+        // в том же порядке, что и их дети, и не склеиваются в одну линию.
+        let cfg = plain();
+        let mut t = Tree::new();
+        let (a1, a2) = pair(&mut t, 1880);
+        let (d1, d2) = pair(&mut t, 1881);
+        let (b1, b2) = pair(&mut t, 1882);
+        let (c1, c2) = pair(&mut t, 1883);
+        let ebb = add(&mut t, "Ебб", Some(1905));
+        let ala = add(&mut t, "Ала", Some(1903));
+        let alb = add(&mut t, "Альб", Some(1906));
+        let jad = add(&mut t, "Яд", Some(1908));
+        for p in [a1, a2] {
+            t.add_parent_child(p, ebb).unwrap();
+        }
+        for p in [d1, d2] {
+            t.add_parent_child(p, ala).unwrap();
+        }
+        for p in [b1, b2] {
+            t.add_parent_child(p, alb).unwrap();
+        }
+        for p in [c1, c2] {
+            t.add_parent_child(p, jad).unwrap();
+        }
+        t.add_partners(ebb, ala).unwrap();
+        t.add_partners(alb, jad).unwrap();
+
+        // Дети Ебб+Ала: три брата/сестры и Генрих; дети Альб+Яд: Аделя и три сестры.
+        let hen = add(&mut t, "Генрих", Some(1932));
+        let ade = add(&mut t, "Аделя", Some(1934));
+        for i in 0..3 {
+            let k = add(&mut t, "Брат", Some(1925 + i));
+            t.add_parent_child(ebb, k).unwrap();
+            t.add_parent_child(ala, k).unwrap();
+            let s = add(&mut t, "Сестра", Some(1936 + i));
+            t.add_parent_child(alb, s).unwrap();
+            t.add_parent_child(jad, s).unwrap();
+        }
+        for p in [ebb, ala] {
+            t.add_parent_child(p, hen).unwrap();
+        }
+        for p in [alb, jad] {
+            t.add_parent_child(p, ade).unwrap();
+        }
+        t.add_partners(hen, ade).unwrap();
+
+        // Дальше вниз: Мариан + Ст., их ребёнок — «я».
+        let mar = add(&mut t, "Мариан", Some(1960));
+        let ste = add(&mut t, "Ст", Some(1962));
+        for p in [hen, ade] {
+            t.add_parent_child(p, mar).unwrap();
+        }
+        t.add_partners(mar, ste).unwrap();
+        let me = add(&mut t, "Я", Some(1985));
+        for p in [mar, ste] {
+            t.add_parent_child(p, me).unwrap();
+        }
+        t.root = Some(me);
+
+        let l = compute(&t, &cfg);
+        assert_eq!(l.nodes.len(), t.persons.len());
+        assert!(l.unplaced.is_empty());
+        assert_no_overlap(&l, &cfg);
+        assert_buses_separate(&l);
+
+        let x = |id: PersonId| l.pos_of(id).unwrap().x;
+        let y = |id: PersonId| l.pos_of(id).unwrap().y;
+        let tops = [(a1, ebb), (d1, ala), (b1, alb), (c1, jad)];
+        for (i, &(p, c)) in tops.iter().enumerate() {
+            assert_eq!(y(p), y(a1), "верхние пары в одном ряду");
+            for &(q, d) in &tops[i + 1..] {
+                assert_eq!(x(p) < x(q), x(c) < x(d), "порядок верхних пар = порядок их детей");
+            }
         }
     }
 }

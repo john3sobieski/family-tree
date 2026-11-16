@@ -259,7 +259,7 @@ impl ViewState {
                 ));
                 continue;
             }
-            let mid_y = (e.from.y + e.to.y) / 2.0;
+            let mid_y = e.bus;
             painter.add(egui::Shape::line(
                 vec![s(e.from.x, e.from.y), s(e.from.x, mid_y), s(e.to.x, mid_y), s(e.to.x, e.to.y)],
                 line,
