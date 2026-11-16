@@ -4,10 +4,15 @@
 //! Корень дерева (`Tree::root`) — сам пользователь («я»). Схема строится от верхних
 //! предков корня вниз, так что видны родители, братья/сёстры, дяди, кузены и т.д.
 //! Если у «меня» предки с двух сторон — деревья ставятся рядом.
+//!
+//! Семья «со стороны» (например, родители мамы, когда схема строится от родителей папы)
+//! строится отдельным куском и ставится рядом с мамой: в ряду получается
+//! [братья/сёстры папы] [папа мама] [братья/сёстры мамы] — «песочные часы». Над каждой
+//! группой стоят её родители, группы не перемешиваются. См. `order_kids` и `attach_in_laws`.
 //! Результат — только координаты (центры карточек); отрисовка — в `ui`.
 
 use crate::model::{PersonId, Relation, Tree};
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct Pt {
@@ -35,6 +40,9 @@ pub struct LayoutConfig {
     pub hang_max: usize,
     /// Автоматически подбирать компактность, чтобы схема не была слишком широкой.
     pub auto_compact: bool,
+    /// Автокомпактность включается только если людей не меньше этого числа
+    /// (небольшие деревья остаются широкими и понятными, без «лесенок»).
+    pub auto_compact_min: usize,
     /// Желаемое отношение ширины к высоте схемы (чем меньше — тем «выше» дерево).
     pub target_aspect: f32,
 }
@@ -51,6 +59,7 @@ impl Default for LayoutConfig {
             hang_gap: 28.0,
             hang_max: 0,
             auto_compact: true,
+            auto_compact_min: 200,
             target_aspect: 1.6,
         }
     }
@@ -143,16 +152,6 @@ impl Adj {
     }
 }
 
-struct BuildNode {
-    members: Vec<PersonId>,
-    children: Vec<BuildNode>,
-    width: f32,
-    /// Число единиц в поддереве (включая эту).
-    count: usize,
-    /// Поддерево рисуется «лесенкой» (столбиком), а не вширь.
-    hang: bool,
-}
-
 /// Ширина поддерева, если подвесить его «лесенкой».
 fn outline_width(cfg: &LayoutConfig, node: &BuildNode) -> f32 {
     let mut w = unit_width(cfg, node.members.len());
@@ -217,36 +216,6 @@ fn pick_tops(tree: &Tree, adj: &Adj) -> Vec<PersonId> {
         }
     }
     tops
-}
-
-/// Делит зёрна на «стартовые» и «отложенные». Человек без родителей, у чьего партнёра
-/// родители есть, — «пришедший со стороны»: он встанет рядом с партнёром, а строить
-/// надо от предков партнёра (иначе их ветка повиснет отдельно, не связанной с ним).
-fn start_tops(tree: &Tree, adj: &Adj, seeds: Vec<PersonId>) -> (Vec<PersonId>, Vec<PersonId>) {
-    let mut starts: BTreeSet<PersonId> = BTreeSet::new();
-    let mut deferred: BTreeSet<PersonId> = BTreeSet::new();
-    let mut seen: HashSet<PersonId> = HashSet::new();
-    let mut work = seeds;
-    while let Some(t) = work.pop() {
-        if !seen.insert(t) {
-            continue;
-        }
-        let linked: Vec<PersonId> = adj
-            .partners(t)
-            .iter()
-            .copied()
-            .filter(|p| tree.persons.contains_key(p) && adj.parents.contains_key(p))
-            .collect();
-        if linked.is_empty() {
-            starts.insert(t);
-        } else {
-            deferred.insert(t);
-            for p in linked {
-                work.extend(ancestor_tops(tree, adj, p));
-            }
-        }
-    }
-    (starts.into_iter().collect(), deferred.into_iter().collect())
 }
 
 /// Поколение каждого человека (номер ряда): ребёнок строго ниже всех родителей,
@@ -332,14 +301,147 @@ fn gen_of(gens: &HashMap<PersonId, i32>, id: PersonId) -> usize {
     gens.get(&id).copied().unwrap_or(0).max(0) as usize
 }
 
-fn build(
-    tree: &Tree,
-    adj: &Adj,
-    cfg: &LayoutConfig,
+/// С какой стороны ряда братьев/сестёр стоит человек.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum End {
+    Left,
+    Right,
+}
+
+impl End {
+    fn opposite(self) -> End {
+        match self {
+            End::Left => End::Right,
+            End::Right => End::Left,
+        }
+    }
+}
+
+struct BuildNode {
+    /// Люди единицы в порядке слева направо.
+    members: Vec<PersonId>,
+    /// Индекс «своего» (кровного) человека в `members`: к нему идёт линия от родителей.
+    main: usize,
+    children: Vec<BuildNode>,
+    width: f32,
+    /// Число единиц в поддереве (включая эту).
+    count: usize,
+    /// Поддерево рисуется «лесенкой» (столбиком), а не вширь.
+    hang: bool,
+    /// «Призрак» — пустое место под человека, который уже стоит в другом куске схемы
+    /// (например, мама, чья семья строится отдельно). Карточка не рисуется, но куски
+    /// потом совмещаются так, чтобы призрак лёг ровно на реального человека.
+    ghost: Option<PersonId>,
+    /// В поддереве есть призрак.
+    anch: bool,
+    /// В поддереве есть корень («я»).
+    root: bool,
+}
+
+/// Общие данные для построения.
+struct Ctx<'a> {
+    tree: &'a Tree,
+    adj: &'a Adj,
+    cfg: &'a LayoutConfig,
+    gens: &'a HashMap<PersonId, i32>,
+    root: Option<PersonId>,
     hang_max: usize,
+}
+
+fn ghost_node(cfg: &LayoutConfig, id: PersonId) -> BuildNode {
+    BuildNode {
+        members: Vec::new(),
+        main: 0,
+        children: Vec::new(),
+        width: cfg.card_w,
+        count: 0,
+        hang: false,
+        ghost: Some(id),
+        anch: true,
+        root: false,
+    }
+}
+
+/// У человека есть родители, которых ещё нет на схеме (его семья «со стороны»).
+fn has_free_parents(cx: &Ctx, id: PersonId, visited: &HashSet<PersonId>) -> bool {
+    cx.adj
+        .parents(id)
+        .iter()
+        .any(|p| cx.tree.persons.contains_key(p) && !visited.contains(p))
+}
+
+/// В единице есть партнёр «со стороны», у которого на схеме ещё нет своей семьи.
+fn marries_in(cx: &Ctx, node: &BuildNode, visited: &HashSet<PersonId>) -> bool {
+    node.ghost.is_none()
+        && node
+            .members
+            .iter()
+            .enumerate()
+            .any(|(i, m)| i != node.main && has_free_parents(cx, *m, visited))
+}
+
+/// Зеркалит единицу: партнёры меняются местами (кровный человек уходит вправо).
+fn flip(k: &mut BuildNode) {
+    k.members.reverse();
+    k.main = k.members.len() - 1 - k.main;
+}
+
+/// Порядок детей одной семьи. Дети идут по возрасту, но:
+/// - ребёнок, на чьём пути лежит призрак (или «я», если у его партнёра есть своя семья),
+///   ставится на `path_end` — туда, где у него есть место для семьи партнёра;
+/// - первый другой ребёнок с партнёром «со стороны» ставится на противоположный край.
+/// Так у каждой семьи братья/сёстры стоят рядом друг с другом, а партнёр «со стороны»
+/// получает свою семью с внешней стороны ряда («песочные часы»), и ветки не пересекаются.
+fn order_kids(cx: &Ctx, kids: Vec<BuildNode>, visited: &HashSet<PersonId>, path_end: End) -> Vec<BuildNode> {
+    if kids.len() < 2 {
+        return kids;
+    }
+    let mut path_kid: Option<BuildNode> = None;
+    let mut far_kid: Option<BuildNode> = None;
+    let mut rest: Vec<BuildNode> = Vec::new();
+    for k in kids {
+        let is_path = k.anch || (k.root && marries_in(cx, &k, visited));
+        if is_path && path_kid.is_none() {
+            path_kid = Some(k);
+        } else if far_kid.is_none() && marries_in(cx, &k, visited) {
+            far_kid = Some(k);
+        } else {
+            rest.push(k);
+        }
+    }
+    // Партнёр «со стороны» стоит с внешней стороны единицы, у края ряда.
+    if let Some(k) = path_kid.as_mut() {
+        if path_end == End::Left && marries_in(cx, k, visited) {
+            flip(k);
+        }
+    }
+    if let Some(k) = far_kid.as_mut() {
+        if path_end.opposite() == End::Left {
+            flip(k);
+        }
+    }
+    let (left, right) = match path_end {
+        End::Right => (far_kid, path_kid),
+        End::Left => (path_kid, far_kid),
+    };
+    let mut out: Vec<BuildNode> = Vec::with_capacity(rest.len() + 2);
+    out.extend(left);
+    out.extend(rest);
+    out.extend(right);
+    out
+}
+
+/// `anchor` — человек, который уже стоит на схеме, а этот кусок строится как его семья
+/// (родители и братья/сёстры): для него в нужной семье оставляется «призрак».
+/// `path_end` — с какого края ряда ставить ветку, ведущую к якорю.
+fn build(
+    cx: &Ctx,
     id: PersonId,
     visited: &mut HashSet<PersonId>,
+    anchor: Option<PersonId>,
+    path_end: End,
 ) -> BuildNode {
+    let (tree, adj, cfg) = (cx.tree, cx.adj, cx.cfg);
     visited.insert(id);
     // Единица: человек + все его партнёры (и партнёры партнёров) в одном ряду.
     let mut members = vec![id];
@@ -366,15 +468,35 @@ fn build(
     // Старшие слева; без года рождения — в конец.
     kids.sort_by_key(|c| (tree.persons[c].birth.year.unwrap_or(i32::MAX), *c));
 
-    let mut children = Vec::new();
+    let mut children: Vec<BuildNode> = Vec::new();
     for c in kids {
         if !visited.contains(&c) {
-            children.push(build(tree, adj, cfg, hang_max, c, visited));
+            children.push(build(cx, c, visited, anchor, path_end));
         }
     }
+    if let Some(a) = anchor {
+        if members.iter().any(|m| adj.children(*m).contains(&a)) {
+            children.push(ghost_node(cfg, a));
+        }
+    }
+    let children = order_kids(cx, children, &*visited, path_end);
+
     let count = 1 + children.iter().map(|c| c.count).sum::<usize>();
-    let mut node = BuildNode { members, children, width: 0.0, count, hang: false };
-    if hang_max > 0 && !node.children.is_empty() && count <= hang_max {
+    let anch = children.iter().any(|c| c.anch);
+    let root = cx.root.map_or(false, |r| members.contains(&r)) || children.iter().any(|c| c.root);
+    let mut node = BuildNode {
+        members,
+        main: 0,
+        children,
+        width: 0.0,
+        count,
+        hang: false,
+        ghost: None,
+        anch,
+        root,
+    };
+    // Ветку к якорю и ветку с «я» «лесенкой» не подвешиваем — они должны остаться «песочными часами».
+    if cx.hang_max > 0 && !node.children.is_empty() && count <= cx.hang_max && !node.anch && !node.root {
         node.hang = true;
         node.width = outline_width(cfg, &node);
     } else {
@@ -389,6 +511,8 @@ struct Out {
     edges: Vec<Edge>,
     /// Ребёнок (основной человек его единицы) → индекс единицы-родителя, под которой он стоит.
     placed_under: HashMap<PersonId, usize>,
+    /// Где в этом куске стоит «призрак» (место якоря).
+    anchor: Option<Pt>,
 }
 
 fn row_y(cfg: &LayoutConfig, depth: usize) -> f32 {
@@ -422,13 +546,13 @@ fn place_hang(node: &BuildNode, left: f32, y: f32, cfg: &LayoutConfig, out: &mut
             to: Pt { x: child_left, y: cy - cfg.card_h / 2.0 + cfg.card_w * 2.0 / 3.0 },
             hang: true,
         });
-        out.placed_under.insert(child.members[0], unit_idx);
+        out.placed_under.insert(child.members[child.main], unit_idx);
         last_y = place_hang(child, child_left, cy, cfg, out);
     }
     last_y
 }
 
-/// Размещает поддерево; возвращает x центра карточки основного человека.
+/// Размещает поддерево; возвращает x центра карточки основного (кровного) человека.
 /// Ряд (y) определяется поколением человека, а не глубиной рекурсии.
 fn place(
     node: &BuildNode,
@@ -437,6 +561,12 @@ fn place(
     gens: &HashMap<PersonId, i32>,
     out: &mut Out,
 ) -> f32 {
+    if let Some(g) = node.ghost {
+        // Призрак: карточки нет, только запоминаем место.
+        let gx = left + cfg.card_w / 2.0;
+        out.anchor = Some(Pt { x: gx, y: row_y(cfg, gen_of(gens, g)) });
+        return gx;
+    }
     let depth = gen_of(gens, node.members[0]);
     if node.hang {
         place_hang(node, left, row_y(cfg, depth), cfg, out);
@@ -461,8 +591,13 @@ fn place(
     let cw = children_width(cfg, &node.children);
     let mut child_left = left + (node.width - cw) / 2.0;
     for child in &node.children {
+        if child.ghost.is_some() {
+            place(child, child_left, cfg, gens, out);
+            child_left += child.width + cfg.h_gap;
+            continue;
+        }
         let child_top = row_y(cfg, gen_of(gens, child.members[0])) - cfg.card_h / 2.0;
-        out.placed_under.insert(child.members[0], unit_idx);
+        out.placed_under.insert(child.members[child.main], unit_idx);
         let anchor_x = place(child, child_left, cfg, gens, out);
         out.edges.push(Edge {
             from: Pt { x: cx, y: y + cfg.card_h / 2.0 },
@@ -471,11 +606,17 @@ fn place(
         });
         child_left += child.width + cfg.h_gap;
     }
-    unit_left + cfg.card_w / 2.0
+    unit_left + cfg.card_w / 2.0 + node.main as f32 * (cfg.card_w + cfg.partner_gap)
 }
 
 fn new_out() -> Out {
-    Out { nodes: Vec::new(), units: Vec::new(), edges: Vec::new(), placed_under: HashMap::new() }
+    Out {
+        nodes: Vec::new(),
+        units: Vec::new(),
+        edges: Vec::new(),
+        placed_under: HashMap::new(),
+        anchor: None,
+    }
 }
 
 fn row_key(y: f32) -> i64 {
@@ -489,30 +630,6 @@ fn right_dx(piece: &Out, out: &Out, cfg: &LayoutConfig) -> f32 {
     (max_x + cfg.card_w + cfg.h_gap * 3.0) - min_x
 }
 
-/// Желаемый сдвиг куска: родители над ребёнком, который уже стоит, либо кусок (ребёнок)
-/// под родителем, который уже стоит. `None` — кусок ни с чем не связан.
-fn desired_dx(piece: &Out, adj: &Adj, placed: &HashMap<PersonId, Pt>) -> Option<f32> {
-    for n in &piece.nodes {
-        for &c in adj.children(n.id) {
-            if let Some(cp) = placed.get(&c) {
-                let ucx = piece
-                    .units
-                    .iter()
-                    .find(|u| u.members.contains(&n.id))
-                    .map(|u| u.center.x)
-                    .unwrap_or(n.pos.x);
-                return Some(cp.x - ucx);
-            }
-        }
-        for &par in adj.parents(n.id) {
-            if let Some(pp) = placed.get(&par) {
-                return Some(pp.x - n.pos.x);
-            }
-        }
-    }
-    None
-}
-
 fn conflicts(piece: &Out, dx: f32, occ: &HashMap<i64, Vec<(f32, f32)>>, cfg: &LayoutConfig) -> bool {
     let half = cfg.card_w / 2.0 + cfg.h_gap / 2.0;
     piece.nodes.iter().any(|n| {
@@ -523,15 +640,23 @@ fn conflicts(piece: &Out, dx: f32, occ: &HashMap<i64, Vec<(f32, f32)>>, cfg: &La
     })
 }
 
-/// Ближайший к `desired` сдвиг без наложений (шагаем вправо/влево).
-fn free_dx(piece: &Out, desired: f32, occ: &HashMap<i64, Vec<(f32, f32)>>, cfg: &LayoutConfig) -> Option<f32> {
+/// Ближайший к `desired` сдвиг без наложений. `prefer` — куда двигать в первую очередь:
+/// `1.0` вправо, `-1.0` влево (от родственника-якоря — прочь, а не сквозь соседей).
+fn free_dx(
+    piece: &Out,
+    desired: f32,
+    prefer: f32,
+    occ: &HashMap<i64, Vec<(f32, f32)>>,
+    cfg: &LayoutConfig,
+) -> Option<f32> {
     if !conflicts(piece, desired, occ, cfg) {
         return Some(desired);
     }
     let step = cfg.card_w / 2.0;
-    for k in 1..=800 {
-        for sign in [1.0_f32, -1.0] {
-            let d = desired + sign * step * k as f32;
+    let dirs = if prefer >= 0.0 { [1.0_f32, -1.0] } else { [-1.0_f32, 1.0] };
+    for dir in dirs {
+        for k in 1..=800 {
+            let d = desired + dir * step * k as f32;
             if !conflicts(piece, d, occ, cfg) {
                 return Some(d);
             }
@@ -570,22 +695,103 @@ fn merge_piece(
     }
 }
 
+/// Накопленная схема: уже поставленные куски + служебные индексы.
+struct Acc {
+    out: Out,
+    occ: HashMap<i64, Vec<(f32, f32)>>,
+    placed: HashMap<PersonId, Pt>,
+    /// Человек → x центра его единицы (чтобы понять, по какую сторону от неё он стоит).
+    unit_cx: HashMap<PersonId, f32>,
+    /// Люди, у которых ещё надо проверить, есть ли семья «со стороны».
+    queue: VecDeque<PersonId>,
+}
+
+impl Acc {
+    fn new() -> Self {
+        Acc {
+            out: new_out(),
+            occ: HashMap::new(),
+            placed: HashMap::new(),
+            unit_cx: HashMap::new(),
+            queue: VecDeque::new(),
+        }
+    }
+
+    fn add(&mut self, piece: Out, dx: f32, cfg: &LayoutConfig) {
+        let node_base = self.out.nodes.len();
+        let unit_base = self.out.units.len();
+        merge_piece(&mut self.out, &mut self.occ, &mut self.placed, piece, dx, cfg);
+        for u in &self.out.units[unit_base..] {
+            for m in &u.members {
+                self.unit_cx.insert(*m, u.center.x);
+            }
+        }
+        for n in &self.out.nodes[node_base..] {
+            self.queue.push_back(n.id);
+        }
+    }
+}
+
+/// С какого верхнего предка строить семью родителей `x` (если их ещё нет на схеме).
+fn next_in_law_top(cx: &Ctx, x: PersonId, visited: &HashSet<PersonId>) -> Option<PersonId> {
+    for &p in cx.adj.parents(x) {
+        if !cx.tree.persons.contains_key(&p) || visited.contains(&p) {
+            continue;
+        }
+        let top = ancestor_tops(cx.tree, cx.adj, p).into_iter().find(|t| !visited.contains(t));
+        return Some(top.unwrap_or(p));
+    }
+    None
+}
+
+/// Для каждого поставленного человека, у которого есть родители «со стороны» (мама,
+/// пришедшая из другой семьи, и т.п.), строит эту семью отдельным куском и ставит
+/// так, чтобы братья/сёстры стояли рядом с ним, а родители — над ними.
+/// Кусок ставится с внешней стороны единицы и при столкновении отодвигается прочь.
+fn attach_in_laws(cx: &Ctx, visited: &mut HashSet<PersonId>, acc: &mut Acc) {
+    while let Some(x) = acc.queue.pop_front() {
+        loop {
+            let Some(top) = next_in_law_top(cx, x, &*visited) else { break };
+            let (Some(xp), Some(ucx)) = (acc.placed.get(&x).copied(), acc.unit_cx.get(&x).copied()) else {
+                break;
+            };
+            // Партнёр справа от центра единицы → его семья справа и наоборот.
+            let side = if xp.x >= ucx { End::Right } else { End::Left };
+            let node = build(cx, top, visited, Some(x), side.opposite());
+            let mut piece = new_out();
+            place(&node, 0.0, cx.cfg, cx.gens, &mut piece);
+            let dx = match piece.anchor {
+                Some(a) => {
+                    let prefer = if side == End::Right { 1.0 } else { -1.0 };
+                    free_dx(&piece, xp.x - a.x, prefer, &acc.occ, cx.cfg)
+                        .unwrap_or_else(|| right_dx(&piece, &acc.out, cx.cfg))
+                }
+                None => right_dx(&piece, &acc.out, cx.cfg),
+            };
+            acc.add(piece, dx, cx.cfg);
+        }
+    }
+}
+
 /// Кандидаты порога «лесенки» при автоподборе (в единицах раскладки).
 const HANG_STEPS: [usize; 12] = [0, 3, 5, 8, 13, 20, 30, 40, 60, 90, 121, 364];
 
 pub fn compute(tree: &Tree, cfg: &LayoutConfig) -> Layout {
     let adj = Adj::new(tree);
-    let seeds = pick_tops(tree, &adj);
-    let (starts, deferred) = start_tops(tree, &adj, seeds);
+    let tops = pick_tops(tree, &adj);
     let gens = compute_gens(tree, &adj);
     if !cfg.auto_compact {
-        return compute_with(tree, &adj, &starts, &deferred, &gens, cfg, cfg.hang_max);
+        return compute_with(tree, &adj, &tops, &gens, cfg, cfg.hang_max);
+    }
+    // Небольшие деревья не «сжимаем»: пусть будут широкими, но понятными.
+    if tree.persons.len() < cfg.auto_compact_min {
+        return compute_with(tree, &adj, &tops, &gens, cfg, 0);
     }
     // Берём наименее компактную раскладку, у которой схема не шире целевых пропорций;
     // если такой нет — самую «высокую» из всех.
     let mut best: Option<(f32, Layout)> = None;
     for &h in HANG_STEPS.iter() {
-        let l = compute_with(tree, &adj, &starts, &deferred, &gens, cfg, h);
+        let l = compute_with(tree, &adj, &tops, &gens, cfg, h);
         let w = l.bounds.max.x - l.bounds.min.x;
         let ht = l.bounds.max.y - l.bounds.min.y;
         if ht <= 0.0 || l.nodes.is_empty() {
@@ -609,84 +815,39 @@ pub fn compute(tree: &Tree, cfg: &LayoutConfig) -> Layout {
 fn compute_with(
     tree: &Tree,
     adj: &Adj,
-    starts: &[PersonId],
-    deferred: &[PersonId],
+    tops: &[PersonId],
     gens: &HashMap<PersonId, i32>,
     cfg: &LayoutConfig,
     hang_max: usize,
 ) -> Layout {
-    let mut visited: HashSet<PersonId> = HashSet::new();
-
-    // 1) Каждое дерево от верхнего предка строится отдельным «куском» (координаты от нуля).
-    let mut pieces: Vec<Out> = Vec::new();
-    let build_piece = |top: PersonId, visited: &mut HashSet<PersonId>, pieces: &mut Vec<Out>| {
-        if visited.contains(&top) {
-            return;
-        }
-        let node = build(tree, adj, cfg, hang_max, top, visited);
-        let mut o = new_out();
-        place(&node, 0.0, cfg, gens, &mut o);
-        pieces.push(o);
+    let cx = Ctx {
+        tree,
+        adj,
+        cfg,
+        gens,
+        root: tree.root.filter(|r| tree.persons.contains_key(r)),
+        hang_max,
     };
-    for &top in starts.iter().chain(deferred.iter()) {
-        build_piece(top, &mut visited, &mut pieces);
-    }
-    // Родители тех, кто уже на схеме (например, родители супруга/супруги), тоже показываем:
-    // иначе ветка «не подвязывается».
-    loop {
-        let mut extra: BTreeSet<PersonId> = BTreeSet::new();
-        for &v in visited.iter() {
-            for &p in adj.parents(v) {
-                if tree.persons.contains_key(&p) && !visited.contains(&p) {
-                    for t in ancestor_tops(tree, adj, p) {
-                        if !visited.contains(&t) {
-                            extra.insert(t);
-                        }
-                    }
-                }
-            }
+    let mut visited: HashSet<PersonId> = HashSet::new();
+    let mut acc = Acc::new();
+
+    // 1) Первое дерево строим от верхнего предка (в нём «я»). Затем для каждого человека,
+    // у которого на схеме нет родителей (мама, пришедшая из другой семьи, и т.п.), строится
+    // и ставится её семья — рядом с ним, на внешней стороне (см. `attach_in_laws`).
+    // Остальные зёрна нужны только для несвязанных между собой групп людей (корня нет).
+    for &top in tops {
+        if visited.contains(&top) {
+            continue;
         }
-        if extra.is_empty() {
-            break;
-        }
-        for t in extra {
-            build_piece(t, &mut visited, &mut pieces);
-        }
+        let node = build(&cx, top, &mut visited, None, End::Right);
+        let mut piece = new_out();
+        place(&node, 0.0, cfg, gens, &mut piece);
+        let dx = if acc.out.nodes.is_empty() { 0.0 } else { right_dx(&piece, &acc.out, cfg) };
+        acc.add(piece, dx, cfg);
+        attach_in_laws(&cx, &mut visited, &mut acc);
     }
 
-    // 2) Куски собираются вместе: первый — с корнем («я») — остаётся как есть, остальные
-    // ставятся так, чтобы родители оказались прямо над ребёнком (или ребёнок под родителями);
-    // если место занято — сдвигаются к ближайшему свободному.
-    let mut out = new_out();
-    let mut occ: HashMap<i64, Vec<(f32, f32)>> = HashMap::new();
-    let mut placed_pos: HashMap<PersonId, Pt> = HashMap::new();
-    if !pieces.is_empty() {
-        let first = tree
-            .root
-            .and_then(|r| pieces.iter().position(|o| o.nodes.iter().any(|n| n.id == r)))
-            .unwrap_or(0);
-        let piece = pieces.remove(first);
-        merge_piece(&mut out, &mut occ, &mut placed_pos, piece, 0.0, cfg);
-    }
-    while !pieces.is_empty() {
-        let mut chosen: Option<(usize, f32)> = None;
-        for (i, o) in pieces.iter().enumerate() {
-            if let Some(d) = desired_dx(o, adj, &placed_pos) {
-                chosen = Some((i, d));
-                break;
-            }
-        }
-        let (idx, dx) = match chosen {
-            Some((i, desired)) => {
-                let dx = free_dx(&pieces[i], desired, &occ, cfg)
-                    .unwrap_or_else(|| right_dx(&pieces[i], &out, cfg));
-                (i, dx)
-            }
-            None => (0, right_dx(&pieces[0], &out, cfg)),
-        };
-        let piece = pieces.remove(idx);
-        merge_piece(&mut out, &mut occ, &mut placed_pos, piece, dx, cfg);
-    }
+    let mut out = acc.out;
 
     // Связи родитель → ребёнок, которые не вошли в «дерево под единицей»
     // (ребёнок стоит рядом с партнёром в чужой единице): рисуем отдельной линией.
@@ -1136,5 +1297,205 @@ mod tests {
         assert!(l.pos_of(her_dad).unwrap().y < l.pos_of(wife).unwrap().y);
         assert_eq!(l.edges.len(), 2);
         assert_no_overlap(&l, &cfg);
+    }
+
+    /// Линии «шины» разных семей в одной паре рядов не должны перекрываться по x:
+    /// иначе ветки визуально склеиваются в одну.
+    fn assert_buses_separate(l: &Layout) {
+        let mut groups: BTreeMap<(i64, i64), BTreeMap<i64, (f32, f32)>> = BTreeMap::new();
+        for e in l.edges.iter().filter(|e| !e.hang) {
+            let g = groups.entry((row_key(e.from.y), row_key(e.to.y))).or_default();
+            let r = g.entry(row_key(e.from.x)).or_insert((e.from.x, e.from.x));
+            r.0 = r.0.min(e.to.x).min(e.from.x);
+            r.1 = r.1.max(e.to.x).max(e.from.x);
+        }
+        for g in groups.values() {
+            let rs: Vec<(f32, f32)> = g.values().copied().collect();
+            for i in 0..rs.len() {
+                for j in (i + 1)..rs.len() {
+                    assert!(
+                        rs[i].1 < rs[j].0 || rs[j].1 < rs[i].0,
+                        "шины семей перекрываются: {:?} и {:?}",
+                        rs[i],
+                        rs[j]
+                    );
+                }
+            }
+        }
+    }
+
+    /// Пара родителей и `n` детей (дети по возрасту). Возвращает (отец, мать, дети).
+    fn family(t: &mut Tree, n: usize, year: i32) -> (PersonId, PersonId, Vec<PersonId>) {
+        let f = add(t, "Отец", Some(year));
+        let m = add(t, "Мать", Some(year + 2));
+        t.add_partners(f, m).unwrap();
+        let mut kids = Vec::new();
+        for i in 0..n {
+            let k = add(t, "Ребёнок", Some(year + 25 + i as i32));
+            t.add_parent_child(f, k).unwrap();
+            t.add_parent_child(m, k).unwrap();
+            kids.push(k);
+        }
+        (f, m, kids)
+    }
+
+    fn unit_cx(l: &Layout, id: PersonId) -> f32 {
+        l.units.iter().find(|u| u.members.contains(&id)).unwrap().center.x
+    }
+
+    #[test]
+    fn five_siblings_on_both_parental_sides_form_hourglass() {
+        // У папы и у мамы по пять братьев/сестёр: [семья папы] [папа мама] [семья мамы].
+        let cfg = plain();
+        let mut t = Tree::new();
+        let (gf1, _gf2, dad_kids) = family(&mut t, 6, 1930); // ids 1.. — строится от этой стороны
+        let (gm1, _gm2, mom_kids) = family(&mut t, 6, 1932);
+        let dad = dad_kids[2];
+        let mom = mom_kids[3];
+        let dad_sibs: Vec<PersonId> = dad_kids.iter().copied().filter(|&k| k != dad).collect();
+        let mom_sibs: Vec<PersonId> = mom_kids.iter().copied().filter(|&k| k != mom).collect();
+        t.add_partners(dad, mom).unwrap();
+        let me = add(&mut t, "Я", Some(1985));
+        t.add_parent_child(dad, me).unwrap();
+        t.add_parent_child(mom, me).unwrap();
+        t.root = Some(me);
+
+        let l = compute(&t, &cfg);
+        assert_eq!(l.nodes.len(), t.persons.len());
+        assert!(l.unplaced.is_empty());
+        assert_no_overlap(&l, &cfg);
+        assert_buses_separate(&l);
+
+        let x = |id: PersonId| l.pos_of(id).unwrap().x;
+        let y = |id: PersonId| l.pos_of(id).unwrap().y;
+        for &k in dad_sibs.iter().chain(mom_sibs.iter()) {
+            assert_eq!(y(k), y(dad), "братья/сёстры родителей в одном ряду с ними");
+        }
+        assert!(y(me) > y(dad));
+        // Семьи не перемешаны: сначала папины братья/сёстры, потом папа и мама, потом мамины.
+        for &k in &dad_sibs {
+            assert!(x(k) < x(dad));
+        }
+        for &k in &mom_sibs {
+            assert!(x(k) > x(mom));
+        }
+        assert!(x(dad) < x(mom));
+        // Родители каждой семьи стоят над своими детьми.
+        let (lo, hi) = dad_kids.iter().map(|&k| x(k)).fold((f32::MAX, f32::MIN), |a, v| (a.0.min(v), a.1.max(v)));
+        let c = unit_cx(&l, gf1);
+        assert!(lo <= c && c <= hi, "родители папы над его семьёй: {lo} <= {c} <= {hi}");
+        let (lo, hi) = mom_kids.iter().map(|&k| x(k)).fold((f32::MAX, f32::MIN), |a, v| (a.0.min(v), a.1.max(v)));
+        let c = unit_cx(&l, gm1);
+        assert!(lo <= c && c <= hi, "родители мамы над её семьёй: {lo} <= {c} <= {hi}");
+    }
+
+    #[test]
+    fn aunts_husband_family_goes_to_the_far_side() {
+        // У тёти муж «со стороны» с родителями и братьями: тётя ставится на левый край,
+        // муж — слева от неё, а его семья ещё левее. Папа с мамой — на правом краю.
+        let cfg = plain();
+        let mut t = Tree::new();
+        let gf1 = add(&mut t, "Дед", Some(1930));
+        let gf2 = add(&mut t, "Бабка", Some(1932));
+        t.add_partners(gf1, gf2).unwrap();
+        let aunt = add(&mut t, "Тётя", Some(1958));
+        let dad = add(&mut t, "Папа", Some(1960));
+        for k in [aunt, dad] {
+            t.add_parent_child(gf1, k).unwrap();
+            t.add_parent_child(gf2, k).unwrap();
+        }
+        // Семья мамы.
+        let (_gm1, _gm2, mom_kids) = family(&mut t, 4, 1935);
+        let mom = mom_kids[1];
+        t.add_partners(dad, mom).unwrap();
+        // Семья мужа тёти.
+        let (_hp1, _hp2, h_kids) = family(&mut t, 4, 1932);
+        let husband = h_kids[2];
+        t.add_partners(aunt, husband).unwrap();
+        let me = add(&mut t, "Я", Some(1985));
+        t.add_parent_child(dad, me).unwrap();
+        t.add_parent_child(mom, me).unwrap();
+        t.root = Some(me);
+
+        let l = compute(&t, &cfg);
+        assert_eq!(l.nodes.len(), t.persons.len());
+        assert!(l.unplaced.is_empty());
+        assert_no_overlap(&l, &cfg);
+        assert_buses_separate(&l);
+
+        let x = |id: PersonId| l.pos_of(id).unwrap().x;
+        let y = |id: PersonId| l.pos_of(id).unwrap().y;
+        assert!(x(husband) < x(aunt), "муж слева от тёти");
+        assert!(x(aunt) < x(dad) && x(dad) < x(mom));
+        for &k in h_kids.iter().filter(|&&k| k != husband) {
+            assert!(x(k) < x(husband), "семья мужа слева от него");
+            assert_eq!(y(k), y(aunt));
+        }
+        for &k in mom_kids.iter().filter(|&&k| k != mom) {
+            assert!(x(k) > x(mom), "семья мамы справа от неё");
+            assert_eq!(y(k), y(dad));
+        }
+    }
+
+    #[test]
+    fn many_siblings_with_families_everywhere_do_not_overlap() {
+        let cfg = plain();
+        let mut t = Tree::new();
+        let gf1 = add(&mut t, "Дед", Some(1930));
+        let gf2 = add(&mut t, "Бабка", Some(1932));
+        t.add_partners(gf1, gf2).unwrap();
+        let gm1 = add(&mut t, "Дед2", Some(1931));
+        let gm2 = add(&mut t, "Бабка2", Some(1933));
+        t.add_partners(gm1, gm2).unwrap();
+        let mut dad_side = Vec::new();
+        let mut mom_side = Vec::new();
+        for i in 0..6 {
+            let a = add(&mut t, "Сиблинг", Some(1955 + i));
+            t.add_parent_child(gf1, a).unwrap();
+            t.add_parent_child(gf2, a).unwrap();
+            dad_side.push(a);
+            let b = add(&mut t, "Сиблинг", Some(1957 + i));
+            t.add_parent_child(gm1, b).unwrap();
+            t.add_parent_child(gm2, b).unwrap();
+            mom_side.push(b);
+        }
+        let (dad, mom) = (dad_side[2], mom_side[3]);
+        t.add_partners(dad, mom).unwrap();
+        // У каждого брата/сестры родителей — партнёр и двое детей.
+        for &s in dad_side.iter().chain(mom_side.iter()) {
+            if s == dad || s == mom {
+                continue;
+            }
+            let w = add(&mut t, "Партнёр", None);
+            t.add_partners(s, w).unwrap();
+            for j in 0..2 {
+                let c = add(&mut t, "Кузен", Some(1985 + j));
+                t.add_parent_child(s, c).unwrap();
+                t.add_parent_child(w, c).unwrap();
+            }
+        }
+        // «Я» и пятеро братьев/сестёр.
+        let mut me_side = Vec::new();
+        for i in 0..6 {
+            let k = add(&mut t, "Я", Some(1985 + i));
+            t.add_parent_child(dad, k).unwrap();
+            t.add_parent_child(mom, k).unwrap();
+            me_side.push(k);
+        }
+        t.root = Some(me_side[0]);
+
+        let l = compute(&t, &cfg);
+        assert_eq!(l.nodes.len(), t.persons.len());
+        assert!(l.unplaced.is_empty());
+        assert_no_overlap(&l, &cfg);
+        assert!(l.edges.iter().all(|e| e.to.y > e.from.y));
+        let y = |id: PersonId| l.pos_of(id).unwrap().y;
+        for &s in dad_side.iter().chain(mom_side.iter()) {
+            assert_eq!(y(s), y(dad));
+        }
+        for &k in &me_side {
+            assert_eq!(y(k), y(me_side[0]));
+            assert!(y(k) > y(dad));
+        }
     }
 }

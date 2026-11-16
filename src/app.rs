@@ -14,6 +14,12 @@ use crate::search::{self, SearchState};
 use crate::view::ViewState;
 use eframe::egui;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
+
+/// Через сколько после последней правки сохраняем файл сами.
+const AUTOSAVE_DELAY: Duration = Duration::from_millis(1500);
+/// Через сколько пробуем снова, если автосохранение не удалось.
+const AUTOSAVE_RETRY: Duration = Duration::from_secs(5);
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
@@ -39,6 +45,8 @@ pub struct FamTreeApp {
     pub path: Option<PathBuf>,
     /// Есть несохранённые изменения.
     pub dirty: bool,
+    /// Когда сработает автосохранение (после правки сдвигается на `AUTOSAVE_DELAY`).
+    autosave_at: Option<Instant>,
     pub layout: Layout,
     pub layout_cfg: LayoutConfig,
     pub status: String,
@@ -68,6 +76,7 @@ impl FamTreeApp {
             store: MediaStore::new(),
             path: None,
             dirty: false,
+            autosave_at: None,
             layout: Layout::default(),
             layout_cfg: LayoutConfig::default(),
             status: String::new(),
@@ -105,6 +114,7 @@ impl FamTreeApp {
         self.store = store;
         self.path = path;
         self.dirty = false;
+        self.autosave_at = None;
         self.selected = None;
         self.person_win.reset();
         self.edit.reset();
@@ -128,6 +138,10 @@ impl FamTreeApp {
     /// Выполнить действие, которое заменяет дерево; если есть несохранённые правки —
     /// сначала спросить пользователя.
     pub fn request(&mut self, ctx: &egui::Context, a: Guarded) {
+        // Файл уже есть — сохраняем молча, вопрос нужен только если не получилось.
+        if self.dirty && self.path.is_some() {
+            self.save();
+        }
         if self.dirty {
             self.pending = Some(a);
         } else {
@@ -238,6 +252,39 @@ impl FamTreeApp {
         }
     }
 
+    /// Отметить правку: дерево изменено, автосохранение запланировано.
+    fn mark_dirty(&mut self) {
+        self.dirty = true;
+        self.autosave_at = Some(Instant::now() + AUTOSAVE_DELAY);
+    }
+
+    /// Автосохранение: через `AUTOSAVE_DELAY` после последней правки пишем в текущий файл.
+    /// У нового (ещё не сохранённого) дерева файла нет — там сначала нужно «Сохранить как…».
+    fn autosave_tick(&mut self, ctx: &egui::Context) {
+        let Some(at) = self.autosave_at else { return };
+        if !self.dirty || self.path.is_none() {
+            self.autosave_at = None;
+            return;
+        }
+        // Пока открыт диалог «Сохранить изменения?» — не вмешиваемся.
+        if self.pending.is_some() {
+            return;
+        }
+        let now = Instant::now();
+        if now < at {
+            ctx.request_repaint_after(at - now);
+            return;
+        }
+        self.save();
+        if self.dirty {
+            // Не получилось (ошибка в статусе) — повторим чуть позже.
+            self.autosave_at = Some(Instant::now() + AUTOSAVE_RETRY);
+            ctx.request_repaint_after(AUTOSAVE_RETRY);
+        } else {
+            self.autosave_at = None;
+        }
+    }
+
     fn save_to(&mut self, p: PathBuf) {
         match container::save(&p, &self.tree, &mut self.store) {
             Ok(()) => {
@@ -263,6 +310,11 @@ impl FamTreeApp {
 
 impl eframe::App for FamTreeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Закрытие окна: если файл есть, последние правки (ещё не дождавшиеся автосохранения)
+        // сохраняем молча.
+        if ctx.input(|i| i.viewport().close_requested()) && self.dirty && self.path.is_some() {
+            self.save();
+        }
         // Закрытие окна с несохранённым: отменяем и спрашиваем.
         if ctx.input(|i| i.viewport().close_requested()) && self.dirty && !self.allow_close {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
@@ -369,6 +421,9 @@ impl eframe::App for FamTreeApp {
                 }
                 if self.dirty {
                     ui.label(egui::RichText::new("●  не сохранено").small().color(theme::TEXT));
+                    if self.path.is_none() {
+                        ui.label(dim("(автосохранение заработает после «Сохранить как…»)".into()));
+                    }
                 }
                 if !self.status.is_empty() {
                     ui.label(egui::RichText::new(&self.status).small().color(theme::DANGER));
@@ -385,7 +440,7 @@ impl eframe::App for FamTreeApp {
                 ListAction::Select(id) => self.select_and_show(id),
                 ListAction::New => {
                     let id = edit::new_person(&mut self.tree);
-                    self.dirty = true;
+                    self.mark_dirty();
                     self.relayout();
                     self.select_and_show(id);
                 }
@@ -405,7 +460,7 @@ impl eframe::App for FamTreeApp {
                 );
             });
             if change.dirty {
-                self.dirty = true;
+                self.mark_dirty();
             }
             if change.relayout {
                 self.relayout();
@@ -452,5 +507,6 @@ impl eframe::App for FamTreeApp {
         }
 
         self.confirm_dialog(ctx);
+        self.autosave_tick(ctx);
     }
 }
