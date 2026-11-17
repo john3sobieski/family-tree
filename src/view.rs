@@ -443,7 +443,9 @@ fn draw_card_body(
             let top = Rounding { nw: radius, ne: radius, sw: 0.0, se: 0.0 };
             painter.rect_filled(inner, top, bg);
         }
-        None => painter.rect_filled(card, radius, bg),
+        None => {
+            painter.rect_filled(card, radius, bg);
+        }
     }
 }
 
