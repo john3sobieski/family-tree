@@ -60,6 +60,9 @@ pub struct Person {
     /// Остальные фото (в заметках), без лимита.
     #[serde(default)]
     pub photos: Vec<Photo>,
+    /// Национальности: коды стран (`flags::COUNTRIES`), не больше двух.
+    #[serde(default)]
+    pub nationalities: Vec<String>,
 }
 
 impl Person {
@@ -309,6 +312,20 @@ impl Tree {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn nationalities_roundtrip_and_old_files_load() {
+        let mut t = Tree::new();
+        let mut p = Person::new("A", "B");
+        p.nationalities = vec!["PL".to_string(), "DE".to_string()];
+        let id = t.add_person(p);
+        let back = Tree::from_json(&t.to_json().unwrap()).unwrap();
+        assert_eq!(back.persons[&id].nationalities, vec!["PL", "DE"]);
+
+        let old = r#"{"version":1,"persons":{"1":{"id":1,"first_name":"X"}}}"#;
+        let t = Tree::from_json(old).unwrap();
+        assert!(t.persons[&1].nationalities.is_empty());
+    }
     use super::*;
 
     #[test]

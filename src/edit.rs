@@ -224,6 +224,46 @@ fn import_dialog(store: &mut MediaStore, multiple: bool, errors: &mut Vec<String
     hashes
 }
 
+/// Выбор национальностей (до двух, только европейские страны).
+fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
+    ui.vertical(|ui| {
+        let mut remove: Option<usize> = None;
+        for (i, code) in list.iter().enumerate() {
+            ui.horizontal(|ui| {
+                crate::flags::icon(ui, code, 16.0);
+                ui.label(crate::flags::name(code).unwrap_or(code.as_str()));
+                if ui.small_button("Убрать").clicked() {
+                    remove = Some(i);
+                }
+            });
+        }
+        if let Some(i) = remove {
+            list.remove(i);
+        }
+        if list.len() < crate::flags::MAX_PER_PERSON {
+            let mut add: Option<&'static str> = None;
+            egui::ComboBox::from_id_salt("nationality-add")
+                .selected_text("Добавить страну…")
+                .show_ui(ui, |ui| {
+                    for (code, name) in crate::flags::COUNTRIES {
+                        if list.iter().any(|c| c.as_str() == *code) {
+                            continue;
+                        }
+                        ui.horizontal(|ui| {
+                            crate::flags::icon(ui, code, 14.0);
+                            if ui.selectable_label(false, *name).clicked() {
+                                add = Some(*code);
+                            }
+                        });
+                    }
+                });
+            if let Some(code) = add {
+                list.push(code.to_string());
+            }
+        }
+    });
+}
+
 /// Правая панель: форма выбранного человека.
 pub fn editor(
     ui: &mut egui::Ui,
@@ -268,6 +308,9 @@ pub fn editor(
             ui.end_row();
             ui.label("Фамилия");
             ui.add(egui::TextEdit::singleline(&mut p.last_name).desired_width(w));
+            ui.end_row();
+            ui.label("Национальность");
+            nationality_row(ui, &mut p.nationalities);
             ui.end_row();
             ui.label("Пол");
             let gender_text = match p.gender {

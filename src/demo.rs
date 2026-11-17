@@ -57,6 +57,12 @@ pub fn sample_tree() -> Tree {
     let k2 = add(&mut t, "Ева", "Иванова", F, 2018);
     couple(&mut t, me, wife, &[k1, k2]);
 
+    // Национальности для проверки отображения флагов (1 и 2 флага).
+    for (id, codes) in [(dad, &["PL"][..]), (mom, &["PL", "DE"][..]), (me, &["PL", "DE"][..]), (sis, &["DE"][..])] {
+        if let Some(p) = t.persons.get_mut(&id) {
+            p.nationalities = codes.iter().map(|c| c.to_string()).collect();
+        }
+    }
     t.root = Some(me);
     t
 }

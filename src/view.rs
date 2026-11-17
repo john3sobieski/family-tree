@@ -306,7 +306,12 @@ impl ViewState {
                 Pos2::new(n.pos.x, n.pos.y),
                 Vec2::new(cfg.card_w, cfg.card_h),
             );
-            if !vis.intersects(world) {
+            // Флаги стоят над карточкой, поэтому область видимости расширена вверх.
+            let with_flags = Rect::from_min_max(
+                Pos2::new(world.min.x, world.min.y - crate::flags::FLAG_H),
+                world.max,
+            );
+            if !vis.intersects(with_flags) {
                 continue;
             }
             let card = Rect::from_min_max(s(world.min.x, world.min.y), s(world.max.x, world.max.y));
@@ -316,15 +321,19 @@ impl ViewState {
             }
             let stroke = if is_hover || self.highlight == Some(n.id) { Stroke::new(2.5_f32, accent) } else { card_stroke };
 
+            let Some(person) = tree.persons.get(&n.id) else { continue };
+
             if zoom < DETAIL_ZOOM {
                 painter.rect_filled(card, 2.0, card_bg);
                 painter.rect_stroke(card, 2.0, stroke);
+                crate::flags::draw_row(&painter, card, zoom, &person.nationalities, false);
                 continue;
             }
-            let Some(person) = tree.persons.get(&n.id) else { continue };
 
             painter.rect_filled(card, 8.0 * zoom, card_bg);
             painter.rect_stroke(card, 8.0 * zoom, stroke);
+            // Флаги национальностей: над карточкой, вплотную, по центру.
+            crate::flags::draw_row(&painter, card, zoom, &person.nationalities, true);
 
             // Фото 3:4.
             let pad = PHOTO_PAD * zoom;

@@ -254,6 +254,7 @@ fn info_panel(ui: &mut egui::Ui, tree: &Tree, p: &Person) -> Option<WindowEvent>
         ("Родился(ась)", format_date(&p.birth)),
         ("Умер(ла)", format_date(&p.death)),
         ("Возраст", age_text(&p.birth, &p.death, (ty, tm, td))),
+        ("Национальность", nationalities_text(p)),
         ("Специальность", non_empty(&p.profession)),
     ]
     .into_iter()
@@ -303,6 +304,20 @@ fn info_panel(ui: &mut egui::Ui, tree: &Tree, p: &Person) -> Option<WindowEvent>
         ui.label(p.notes.trim());
     }
     event
+}
+
+fn nationalities_text(p: &Person) -> Option<String> {
+    let names: Vec<&str> = p
+        .nationalities
+        .iter()
+        .take(crate::flags::MAX_PER_PERSON)
+        .filter_map(|c| crate::flags::name(c))
+        .collect();
+    if names.is_empty() {
+        None
+    } else {
+        Some(names.join(", "))
+    }
 }
 
 fn non_empty(s: &str) -> Option<String> {

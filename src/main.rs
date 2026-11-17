@@ -8,6 +8,7 @@ mod chrome;
 mod container;
 mod demo;
 mod edit;
+mod flags;
 #[allow(dead_code)]
 mod layout;
 mod list;
