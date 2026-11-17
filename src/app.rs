@@ -304,7 +304,7 @@ impl FamTreeApp {
 
     fn selected_name(&self) -> Option<String> {
         let p = self.tree.persons.get(&self.selected?)?;
-        Some(format!("{} {}", p.first_name, p.last_name))
+        Some(crate::person_window::full_name(p))
     }
 }
 

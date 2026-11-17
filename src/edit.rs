@@ -306,8 +306,21 @@ pub fn editor(
             ui.label("Имя");
             ui.add(egui::TextEdit::singleline(&mut p.first_name).desired_width(w));
             ui.end_row();
-            ui.label("Фамилия");
+            let female = p.gender == Gender::Female;
+            ui.label(if female { "Фамилия (сейчас)" } else { "Фамилия" });
             ui.add(egui::TextEdit::singleline(&mut p.last_name).desired_width(w));
+            ui.end_row();
+            if female {
+                ui.label("Фамилия при рождении");
+                ui.add(
+                    egui::TextEdit::singleline(&mut p.maiden_name)
+                        .hint_text("если сменила после свадьбы")
+                        .desired_width(w),
+                );
+                ui.end_row();
+            }
+            ui.label("Отчество");
+            ui.add(egui::TextEdit::singleline(&mut p.patronymic).desired_width(w));
             ui.end_row();
             ui.label("Национальность");
             nationality_row(ui, &mut p.nationalities);

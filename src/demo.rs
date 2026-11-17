@@ -63,6 +63,22 @@ pub fn sample_tree() -> Tree {
             p.nationalities = codes.iter().map(|c| c.to_string()).collect();
         }
     }
+    // Отчества и фамилия при рождении (мама — Смирнова, тётя — Иванова).
+    for (id, patr, maiden) in [
+        (dad, "Петрович", ""),
+        (mom, "Николаевна", "Смирнова"),
+        (me, "Сергеевич", ""),
+        (sis, "Сергеевна", ""),
+        (aunt, "Петровна", "Иванова"),
+    ] {
+        if let Some(p) = t.persons.get_mut(&id) {
+            p.patronymic = patr.to_string();
+            p.maiden_name = maiden.to_string();
+        }
+    }
+    if let Some(p) = t.persons.get_mut(&bro) {
+        p.nationalities = vec!["NG".to_string()];
+    }
     t.root = Some(me);
     t
 }

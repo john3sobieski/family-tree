@@ -51,7 +51,7 @@ impl Default for LayoutConfig {
     fn default() -> Self {
         LayoutConfig {
             card_w: 120.0,
-            card_h: 198.0,
+            card_h: 213.0,
             h_gap: 30.0,
             partner_gap: 12.0,
             v_gap: 90.0,

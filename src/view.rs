@@ -368,23 +368,27 @@ impl ViewState {
                 None => draw_placeholder_rounded(&painter, photo, radius, ph_fg, ph_bg),
             }
 
-            // Имя и фамилия.
+            // Имя, фамилия (у женщин с фамилией при рождении — «Иванова (Петрова)»), отчество.
             let clip = painter.with_clip_rect(card);
-            let font = FontId::proportional(12.5 * zoom);
             let cx = card.center().x;
             let y1 = photo.max.y + 3.0 * zoom;
-            let (first, last) = (person.first_name.trim(), person.last_name.trim());
-            if first.is_empty() && last.is_empty() {
-                clip.text(Pos2::new(cx, y1), Align2::CENTER_TOP, "—", font, text_color);
-            } else {
-                clip.text(Pos2::new(cx, y1), Align2::CENTER_TOP, first, font.clone(), text_color);
+            let size = 12.5 * zoom;
+            let max_w = card.width() - 2.0 * pad;
+            let first = person.first_name.trim();
+            let last = person.surname_display();
+            let patr = person.patronymic.trim();
+            if first.is_empty() && last.is_empty() && patr.is_empty() {
                 clip.text(
-                    Pos2::new(cx, y1 + 15.0 * zoom),
+                    Pos2::new(cx, y1),
                     Align2::CENTER_TOP,
-                    last,
-                    font,
+                    "—",
+                    FontId::proportional(size),
                     text_color,
                 );
+            } else {
+                draw_fitted(&clip, cx, y1, first, size, max_w, text_color);
+                draw_fitted(&clip, cx, y1 + 15.0 * zoom, &last, size, max_w, text_color);
+                draw_fitted(&clip, cx, y1 + 30.0 * zoom, patr, size, max_w, text_color);
             }
         }
 
@@ -424,6 +428,25 @@ impl ViewState {
         }
         None
     }
+}
+
+/// Строка по центру; если шире `max_w`, шрифт уменьшается (не меньше 70%).
+fn draw_fitted(painter: &Painter, cx: f32, y: f32, text: &str, size: f32, max_w: f32, color: Color32) {
+    if text.is_empty() {
+        return;
+    }
+    let w = painter
+        .layout_no_wrap(text.to_string(), FontId::proportional(size), color)
+        .size()
+        .x;
+    let k = if w > max_w && w > 0.0 { (max_w / w).max(0.7) } else { 1.0 };
+    painter.text(
+        Pos2::new(cx, y),
+        Align2::CENTER_TOP,
+        text,
+        FontId::proportional(size * k),
+        color,
+    );
 }
 
 /// Фон карточки. Если задан цвет полосы — нижняя часть (`strip`) окрашена им

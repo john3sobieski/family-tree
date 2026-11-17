@@ -176,7 +176,7 @@ impl ListState {
         let (asc, now_year) = (self.asc, today().0);
         match self.sort {
             Col::First => people.sort_by_cached_key(|p| p.first_name.to_lowercase()),
-            Col::Last => people.sort_by_cached_key(|p| p.last_name.to_lowercase()),
+            Col::Last => people.sort_by_cached_key(|p| p.surname_display().to_lowercase()),
             Col::Gender => people.sort_by_key(|p| gender_rank(&p.gender)),
             Col::Birth => people.sort_by(|a, b| cmp_opt(&date_key(&a.birth), &date_key(&b.birth), asc)),
             Col::Death => people.sort_by(|a, b| cmp_opt(&date_key(&a.death), &date_key(&b.death), asc)),
@@ -334,7 +334,7 @@ pub fn show(
                 let age = age_text(&p.birth, &p.death, now).unwrap_or_default();
                 let cells: [String; 7] = [
                     p.first_name.clone(),
-                    p.last_name.clone(),
+                    p.surname_display(),
                     gender_text(&p.gender).to_string(),
                     format_date(&p.birth).unwrap_or_default(),
                     format_date(&p.death).unwrap_or_default(),

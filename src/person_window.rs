@@ -228,12 +228,17 @@ fn photo_list(p: &Person) -> Vec<(String, String)> {
 }
 
 pub(crate) fn full_name(p: &Person) -> String {
-    let s = format!("{} {}", p.first_name.trim(), p.last_name.trim());
-    let s = s.trim();
+    // «Имя Отчество Фамилия»; у женщин с фамилией при рождении: «… Иванова (Петрова)».
+    let parts = [
+        p.first_name.trim().to_string(),
+        p.patronymic.trim().to_string(),
+        p.surname_display(),
+    ];
+    let s = parts.iter().filter(|x| !x.is_empty()).cloned().collect::<Vec<_>>().join(" ");
     if s.is_empty() {
         "Без имени".to_string()
     } else {
-        s.to_string()
+        s
     }
 }
 

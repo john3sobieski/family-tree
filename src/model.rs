@@ -42,8 +42,15 @@ pub struct Person {
     pub id: PersonId,
     #[serde(default)]
     pub first_name: String,
+    /// Текущая фамилия (у женщины — после замужества, если менялась).
     #[serde(default)]
     pub last_name: String,
+    /// Фамилия при рождении (чаще всего фамилия отца). Используется только у женщин.
+    #[serde(default)]
+    pub maiden_name: String,
+    /// Отчество.
+    #[serde(default)]
+    pub patronymic: String,
     #[serde(default)]
     pub gender: Gender,
     #[serde(default)]
@@ -77,6 +84,20 @@ impl Person {
             first_name: first_name.to_string(),
             last_name: last_name.to_string(),
             ..Default::default()
+        }
+    }
+
+    /// Фамилия для показа. У женщины с фамилией при рождении, отличной от текущей:
+    /// «Иванова (Петрова)», где в скобках фамилия при рождении.
+    pub fn surname_display(&self) -> String {
+        let last = self.last_name.trim();
+        let maiden = self.maiden_name.trim();
+        if self.gender != Gender::Female || maiden.is_empty() || maiden == last {
+            last.to_string()
+        } else if last.is_empty() {
+            maiden.to_string()
+        } else {
+            format!("{last} ({maiden})")
         }
     }
 }
@@ -334,6 +355,28 @@ mod tests {
         assert!(t.persons[&1].birth_place.is_empty());
         assert!(t.persons[&1].death_place.is_empty());
     }
+    #[test]
+    fn surname_display_and_old_files() {
+        let mut p = Person::new("Анна", "Иванова");
+        p.gender = Gender::Female;
+        assert_eq!(p.surname_display(), "Иванова");
+        p.maiden_name = "Петрова".into();
+        assert_eq!(p.surname_display(), "Иванова (Петрова)");
+        p.maiden_name = "Иванова".into();
+        assert_eq!(p.surname_display(), "Иванова");
+        p.maiden_name = "Петрова".into();
+        p.last_name.clear();
+        assert_eq!(p.surname_display(), "Петрова");
+        p.last_name = "Иванова".into();
+        p.gender = Gender::Male;
+        assert_eq!(p.surname_display(), "Иванова");
+
+        let old = r#"{"version":1,"persons":{"1":{"id":1,"first_name":"X"}}}"#;
+        let t = Tree::from_json(old).unwrap();
+        assert!(t.persons[&1].patronymic.is_empty());
+        assert!(t.persons[&1].maiden_name.is_empty());
+    }
+
     use super::*;
 
     #[test]
@@ -366,6 +409,8 @@ mod tests {
             let p = t.persons.get_mut(&dad).unwrap();
             p.profession = "Инженер".into();
             p.birth.year = Some(1960);
+            p.patronymic = "Иванович".into();
+            p.maiden_name = "Петров".into();
             p.birth_place = "Минск".into();
             p.death_place = "Гродно".into();
             p.main_photo = Some("abc".into());

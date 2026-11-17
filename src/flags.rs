@@ -1,4 +1,4 @@
-//! Европейские страны и их флаги. Флаги рисуются кодом (без картинок), эмблемы упрощены.
+//! Европейские страны (и Нигерия) и их флаги. Флаги рисуются кодом (без картинок), эмблемы упрощены.
 
 use eframe::egui::{pos2, Color32, Painter, Pos2, Rect, Sense, Shape, Stroke, Ui, Vec2};
 
@@ -37,6 +37,7 @@ pub const COUNTRIES: &[(&str, &str)] = &[
     ("MT", "Мальта"),
     ("MD", "Молдова"),
     ("MC", "Монако"),
+    ("NG", "Нигерия"),
     ("NL", "Нидерланды"),
     ("NO", "Норвегия"),
     ("PL", "Польша"),
@@ -391,6 +392,7 @@ pub fn draw(painter: &Painter, r: Rect, code: &str, detail: bool) {
                 dot(p, r, 0.75, 0.30, 0.06, rgb(200, 30, 30));
             }
         }
+        "NG" => vbands(p, r, &[(1.0, rgb(0, 135, 81)), (1.0, WHITE), (1.0, rgb(0, 135, 81))]),
         _ => fill(p, r, rgb(90, 90, 90)),
     }
     painter.rect_stroke(r, 0.0, Stroke::new(1.0_f32, crate::theme::BORDER_HI));
