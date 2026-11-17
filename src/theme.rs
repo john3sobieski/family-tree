@@ -15,6 +15,9 @@ pub const ACCENT: Color32 = Color32::from_rgb(237, 237, 237);
 /// Фон выбранной строки/вкладки.
 pub const SELECT_BG: Color32 = Color32::from_rgb(38, 38, 42);
 pub const DANGER: Color32 = Color32::from_rgb(229, 72, 77);
+/// Нижняя полоса карточки по полу: приглушённые голубой и розовый.
+pub const GENDER_MALE: Color32 = Color32::from_rgb(98, 148, 196);
+pub const GENDER_FEMALE: Color32 = Color32::from_rgb(200, 128, 158);
 
 const R: f32 = 6.0;
 

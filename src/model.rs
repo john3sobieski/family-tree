@@ -50,6 +50,12 @@ pub struct Person {
     pub birth: PartialDate,
     #[serde(default)]
     pub death: PartialDate,
+    /// Место рождения (свободный текст).
+    #[serde(default)]
+    pub birth_place: String,
+    /// Место смерти (свободный текст).
+    #[serde(default)]
+    pub death_place: String,
     #[serde(default)]
     pub profession: String,
     #[serde(default)]
@@ -325,6 +331,8 @@ mod tests {
         let old = r#"{"version":1,"persons":{"1":{"id":1,"first_name":"X"}}}"#;
         let t = Tree::from_json(old).unwrap();
         assert!(t.persons[&1].nationalities.is_empty());
+        assert!(t.persons[&1].birth_place.is_empty());
+        assert!(t.persons[&1].death_place.is_empty());
     }
     use super::*;
 
@@ -358,6 +366,8 @@ mod tests {
             let p = t.persons.get_mut(&dad).unwrap();
             p.profession = "Инженер".into();
             p.birth.year = Some(1960);
+            p.birth_place = "Минск".into();
+            p.death_place = "Гродно".into();
             p.main_photo = Some("abc".into());
             p.photos.push(Photo { hash: "def".into(), caption: "Дача".into() });
         }

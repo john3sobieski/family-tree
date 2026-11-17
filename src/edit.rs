@@ -327,8 +327,14 @@ pub fn editor(
             ui.label("Родился(ась)");
             date_row(ui, id, "birth", &mut p.birth);
             ui.end_row();
+            ui.label("Место рождения");
+            ui.add(egui::TextEdit::singleline(&mut p.birth_place).desired_width(w));
+            ui.end_row();
             ui.label("Умер(ла)");
             date_row(ui, id, "death", &mut p.death);
+            ui.end_row();
+            ui.label("Место смерти");
+            ui.add(egui::TextEdit::singleline(&mut p.death_place).desired_width(w));
             ui.end_row();
             ui.label("Специальность");
             ui.add(egui::TextEdit::singleline(&mut p.profession).desired_width(w));

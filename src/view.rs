@@ -3,10 +3,10 @@
 
 use crate::container::{MediaKind, MediaStore};
 use crate::layout::{Layout, LayoutConfig};
-use crate::model::{PersonId, Tree};
+use crate::model::{Gender, PersonId, Tree};
 use eframe::egui::{
-    self, Align2, Color32, FontId, Painter, Pos2, Rect, Sense, Stroke, TextureHandle, TextureId,
-    Vec2,
+    self, Align2, Color32, FontId, Painter, Pos2, Rect, Rounding, Sense, Stroke, TextureHandle,
+    TextureId, Vec2,
 };
 use std::collections::HashMap;
 
@@ -20,6 +20,10 @@ const MAX_TEXTURES: usize = 300;
 const LOADS_PER_FRAME: usize = 6;
 /// Отступ фото внутри карточки (в единицах мира).
 const PHOTO_PAD: f32 = 4.0;
+/// Скругление углов карточки; такое же у главного фото на ней (в единицах мира).
+const CARD_RADIUS: f32 = 8.0;
+/// Толщина цветной полосы пола внизу карточки (в единицах мира).
+const GENDER_STRIP: f32 = 6.0;
 
 /// Плавный перелёт камеры: центр (в мире) и масштаб интерполируются по времени.
 #[derive(Clone, Copy)]
@@ -323,15 +327,23 @@ impl ViewState {
 
             let Some(person) = tree.persons.get(&n.id) else { continue };
 
+            let strip_color = match person.gender {
+                Gender::Male => Some(crate::theme::GENDER_MALE),
+                Gender::Female => Some(crate::theme::GENDER_FEMALE),
+                Gender::Unknown => None,
+            };
+
             if zoom < DETAIL_ZOOM {
-                painter.rect_filled(card, 2.0, card_bg);
+                let strip = (GENDER_STRIP * zoom).max(1.0);
+                draw_card_body(&painter, card, 2.0, strip, strip_color, card_bg);
                 painter.rect_stroke(card, 2.0, stroke);
                 crate::flags::draw_row(&painter, card, zoom, &person.nationalities, false);
                 continue;
             }
 
-            painter.rect_filled(card, 8.0 * zoom, card_bg);
-            painter.rect_stroke(card, 8.0 * zoom, stroke);
+            let radius = CARD_RADIUS * zoom;
+            draw_card_body(&painter, card, radius, GENDER_STRIP * zoom, strip_color, card_bg);
+            painter.rect_stroke(card, radius, stroke);
             // Флаги национальностей: над карточкой, вплотную, по центру.
             crate::flags::draw_row(&painter, card, zoom, &person.nationalities, true);
 
@@ -348,14 +360,12 @@ impl ViewState {
                 .and_then(|h| self.texture_for(&ctx, store, h, &mut budget, &mut pending));
             match tex {
                 Some(id) => {
-                    painter.image(
-                        id,
-                        photo,
-                        Rect::from_min_max(Pos2::new(0.0, 0.0), Pos2::new(1.0, 1.0)),
-                        Color32::WHITE,
-                    );
+                    // Фото скруглено тем же радиусом, что и карточка.
+                    egui::Image::new((id, photo.size()))
+                        .rounding(radius)
+                        .paint_at(ui, photo);
                 }
-                None => draw_placeholder(&painter, photo, ph_fg, ph_bg),
+                None => draw_placeholder_rounded(&painter, photo, radius, ph_fg, ph_bg),
             }
 
             // Имя и фамилия.
@@ -416,8 +426,40 @@ impl ViewState {
     }
 }
 
+/// Фон карточки. Если задан цвет полосы — нижняя часть (`strip`) окрашена им
+/// и служит частью обрамления: внешний контур остаётся скруглённым.
+fn draw_card_body(
+    painter: &Painter,
+    card: Rect,
+    radius: f32,
+    strip: f32,
+    strip_color: Option<Color32>,
+    bg: Color32,
+) {
+    match strip_color {
+        Some(color) => {
+            painter.rect_filled(card, radius, color);
+            let inner = Rect::from_min_max(card.min, Pos2::new(card.max.x, card.max.y - strip));
+            let top = Rounding { nw: radius, ne: radius, sw: 0.0, se: 0.0 };
+            painter.rect_filled(inner, top, bg);
+        }
+        None => painter.rect_filled(card, radius, bg),
+    }
+}
+
 pub(crate) fn draw_placeholder(painter: &Painter, r: Rect, fg: Color32, bg: Color32) {
-    painter.rect_filled(r, 0.0, bg);
+    draw_placeholder_rounded(painter, r, 0.0, fg, bg);
+}
+
+/// Заглушка-силуэт со скруглёнными углами.
+pub(crate) fn draw_placeholder_rounded(
+    painter: &Painter,
+    r: Rect,
+    radius: f32,
+    fg: Color32,
+    bg: Color32,
+) {
+    painter.rect_filled(r, radius, bg);
     let clip = painter.with_clip_rect(r);
     let cx = r.center().x;
     clip.circle_filled(Pos2::new(cx, r.top() + r.height() * 0.36), r.width() * 0.17, fg);

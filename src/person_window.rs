@@ -252,7 +252,9 @@ fn info_panel(ui: &mut egui::Ui, tree: &Tree, p: &Person) -> Option<WindowEvent>
     let rows: Vec<(&str, String)> = [
         ("Пол", gender.map(|g| g.to_string())),
         ("Родился(ась)", format_date(&p.birth)),
+        ("Место рождения", non_empty(&p.birth_place)),
         ("Умер(ла)", format_date(&p.death)),
+        ("Место смерти", non_empty(&p.death_place)),
         ("Возраст", age_text(&p.birth, &p.death, (ty, tm, td))),
         ("Национальность", nationalities_text(p)),
         ("Специальность", non_empty(&p.profession)),
