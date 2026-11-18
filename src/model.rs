@@ -1,6 +1,7 @@
 //! Модель данных семейного дерева. Сериализуется в `tree.json` внутри `.famtree`.
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 
@@ -20,11 +21,11 @@ pub enum Gender {
 /// Неполная дата: можно знать только год.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub struct PartialDate {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub year: Option<i32>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub month: Option<u8>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub day: Option<u8>,
 }
 
@@ -324,8 +325,64 @@ impl Tree {
         false
     }
 
+    /// Читаемый JSON: короткие записи в одну строку, связи подписаны именами.
+    /// Поля `_readme` и `_comment` — только пояснения: при загрузке игнорируются,
+    /// при сохранении создаются заново.
     pub fn to_json(&self) -> Result<String, ModelError> {
-        serde_json::to_string_pretty(self).map_err(|e| ModelError::Json(e.to_string()))
+        let mut value = serde_json::to_value(self).map_err(|e| ModelError::Json(e.to_string()))?;
+        self.add_comments(&mut value);
+        let mut out = String::new();
+        write_json(&value, 0, &mut out);
+        out.push('\n');
+        Ok(out)
+    }
+
+    /// Имя человека для подсказок в файле: «Имя Фамилия (#id)».
+    fn label(&self, id: PersonId) -> String {
+        match self.persons.get(&id) {
+            Some(p) => {
+                let name = format!("{} {}", p.first_name.trim(), p.last_name.trim());
+                let name = name.trim();
+                if name.is_empty() {
+                    format!("#{id}")
+                } else {
+                    format!("{name} (#{id})")
+                }
+            }
+            None => format!("#{id}?"),
+        }
+    }
+
+    fn add_comments(&self, value: &mut Value) {
+        let Some(root) = value.as_object_mut() else {
+            return;
+        };
+        if let Some(Value::Array(rels)) = root.get_mut("relations") {
+            // Связи сериализуются в том же порядке, что и self.relations.
+            for (rel, v) in self.relations.iter().zip(rels.iter_mut()) {
+                let text = match rel {
+                    Relation::ParentChild { parent, child } => format!(
+                        "родитель {} → ребёнок {}",
+                        self.label(*parent),
+                        self.label(*child)
+                    ),
+                    Relation::Partners { a, b, .. } => {
+                        format!("пара: {} + {}", self.label(*a), self.label(*b))
+                    }
+                };
+                if let Value::Object(obj) = v {
+                    *obj = with_first(std::mem::take(obj), "_comment", Value::String(text));
+                }
+            }
+        }
+        let readme = [
+            "Данные семейного дерева (FamTree). Файл .famtree — ZIP, это его tree.json.",
+            "persons — люди по id; relations — связи, в них указаны id людей (имена в _comment для удобства).",
+            "Поля _readme и _comment приложение игнорирует и пересоздаёт при каждом сохранении.",
+            "Читать можно в любом редакторе, но править прямо в .famtree нельзя: ZIP сломается. Для правки распакуй архив, измени tree.json и запакуй обратно.",
+        ];
+        let lines: Vec<Value> = readme.iter().map(|l| Value::String(l.to_string())).collect();
+        *root = with_first(std::mem::take(root), "_readme", Value::Array(lines));
     }
 
     pub fn from_json(s: &str) -> Result<Tree, ModelError> {
@@ -334,6 +391,106 @@ impl Tree {
             return Err(ModelError::UnsupportedVersion(tree.version));
         }
         Ok(tree)
+    }
+}
+
+/// Новая карта, где `key` стоит первым (порядок ключей сохраняет `preserve_order`).
+fn with_first(old: Map<String, Value>, key: &str, val: Value) -> Map<String, Value> {
+    let mut m = Map::new();
+    m.insert(key.to_string(), val);
+    for (k, v) in old {
+        m.insert(k, v);
+    }
+    m
+}
+
+/// Максимальная длина записи (в символах), которую ещё пишем одной строкой.
+const INLINE_MAX: usize = 150;
+
+fn is_flat(v: &Value) -> bool {
+    match v {
+        Value::Array(a) => a.is_empty(),
+        Value::Object(o) => o.is_empty(),
+        _ => true,
+    }
+}
+
+/// Значение одной строкой (`{"year": 2009, "month": 10}`).
+fn inline_json(v: &Value) -> String {
+    match v {
+        Value::Array(a) => {
+            let parts: Vec<String> = a.iter().map(inline_json).collect();
+            format!("[{}]", parts.join(", "))
+        }
+        Value::Object(o) => {
+            let parts: Vec<String> = o
+                .iter()
+                .map(|(k, x)| format!("{}: {}", Value::String(k.clone()), inline_json(x)))
+                .collect();
+            format!("{{{}}}", parts.join(", "))
+        }
+        other => other.to_string(),
+    }
+}
+
+/// Можно ли записать значение одной строкой: внутри нет вложенных записей и оно недлинное.
+fn fits_inline(v: &Value) -> bool {
+    let flat = match v {
+        Value::Object(o) => o.values().all(is_flat),
+        Value::Array(a) => a.iter().all(is_flat),
+        _ => true,
+    };
+    flat && inline_json(v).chars().count() <= INLINE_MAX
+}
+
+fn push_indent(out: &mut String, level: usize) {
+    for _ in 0..level {
+        out.push_str("  ");
+    }
+}
+
+/// Печать JSON: отступ 2 пробела, мелкие записи (даты, связи, списки) — в одну строку.
+fn write_json(v: &Value, level: usize, out: &mut String) {
+    match v {
+        Value::Object(o) if !o.is_empty() => {
+            if fits_inline(v) {
+                out.push_str(&inline_json(v));
+                return;
+            }
+            out.push_str("{\n");
+            let last = o.len() - 1;
+            for (i, (k, x)) in o.iter().enumerate() {
+                push_indent(out, level + 1);
+                out.push_str(&Value::String(k.clone()).to_string());
+                out.push_str(": ");
+                write_json(x, level + 1, out);
+                if i != last {
+                    out.push(',');
+                }
+                out.push('\n');
+            }
+            push_indent(out, level);
+            out.push('}');
+        }
+        Value::Array(a) if !a.is_empty() => {
+            if fits_inline(v) {
+                out.push_str(&inline_json(v));
+                return;
+            }
+            out.push_str("[\n");
+            let last = a.len() - 1;
+            for (i, x) in a.iter().enumerate() {
+                push_indent(out, level + 1);
+                write_json(x, level + 1, out);
+                if i != last {
+                    out.push(',');
+                }
+                out.push('\n');
+            }
+            push_indent(out, level);
+            out.push(']');
+        }
+        other => out.push_str(&inline_json(other)),
     }
 }
 
@@ -400,6 +557,33 @@ mod tests {
         t.add_parent_child(mom, kid).unwrap();
         t.root = Some(dad);
         (t, dad, mom, kid)
+    }
+
+    #[test]
+    fn json_is_readable_and_loads_back() {
+        let (mut t, dad, _, _) = sample();
+        t.persons.get_mut(&dad).unwrap().birth.year = Some(1960);
+        let json = t.to_json().unwrap();
+        assert!(json.contains("\"_readme\""));
+        assert!(json.contains("\"_comment\": \"родитель Иван Петров (#1) → ребёнок Олег Петров (#3)\""));
+        assert!(json.contains("\"birth\": {\"year\": 1960}"));
+        assert!(json.contains("\"death\": {}"));
+        // Пояснения игнорируются при загрузке: дерево совпадает с исходным.
+        assert_eq!(Tree::from_json(&json).unwrap(), t);
+        // Повторное сохранение даёт тот же текст.
+        assert_eq!(Tree::from_json(&json).unwrap().to_json().unwrap(), json);
+    }
+
+    #[test]
+    fn old_pretty_json_with_null_dates_still_loads() {
+        let old = r#"{"version":1,"root":1,"next_id":2,"persons":{"1":{"id":1,"first_name":"А",
+            "birth":{"year":2000,"month":null,"day":null},
+            "death":{"year":null,"month":null,"day":null}}},
+            "relations":[{"type":"Partners","a":1,"b":1,"start":{"year":null,"month":null,"day":null},"end":{"year":null,"month":null,"day":null}}]}"#;
+        let t = Tree::from_json(old).unwrap();
+        assert_eq!(t.persons[&1].birth.year, Some(2000));
+        assert_eq!(t.persons[&1].death, PartialDate::default());
+        assert_eq!(t.relations.len(), 1);
     }
 
     #[test]

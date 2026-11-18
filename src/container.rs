@@ -3,6 +3,7 @@
 //!   media/<hash>.jpg     — полные фото
 //!   thumb/<hash>.jpg     — миниатюры для карточек
 //!
+//! `tree.json` лежит без сжатия: его текст виден в любом редакторе (только читать, не сохранять).
 //! Сохранение атомарное: пишем во временный файл, затем переименовываем.
 //! Память ограничена: фото копируются из старого файла по одному.
 
@@ -215,13 +216,13 @@ fn write_archive(
     let mut old = store.open_old();
     let mut zip = ZipWriter::new(File::create(tmp)?);
 
+    // tree.json и JPEG храним без сжатия: JPEG уже сжат, а JSON остаётся читаемым текстом.
+    // Старые файлы со сжатым tree.json по-прежнему открываются.
+    let stored = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
     let json = tree.to_json()?;
-    let deflated = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-    zip.start_file(TREE_ENTRY, deflated)?;
+    zip.start_file(TREE_ENTRY, stored.clone())?;
     zip.write_all(json.as_bytes())?;
 
-    // JPEG уже сжат — храним без сжатия.
-    let stored = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
     let mut written: HashSet<MediaKey> = HashSet::new();
     for hash in referenced_hashes(tree) {
         for kind in [MediaKind::Full, MediaKind::Thumb] {
@@ -357,6 +358,38 @@ mod tests {
         }
         let res = load(&path);
         assert!(matches!(res, Err(ContainerError::MissingEntry(_))));
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn tree_json_is_stored_as_plain_text() {
+        let path = temp_path("plain");
+        let tree = tree_with_photos(&["aaa"]);
+        let mut store = MediaStore::new();
+        store.add(MediaKind::Full, "aaa", vec![1, 2, 3]);
+        save(&path, &tree, &mut store).unwrap();
+
+        let raw = std::fs::read(&path).unwrap();
+        let needle = "\"first_name\": \"Иван\"".as_bytes();
+        assert!(raw.windows(needle.len()).any(|w| w == needle));
+
+        let mut ar = ZipArchive::new(File::open(&path).unwrap()).unwrap();
+        assert_eq!(ar.by_name(TREE_ENTRY).unwrap().compression(), CompressionMethod::Stored);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn old_deflated_tree_json_still_loads() {
+        let path = temp_path("olddeflate");
+        {
+            let mut zip = ZipWriter::new(File::create(&path).unwrap());
+            let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+            zip.start_file(TREE_ENTRY, opts).unwrap();
+            zip.write_all(br#"{"version":1,"persons":{"1":{"id":1,"first_name":"X"}}}"#).unwrap();
+            zip.finish().unwrap();
+        }
+        let (t, _s) = load(&path).unwrap();
+        assert_eq!(t.persons[&1].first_name, "X");
         let _ = std::fs::remove_file(&path);
     }
 
