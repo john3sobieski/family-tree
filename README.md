@@ -1,0 +1,112 @@
+# FamTree
+
+Created and maintained by **[john3sobieski](https://github.com/john3sobieski)**. Repository: <https://github.com/john3sobieski/family-tree>
+
+A desktop app for Windows for building, editing and browsing your family tree. Everything lives in a single `.famtree` file: people, relationships and all photos.
+
+> **Status:** early development. There are no ready-made releases yet, and the app is currently available only by building it through GitHub Actions (see [Installation](#installation)). The interface is in Russian for now (see [Roadmap](#roadmap)).
+
+## Features
+
+- **Three modes**
+  - **View** (*Просмотр*) – read-only mind map with smooth zoom and pan.
+  - **Edit** (*Редакция*) – add and change people, photos and relationships.
+  - **List** (*Список*) – a sortable, filterable table of everyone in the tree.
+- **Mind map built around you.** Mark one person as "me" and the tree is drawn from your top ancestors downwards, so parents, siblings, uncles, aunts, cousins and more distant relatives all show up automatically. Both sides of the family are laid out next to each other, and the in-laws' families are included too.
+- **Photo cards.** Each card shows a passport-style photo, the name, the surname (with the maiden name in brackets for women), the patronymic, a colour strip for gender and up to two flags of nationality.
+- **Person window.** Click a card to open a larger window with the full photo, a gallery (10+ photos per person are fine), dates, age, places of birth and death, profession, notes and clickable links to parents, partners and children.
+- **Search.** Type a name and the camera flies to that person on the map and highlights them. In List mode it works as a filter. `Ctrl+F` focuses the search field.
+- **Relationships.** Parents, partners, children and siblings can be added in one click or linked to people who already exist. Cycles and duplicate links are rejected.
+- **Incomplete dates.** Know only the year? That's fine, any part of a date can be left empty.
+- **Nationalities.** Pick up to two per person from a built-in list of 47 countries (46 European countries plus Nigeria). Flags are drawn by the app itself.
+- **Built for big trees.** Only visible cards are drawn, thumbnails are loaded lazily, and the layout is recalculated only when the structure changes. It is tested with trees of thousands of people.
+- **Autosave.** Once the tree has a file, every change is saved automatically a moment after you stop typing. For a new tree, use **Save as…** (*Сохранить как…*) first. You are also asked before closing if something could not be saved.
+- **Double-click to open.** In the **File** (*Файл*) menu you can associate `.famtree` files with the app.
+
+## Installation
+
+The app is Windows 10 only for now and is built from source by GitHub Actions, so you don't need Rust or any other tools on your machine. You do need a GitHub account.
+
+1. **Fork** the [repository](https://github.com/john3sobieski/family-tree) (or use your own copy).
+2. In your fork, open the **Actions** tab. If GitHub asks, enable workflows for the fork.
+3. Select the **Build** workflow, click **Run workflow** and wait for it to finish (about 2–3 minutes). It runs on every push as well.
+4. Open the finished run and download the **`famtree-windows`** artifact from the *Artifacts* section at the bottom.
+5. Unzip it. Inside is `famtree.exe`. There is nothing to install, just run it.
+
+Notes:
+
+- Windows may show a SmartScreen warning because the `.exe` is not signed. Choose *More info → Run anyway* if you trust your own build.
+- Artifacts are kept by GitHub for a limited time (90 days by default), so save the `.exe` somewhere permanent.
+- If you move `famtree.exe`, press the `.famtree` association button in the **File** menu again, because the association points to the exe's location.
+
+Once a proper installer exists, it will be published in **Releases** and this section will be replaced.
+
+## Quick start
+
+1. Start `famtree.exe`. Use **File → Demo** (*Файл → Демо*) to look at a sample tree, or **File → New** (*Файл → Новое*) to start your own.
+2. Switch to **Edit** mode and add the first person (*＋ Новый человек*). In an empty tree they automatically become "me".
+3. Select a person and use **＋ Parent**, **＋ Partner**, **＋ Child** or **＋ Sibling** (*＋ Родитель*, *＋ Партнёр*, *＋ Ребёнок*, *＋ Брат/сестра*) to grow the tree. Fill in names, dates, photos and notes on the right.
+4. Choose **Save as…** and pick a name. From then on, changes are saved automatically.
+5. Switch to **View** to explore the map: drag to pan, scroll to zoom, **Fit** (*По размеру*) to see everything, click a card for details.
+
+## The `.famtree` file
+
+A `.famtree` file is an ordinary ZIP archive:
+
+```
+tree.json            people and relationships (plain, human-readable text)
+media/<hash>.jpg     photos, resized to at most 1600 px
+thumb/<hash>.jpg     small thumbnails for cards
+```
+
+- Photos are stored inside the file, so you can send one `.famtree` to a relative and nothing is lost. Identical photos are stored only once.
+- `tree.json` is readable in any text editor and has comments describing each relationship. If you want to edit it by hand, unpack the archive, edit the file and pack it back. Editing it directly inside the `.famtree` will break the archive.
+- Older files keep opening in newer versions of the app.
+
+## Known limitations
+
+- The interface is currently available only in Russian.
+- Windows 10 only.
+- No undo and no export to PNG/PDF yet.
+- Importing a large batch of photos at once can freeze the window for a moment.
+- HEIC photos are not supported (JPEG, PNG, WebP and BMP are).
+- The thumbnail on a card is a centered crop, and you can't choose the crop area yet.
+- In very large families the layout can still place people in odd spots or cross lines between branches (see the roadmap).
+- Nationalities are not shown in List mode.
+
+## Roadmap
+
+Planned improvements, in no particular order:
+
+- [ ] **A real installer**, instead of a bare `.exe` from Actions, published in Releases.
+- [ ] **Translation of the app** into other languages.
+- [ ] **Translation of this README** into other languages.
+- [ ] **More nationalities** in the country list.
+- [ ] **Fixes for layout bugs**: people occasionally end up in the wrong place on the map.
+
+## Building from source
+
+If you prefer to build locally, you need the Rust toolchain on Windows:
+
+```
+cargo test --release
+cargo build --release
+```
+
+The result is `target/release/famtree.exe`. The project uses [egui/eframe](https://github.com/emilk/egui) for the interface.
+
+## Bug reports
+
+Found a problem, especially with how people are placed on the map? Please [open an issue](https://github.com/john3sobieski/family-tree/issues) and, if you can, attach a small `.famtree` file that reproduces it (without real personal data, if the tree is private).
+
+## License
+
+FamTree is licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/). See [`LICENSE.md`](LICENSE.md).
+
+In short:
+
+- You may use, copy, modify and share the app and its source code for **noncommercial** purposes (personal use, family history, hobby, education, research and the like).
+- **Selling it or using it commercially is not allowed.**
+- Whenever you share the app or a modified version (a fork, a rebuild, a redistribution), you must keep the license terms and the `Required Notice` line from `LICENSE.md`, which credits john3sobieski as the author.
+
+This summary is not legal advice, and the license text is what counts.
