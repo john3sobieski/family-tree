@@ -20,7 +20,7 @@ Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon kel
 - **Pencarian.** Ketik sebuah nama, lalu kamera terbang ke orang tersebut di peta dan menyorotinya. Di mode Daftar, pencarian berfungsi sebagai filter. `Ctrl+F` memfokuskan kolom pencarian.
 - **Hubungan.** Orang tua, pasangan, anak, dan saudara kandung bisa ditambahkan dengan satu klik atau ditautkan ke orang yang sudah ada. Siklus dan tautan ganda ditolak.
 - **Tanggal tidak lengkap.** Hanya tahu tahunnya? Tidak masalah, bagian mana pun dari tanggal boleh dikosongkan.
-- **Kewarganegaraan.** Pilih hingga dua per orang dari daftar bawaan berisi 47 negara (46 negara Eropa ditambah Nigeria). Bendera digambar oleh aplikasi itu sendiri.
+- **Kewarganegaraan.** Pilih hingga dua per orang dari daftar bawaan berisi 197 negara (semua anggota PBB ditambah Vatikan, Palestina, Taiwan, dan Kosovo). Bendera digambar oleh aplikasi itu sendiri.
 - **Dibuat untuk pohon besar.** Hanya kartu yang terlihat yang digambar, thumbnail dimuat secara lazy, dan tata letak hanya dihitung ulang saat struktur berubah. Sudah diuji dengan pohon berisi ribuan orang.
 - **Simpan otomatis.** Setelah pohon memiliki berkas, setiap perubahan disimpan otomatis sesaat setelah Anda berhenti mengetik. Untuk pohon baru, gunakan **Simpan sebagai…** (*Сохранить как…*) terlebih dahulu. Anda juga akan ditanya sebelum menutup jika ada yang tidak berhasil disimpan.
 - **Klik ganda untuk membuka.** Di menu **Berkas** (*Файл*), Anda bisa mengaitkan berkas `.famtree` dengan aplikasi.
@@ -83,7 +83,6 @@ Perbaikan yang direncanakan, tanpa urutan tertentu:
 - [ ] **Installer yang sebenarnya**, bukan `.exe` polos dari Actions, yang dipublikasikan di Releases.
 - [ ] **Terjemahan aplikasi** ke bahasa lain.
 - [ ] **Terjemahan README ini** ke bahasa lain.
-- [ ] **Lebih banyak kewarganegaraan** di daftar negara.
 - [ ] **Perbaikan bug tata letak**: sesekali orang berakhir di posisi yang salah pada peta.
 
 ## Membangun dari kode sumber

@@ -20,7 +20,7 @@ Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüst�
 - **Arama.** Bir ad yazın; kamera haritada o kişiye uçar ve kişiyi vurgular. Liste modunda filtre olarak çalışır. `Ctrl+F` arama alanına odaklanır.
 - **İlişkiler.** Anne-baba, partnerler, çocuklar ve kardeşler tek tıkla eklenebilir veya zaten mevcut kişilere bağlanabilir. Döngüler ve yinelenen bağlantılar reddedilir.
 - **Eksik tarihler.** Yalnızca yılı mı biliyorsunuz? Sorun değil, bir tarihin herhangi bir kısmı boş bırakılabilir.
-- **Uyruklar.** Kişi başına, 47 ülkelik yerleşik bir listeden (46 Avrupa ülkesi artı Nijerya) en fazla iki uyruk seçin. Bayrakları uygulamanın kendisi çizer.
+- **Uyruklar.** Kişi başına, 197 ülkelik yerleşik bir listeden (tüm BM üyeleri artı Vatikan, Filistin, Tayvan ve Kosova) en fazla iki uyruk seçin. Bayrakları uygulamanın kendisi çizer.
 - **Büyük ağaçlar için tasarlandı.** Yalnızca görünen kartlar çizilir, küçük resimler tembel yükleme (lazy loading) ile yüklenir ve yerleşim yalnızca yapı değiştiğinde yeniden hesaplanır. Binlerce kişilik ağaçlarla test edilmiştir.
 - **Otomatik kaydetme.** Ağacın bir dosyası olduktan sonra, yazmayı bıraktıktan kısa bir süre sonra her değişiklik otomatik olarak kaydedilir. Yeni bir ağaç için önce **Farklı kaydet…** (*Сохранить как…*) seçeneğini kullanın. Bir şey kaydedilemediyse kapatmadan önce size sorulur.
 - **Çift tıklayarak açma.** **Dosya** (*Файл*) menüsünden `.famtree` dosyalarını uygulamayla ilişkilendirebilirsiniz.
@@ -83,7 +83,6 @@ Planlanan iyileştirmeler, belirli bir sırayla değil:
 - [ ] Actions'tan alınan çıplak bir `.exe` yerine Releases'ta yayımlanan **gerçek bir yükleyici**.
 - [ ] **Uygulamanın** diğer dillere **çevirisi**.
 - [ ] **Bu README'nin** diğer dillere **çevirisi**.
-- [ ] Ülke listesinde **daha fazla uyruk**.
 - [ ] **Yerleşim hatalarının düzeltilmesi**: kişiler zaman zaman haritada yanlış yere düşüyor.
 
 ## Kaynaktan derleme

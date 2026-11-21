@@ -20,7 +20,7 @@ Um aplicativo de desktop para Windows para montar, editar e navegar pela sua ár
 - **Busca.** Digite um nome e a câmera voa até a pessoa no mapa e a destaca. No modo Lista, funciona como filtro. `Ctrl+F` coloca o foco no campo de busca.
 - **Relacionamentos.** Pais, parceiros, filhos e irmãos podem ser adicionados com um clique ou vinculados a pessoas que já existem. Ciclos e vínculos duplicados são rejeitados.
 - **Datas incompletas.** Só sabe o ano? Sem problema, qualquer parte de uma data pode ficar vazia.
-- **Nacionalidades.** Escolha até duas por pessoa em uma lista integrada de 47 países (46 países europeus mais a Nigéria). As bandeiras são desenhadas pelo próprio aplicativo.
+- **Nacionalidades.** Escolha até duas por pessoa em uma lista integrada de 197 países (todos os membros da ONU, mais Vaticano, Palestina, Taiwan e Kosovo). As bandeiras são desenhadas pelo próprio aplicativo.
 - **Feito para árvores grandes.** Só os cartões visíveis são desenhados, as miniaturas são carregadas sob demanda e o layout só é recalculado quando a estrutura muda. Já foi testado com árvores de milhares de pessoas.
 - **Salvamento automático.** Quando a árvore já tem um arquivo, cada alteração é salva automaticamente um instante depois que você para de digitar. Para uma árvore nova, use **Salvar como…** (*Сохранить как…*) primeiro. Você também é avisado antes de fechar se algo não pôde ser salvo.
 - **Duplo clique para abrir.** No menu **Arquivo** (*Файл*) você pode associar os arquivos `.famtree` ao aplicativo.
@@ -83,7 +83,6 @@ Melhorias planejadas, sem ordem específica:
 - [ ] **Um instalador de verdade**, em vez de um `.exe` solto do Actions, publicado em Releases.
 - [ ] **Tradução do aplicativo** para outros idiomas.
 - [ ] **Tradução deste README** para outros idiomas.
-- [ ] **Mais nacionalidades** na lista de países.
 - [ ] **Correções de bugs de layout**: de vez em quando as pessoas acabam no lugar errado do mapa.
 
 ## Compilando a partir do código-fonte

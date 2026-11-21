@@ -18,7 +18,7 @@ A desktop app for Windows for building, editing and browsing your family tree. E
 - **Search.** Type a name and the camera flies to that person on the map and highlights them. In List mode it works as a filter. `Ctrl+F` focuses the search field.
 - **Relationships.** Parents, partners, children and siblings can be added in one click or linked to people who already exist. Cycles and duplicate links are rejected.
 - **Incomplete dates.** Know only the year? That's fine, any part of a date can be left empty.
-- **Nationalities.** Pick up to two per person from a built-in list of 47 countries (46 European countries plus Nigeria). Flags are drawn by the app itself.
+- **Nationalities.** Pick up to two per person from a built-in list of 197 countries (all UN members plus the Vatican, Palestine, Taiwan and Kosovo), with a search box. Flags are drawn by the app itself.
 - **Built for big trees.** Only visible cards are drawn, thumbnails are loaded lazily, and the layout is recalculated only when the structure changes. It is tested with trees of thousands of people.
 - **Autosave.** Once the tree has a file, every change is saved automatically a moment after you stop typing. For a new tree, use **Save as…** (*Сохранить как…*) first. You are also asked before closing if something could not be saved.
 - **Double-click to open.** In the **File** (*Файл*) menu you can associate `.famtree` files with the app.
@@ -81,7 +81,6 @@ Planned improvements, in no particular order:
 - [ ] **A real installer**, instead of a bare `.exe` from Actions, published in Releases.
 - [ ] **Translation of the app** into other languages.
 - [ ] **Translation of this README** into other languages.
-- [ ] **More nationalities** in the country list.
 - [ ] **Fixes for layout bugs**: people occasionally end up in the wrong place on the map.
 
 ## Building from source

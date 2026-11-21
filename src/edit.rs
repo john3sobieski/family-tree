@@ -224,7 +224,7 @@ fn import_dialog(store: &mut MediaStore, multiple: bool, errors: &mut Vec<String
     hashes
 }
 
-/// Выбор национальностей (до двух, только европейские страны).
+/// Выбор национальностей (до двух, все страны мира).
 fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
     ui.vertical(|ui| {
         let mut remove: Option<usize> = None;
@@ -245,8 +245,17 @@ fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
             egui::ComboBox::from_id_salt("nationality-add")
                 .selected_text("Добавить страну…")
                 .show_ui(ui, |ui| {
+                    // Search box: the list has ~200 countries.
+                    let fid = egui::Id::new("nationality-filter");
+                    let mut filter: String = ui.data_mut(|d| d.get_temp(fid)).unwrap_or_default();
+                    ui.add(egui::TextEdit::singleline(&mut filter).hint_text("Поиск…"));
+                    ui.data_mut(|d| d.insert_temp(fid, filter.clone()));
+                    let query = filter.trim().to_lowercase();
                     for (code, name) in crate::flags::COUNTRIES {
                         if list.iter().any(|c| c.as_str() == *code) {
+                            continue;
+                        }
+                        if !query.is_empty() && !name.to_lowercase().contains(&query) {
                             continue;
                         }
                         ui.horizontal(|ui| {

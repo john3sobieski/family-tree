@@ -20,7 +20,7 @@ Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bear
 - **Suche.** Gib einen Namen ein, und die Kamera fliegt zu dieser Person auf der Karte und hebt sie hervor. Im Listenmodus funktioniert die Suche als Filter. `Strg+F` setzt den Fokus auf das Suchfeld.
 - **Beziehungen.** Eltern, Partner, Kinder und Geschwister lassen sich mit einem Klick hinzufügen oder mit bereits vorhandenen Personen verknüpfen. Zyklen und doppelte Verknüpfungen werden abgelehnt.
 - **Unvollständige Daten.** Du kennst nur das Jahr? Kein Problem, jeder Teil eines Datums kann leer bleiben.
-- **Staatsangehörigkeiten.** Wähle pro Person bis zu zwei aus einer eingebauten Liste von 47 Ländern (46 europäische Länder plus Nigeria). Die Flaggen zeichnet die App selbst.
+- **Staatsangehörigkeiten.** Wähle pro Person bis zu zwei aus einer eingebauten Liste von 197 Ländern (alle UN-Mitglieder plus Vatikan, Palästina, Taiwan und Kosovo). Die Flaggen zeichnet die App selbst.
 - **Für große Bäume gebaut.** Es werden nur sichtbare Karten gezeichnet, Vorschaubilder werden per Lazy Loading nachgeladen, und das Layout wird nur neu berechnet, wenn sich die Struktur ändert. Getestet mit Bäumen aus Tausenden von Personen.
 - **Autosave.** Sobald der Baum eine Datei hat, wird jede Änderung kurz nach dem Aufhören mit dem Tippen automatisch gespeichert. Für einen neuen Baum nutze zuerst **Speichern unter…** (*Сохранить как…*). Vor dem Schließen wirst du außerdem gefragt, wenn etwas nicht gespeichert werden konnte.
 - **Doppelklick zum Öffnen.** Im Menü **Datei** (*Файл*) kannst du `.famtree`-Dateien mit der App verknüpfen.
@@ -83,7 +83,6 @@ Geplante Verbesserungen, in beliebiger Reihenfolge:
 - [ ] **Ein richtiger Installer** statt einer nackten `.exe` aus Actions, veröffentlicht unter Releases.
 - [ ] **Übersetzung der App** in andere Sprachen.
 - [ ] **Übersetzung dieser README** in andere Sprachen.
-- [ ] **Mehr Staatsangehörigkeiten** in der Länderliste.
 - [ ] **Behebung von Layout-Fehlern**: Gelegentlich landen Personen an der falschen Stelle auf der Karte.
 
 ## Aus dem Quellcode bauen

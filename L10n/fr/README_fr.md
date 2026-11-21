@@ -20,7 +20,7 @@ Une application de bureau pour Windows destinée à construire, modifier et parc
 - **Recherche.** Saisissez un nom et la caméra file vers cette personne sur la carte et la met en surbrillance. En mode Liste, elle sert de filtre. `Ctrl+F` place le curseur dans le champ de recherche.
 - **Liens de parenté.** Parents, partenaires, enfants et frères et sœurs peuvent être ajoutés en un clic ou rattachés à des personnes déjà existantes. Les cycles et les liens en double sont refusés.
 - **Dates incomplètes.** Vous ne connaissez que l'année ? Aucun problème, n'importe quelle partie d'une date peut rester vide.
-- **Nationalités.** Choisissez-en jusqu'à deux par personne dans une liste intégrée de 47 pays (46 pays européens plus le Nigeria). Les drapeaux sont dessinés par l'application elle-même.
+- **Nationalités.** Choisissez-en jusqu'à deux par personne dans une liste intégrée de 197 pays (tous les membres de l'ONU plus le Vatican, la Palestine, Taïwan et le Kosovo). Les drapeaux sont dessinés par l'application elle-même.
 - **Conçu pour les grands arbres.** Seules les cartes visibles sont dessinées, les miniatures sont chargées à la demande (lazy loading), et la disposition n'est recalculée que lorsque la structure change. Testé avec des arbres de plusieurs milliers de personnes.
 - **Sauvegarde automatique.** Une fois que l'arbre est associé à un fichier, chaque modification est enregistrée automatiquement un instant après que vous avez arrêté de saisir. Pour un nouvel arbre, utilisez d'abord **Enregistrer sous…** (*Сохранить как…*). L'application vous prévient aussi avant la fermeture si quelque chose n'a pas pu être enregistré.
 - **Ouverture par double-clic.** Dans le menu **Fichier** (*Файл*), vous pouvez associer les fichiers `.famtree` à l'application.
@@ -83,7 +83,6 @@ Améliorations prévues, sans ordre particulier :
 - [ ] **Un véritable installateur**, à la place d'un simple `.exe` issu d'Actions, publié dans Releases.
 - [ ] **Traduction de l'application** dans d'autres langues.
 - [ ] **Traduction de ce README** dans d'autres langues.
-- [ ] **Davantage de nationalités** dans la liste des pays.
 - [ ] **Correction des bugs de disposition** : il arrive que des personnes se retrouvent au mauvais endroit sur la carte.
 
 ## Compiler depuis les sources
