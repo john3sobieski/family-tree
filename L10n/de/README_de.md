@@ -28,7 +28,7 @@ Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bear
 
 ## Installation
 
-Die App läuft vorerst nur unter Windows 10 und wird von GitHub Actions aus dem Quellcode gebaut. Du brauchst also weder Rust noch andere Werkzeuge auf deinem Rechner. Du brauchst allerdings ein GitHub-Konto.
+Die App läuft unter Windows 10 und Windows 11 (dieselbe exe) und wird von GitHub Actions aus dem Quellcode gebaut. Du brauchst also weder Rust noch andere Werkzeuge auf deinem Rechner. Du brauchst allerdings ein GitHub-Konto.
 
 1. Erstelle einen **Fork** des [Repositorys](https://github.com/john3sobieski/family-tree) (oder nutze deine eigene Kopie).
 2. Öffne in deinem Fork den Tab **Actions**. Falls GitHub danach fragt, aktiviere die Workflows für den Fork.
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Die Übersetzungen der Oberfläche (außer Russisch) wurden noch nicht von Muttersprachlern geprüft. Korrekturen sind über Issues willkommen.
 - Datumsangaben werden unabhängig von der Sprache immer als `TT.MM.JJJJ` angezeigt.
-- Nur Windows 10.
 - Noch kein Rückgängig und kein Export nach PNG/PDF.
 - Der Import vieler Fotos auf einmal kann das Fenster kurz einfrieren lassen.
 - HEIC-Fotos werden nicht unterstützt (JPEG, PNG, WebP und BMP schon).

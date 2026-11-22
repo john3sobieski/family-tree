@@ -28,7 +28,7 @@ Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüst�
 
 ## Kurulum
 
-Uygulama şimdilik yalnızca Windows 10'da çalışır ve GitHub Actions tarafından kaynak koddan derlenir; bu yüzden makinenizde Rust veya başka bir araca ihtiyacınız yoktur. Ancak bir GitHub hesabına ihtiyacınız var.
+Uygulama Windows 10 ve Windows 11'de (aynı exe) çalışır ve GitHub Actions tarafından kaynak koddan derlenir; bu yüzden makinenizde Rust veya başka bir araca ihtiyacınız yoktur. Ancak bir GitHub hesabına ihtiyacınız var.
 
 1. [Depoyu](https://github.com/john3sobieski/family-tree) **Fork** edin (veya kendi kopyanızı kullanın).
 2. Fork'unuzda **Actions** sekmesini açın. GitHub isterse, fork için workflow'ları etkinleştirin.
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Arayüz çevirileri (Rusça dışında) henüz ana dili konuşanlar tarafından gözden geçirilmedi. Düzeltmeler issue üzerinden memnuniyetle karşılanır.
 - Tarihler dilden bağımsız olarak her zaman `GG.AA.YYYY` biçiminde gösterilir.
-- Yalnızca Windows 10.
 - Henüz geri alma ve PNG/PDF dışa aktarma yok.
 - Çok sayıda fotoğrafı bir anda içe aktarmak pencereyi kısa süreliğine dondurabilir.
 - HEIC fotoğraflar desteklenmez (JPEG, PNG, WebP ve BMP desteklenir).

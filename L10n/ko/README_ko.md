@@ -28,7 +28,7 @@
 
 ## 설치
 
-앱은 현재 Windows 10 전용이며 GitHub Actions가 소스에서 빌드하므로, 컴퓨터에 Rust나 다른 도구를 설치할 필요가 없습니다. 단, GitHub 계정은 필요합니다.
+앱은 Windows 10과 Windows 11에서 같은 exe로 동작하며 GitHub Actions가 소스에서 빌드하므로, 컴퓨터에 Rust나 다른 도구를 설치할 필요가 없습니다. 단, GitHub 계정은 필요합니다.
 
 1. [저장소](https://github.com/john3sobieski/family-tree)를 **Fork**합니다(또는 본인의 사본을 사용합니다).
 2. 포크에서 **Actions** 탭을 엽니다. GitHub에서 요청하면 포크의 워크플로를 활성화합니다.
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - 러시아어를 제외한 인터페이스 번역은 아직 원어민의 검수를 받지 않았습니다. 수정 제안은 이슈로 환영합니다.
 - 날짜는 언어와 관계없이 항상 `DD.MM.YYYY` 형식으로 표시됩니다.
-- Windows 10 전용입니다.
 - 실행 취소와 PNG/PDF 내보내기는 아직 없습니다.
 - 많은 사진을 한꺼번에 가져오면 창이 잠시 멈출 수 있습니다.
 - HEIC 사진은 지원되지 않습니다(JPEG, PNG, WebP, BMP는 지원).

@@ -35,10 +35,11 @@ mod imp {
     /// Привязана ли расширение к текущему exe.
     pub fn is_registered() -> bool {
         let Ok(exe) = std::env::current_exe() else { return false };
-        let want = format!("\"{}\" \"%1\"", exe.display());
+        // Windows paths are case-insensitive (an installer may write another case).
+        let want = format!("\"{}\" \"%1\"", exe.display()).to_lowercase();
         let cmd = format!(r"{PROG_KEY}\shell\open\command");
         match reg(&["query", &cmd, "/ve"]) {
-            Ok(s) => s.contains(&want),
+            Ok(s) => s.to_lowercase().contains(&want),
             Err(_) => false,
         }
     }
@@ -47,6 +48,8 @@ mod imp {
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
         let exe = exe.display().to_string();
         set_default(EXT_KEY, PROG_ID)?;
+        // Lists the app in "Open with" and Default apps (Windows 10 and 11).
+        reg(&["add", &format!(r"{EXT_KEY}\OpenWithProgids"), "/v", PROG_ID, "/t", "REG_NONE", "/f"])?;
         set_default(PROG_KEY, crate::i18n::tr("Семейное дерево (.famtree)"))?;
         set_default(&format!(r"{PROG_KEY}\DefaultIcon"), &format!("\"{exe}\",0"))?;
         set_default(

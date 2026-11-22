@@ -28,7 +28,7 @@ Um aplicativo de desktop para Windows para montar, editar e navegar pela sua ár
 
 ## Instalação
 
-Por enquanto o aplicativo funciona apenas no Windows 10 e é compilado a partir do código-fonte pelo GitHub Actions, então você não precisa de Rust nem de nenhuma outra ferramenta na sua máquina. Mas precisa de uma conta no GitHub.
+O aplicativo funciona no Windows 10 e no Windows 11 (o mesmo exe) e é compilado a partir do código-fonte pelo GitHub Actions, então você não precisa de Rust nem de nenhuma outra ferramenta na sua máquina. Mas precisa de uma conta no GitHub.
 
 1. Faça um **fork** do [repositório](https://github.com/john3sobieski/family-tree) (ou use a sua própria cópia).
 2. No seu fork, abra a aba **Actions**. Se o GitHub pedir, habilite os workflows do fork.
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - As traduções da interface (exceto o russo) ainda não foram revisadas por falantes nativos. Correções são bem-vindas por meio de issues.
 - As datas são sempre exibidas como `DD.MM.AAAA`, em qualquer idioma.
-- Somente Windows 10.
 - Ainda não há desfazer nem exportação para PNG/PDF.
 - Importar muitas fotos de uma vez pode travar a janela por um instante.
 - Fotos HEIC não são compatíveis (JPEG, PNG, WebP e BMP são).

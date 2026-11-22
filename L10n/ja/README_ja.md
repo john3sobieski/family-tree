@@ -28,7 +28,7 @@
 
 ## インストール
 
-現時点では Windows 10 専用で、GitHub Actions がソースからビルドするため、お使いの PC に Rust などのツールは不要です。ただし GitHub アカウントが必要です。
+Windows 10 と Windows 11 の両方で同じ exe が動作し、GitHub Actions がソースからビルドするため、お使いの PC に Rust などのツールは不要です。ただし GitHub アカウントが必要です。
 
 1. [リポジトリ](https://github.com/john3sobieski/family-tree)を **Fork** します（または自分のコピーを使います）。
 2. フォークで **Actions** タブを開きます。GitHub から求められたら、フォークでワークフローを有効にします。
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - ロシア語以外のインターフェース翻訳は、まだネイティブスピーカーによる確認を受けていません。修正はイシューで歓迎します。
 - 日付は言語に関係なく、常に `DD.MM.YYYY` 形式で表示されます。
-- Windows 10 のみ対応しています。
 - 元に戻す機能と、PNG/PDF へのエクスポートはまだありません。
 - 大量の写真を一度にインポートすると、ウィンドウが一瞬固まることがあります。
 - HEIC 写真は非対応です（JPEG、PNG、WebP、BMP には対応）。

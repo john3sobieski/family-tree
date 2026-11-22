@@ -28,7 +28,7 @@ Une application de bureau pour Windows destinée à construire, modifier et parc
 
 ## Installation
 
-L'application ne fonctionne pour l'instant que sous Windows 10 et est compilée depuis les sources par GitHub Actions : vous n'avez donc besoin ni de Rust ni d'aucun autre outil sur votre machine. En revanche, il vous faut un compte GitHub.
+L'application fonctionne sous Windows 10 et Windows 11 (le même exe) et est compilée depuis les sources par GitHub Actions : vous n'avez donc besoin ni de Rust ni d'aucun autre outil sur votre machine. En revanche, il vous faut un compte GitHub.
 
 1. Faites un **fork** du [dépôt](https://github.com/john3sobieski/family-tree) (ou utilisez votre propre copie).
 2. Dans votre fork, ouvrez l'onglet **Actions**. Si GitHub vous le demande, activez les workflows pour le fork.
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Les traductions de l'interface (hors russe) n'ont pas encore été relues par des locuteurs natifs. Les corrections sont les bienvenues via les issues.
 - Les dates s'affichent toujours au format `JJ.MM.AAAA`, quelle que soit la langue.
-- Windows 10 uniquement.
 - Pas encore d'annulation ni d'export en PNG/PDF.
 - L'importation d'un grand lot de photos d'un coup peut figer la fenêtre un instant.
 - Les photos HEIC ne sont pas prises en charge (JPEG, PNG, WebP et BMP le sont).

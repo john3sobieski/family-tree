@@ -97,5 +97,7 @@ pub fn window_border(ctx: &egui::Context) {
         return;
     }
     let painter = ctx.layer_painter(egui::LayerId::new(egui::Order::Foreground, Id::new("window-border")));
-    painter.rect_stroke(ctx.screen_rect(), 0.0_f32, Stroke::new(1.0_f32, theme::BORDER_HI));
+    // Windows 11 rounds the window corners by 8 px; match them.
+    let radius = if crate::platform::corners_rounded() { 8.0 / ctx.pixels_per_point() } else { 0.0 };
+    painter.rect_stroke(ctx.screen_rect(), radius, Stroke::new(1.0_f32, theme::BORDER_HI));
 }

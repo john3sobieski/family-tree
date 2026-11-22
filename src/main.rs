@@ -19,6 +19,7 @@ mod media;
 #[allow(dead_code)]
 mod model;
 mod person_window;
+mod platform;
 mod search;
 mod theme;
 mod view;
@@ -50,6 +51,7 @@ fn main() -> eframe::Result {
         "Семейное дерево",
         options,
         Box::new(move |cc| {
+            platform::init_window(cc);
             theme::apply(&cc.egui_ctx);
             Ok(Box::new(app::FamTreeApp::new(path)))
         }),

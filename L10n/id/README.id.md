@@ -28,7 +28,7 @@ Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon kel
 
 ## Instalasi
 
-Untuk saat ini aplikasi hanya untuk Windows 10 dan dibangun dari kode sumber oleh GitHub Actions, jadi Anda tidak memerlukan Rust atau alat lain di komputer Anda. Anda memerlukan akun GitHub.
+Aplikasi berjalan di Windows 10 dan Windows 11 (exe yang sama) dan dibangun dari kode sumber oleh GitHub Actions, jadi Anda tidak memerlukan Rust atau alat lain di komputer Anda. Anda memerlukan akun GitHub.
 
 1. **Fork** [repositori](https://github.com/john3sobieski/family-tree) (atau gunakan salinan Anda sendiri).
 2. Di fork Anda, buka tab **Actions**. Jika GitHub memintanya, aktifkan workflow untuk fork tersebut.
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Terjemahan antarmuka (selain bahasa Rusia) belum diperiksa oleh penutur asli. Koreksi sangat disambut lewat issue.
 - Tanggal selalu ditampilkan dalam format `DD.MM.YYYY`, apa pun bahasanya.
-- Hanya Windows 10.
 - Belum ada undo dan ekspor ke PNG/PDF.
 - Mengimpor banyak foto sekaligus bisa membuat jendela membeku sesaat.
 - Foto HEIC tidak didukung (JPEG, PNG, WebP, dan BMP didukung).

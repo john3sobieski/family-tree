@@ -26,7 +26,7 @@ A desktop app for Windows for building, editing and browsing your family tree. E
 
 ## Installation
 
-The app is Windows 10 only for now and is built from source by GitHub Actions, so you don't need Rust or any other tools on your machine. You do need a GitHub account.
+The app runs on Windows 10 and Windows 11 (the same exe) and is built from source by GitHub Actions, so you don't need Rust or any other tools on your machine. You do need a GitHub account.
 
 1. **Fork** the [repository](https://github.com/john3sobieski/family-tree) (or use your own copy).
 2. In your fork, open the **Actions** tab. If GitHub asks, enable workflows for the fork.
@@ -68,7 +68,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Interface translations other than Russian have not been reviewed by native speakers yet. Corrections are welcome via issues.
 - Dates are always shown as `DD.MM.YYYY`, whatever the language.
-- Windows 10 only.
 - No undo and no export to PNG/PDF yet.
 - Importing a large batch of photos at once can freeze the window for a moment.
 - HEIC photos are not supported (JPEG, PNG, WebP and BMP are).

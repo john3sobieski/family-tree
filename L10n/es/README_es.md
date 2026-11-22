@@ -28,7 +28,7 @@ Una aplicación de escritorio para Windows para crear, editar y explorar tu árb
 
 ## Instalación
 
-Por ahora la aplicación solo funciona en Windows 10 y se compila desde el código fuente con GitHub Actions, así que no necesitas Rust ni ninguna otra herramienta en tu equipo. Eso sí, necesitas una cuenta de GitHub.
+La aplicación funciona en Windows 10 y Windows 11 (el mismo exe) y se compila desde el código fuente con GitHub Actions, así que no necesitas Rust ni ninguna otra herramienta en tu equipo. Eso sí, necesitas una cuenta de GitHub.
 
 1. Haz un **fork** del [repositorio](https://github.com/john3sobieski/family-tree) (o usa tu propia copia).
 2. En tu fork, abre la pestaña **Actions**. Si GitHub te lo pide, habilita los workflows del fork.
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Las traducciones de la interfaz (salvo el ruso) aún no las han revisado hablantes nativos. Las correcciones son bienvenidas a través de los issues.
 - Las fechas siempre se muestran como `DD.MM.AAAA`, sea cual sea el idioma.
-- Solo Windows 10.
 - Todavía no hay deshacer ni exportación a PNG/PDF.
 - Importar muchas fotos de golpe puede congelar la ventana un momento.
 - Las fotos HEIC no son compatibles (JPEG, PNG, WebP y BMP sí lo son).

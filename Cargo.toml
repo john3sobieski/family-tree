@@ -15,6 +15,9 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp"] }
 sha2 = "0.10"
 
+[target.'cfg(windows)'.dependencies]
+raw-window-handle = "0.6"
+
 [profile.release]
 opt-level = 3
 lto = true

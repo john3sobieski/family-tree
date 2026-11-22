@@ -28,7 +28,7 @@
 
 ## 安装
 
-目前应用仅支持 Windows 10，并由 GitHub Actions 从源码构建，因此你的电脑上不需要安装 Rust 或其他工具。但你需要一个 GitHub 账号。
+应用在 Windows 10 和 Windows 11 上使用同一个 exe 运行，并由 GitHub Actions 从源码构建，因此你的电脑上不需要安装 Rust 或其他工具。但你需要一个 GitHub 账号。
 
 1. **Fork** [仓库](https://github.com/john3sobieski/family-tree)（或使用你自己的副本）。
 2. 在你的 fork 中打开 **Actions** 标签页。如果 GitHub 提示，请为该 fork 启用工作流。
@@ -70,7 +70,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - 除俄语外，界面翻译尚未经过母语者审校，欢迎通过 issue 提出修正。
 - 无论使用哪种语言，日期始终显示为 `DD.MM.YYYY` 格式。
-- 仅支持 Windows 10。
 - 暂无撤销功能，也不支持导出为 PNG/PDF。
 - 一次性导入大量照片时，窗口可能会短暂卡住。
 - 不支持 HEIC 照片（支持 JPEG、PNG、WebP 和 BMP）。
