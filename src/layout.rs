@@ -9,6 +9,7 @@
 //! строится отдельным куском и ставится рядом с мамой: в ряду получается
 //! [братья/сёстры папы] [папа мама] [братья/сёстры мамы] — «песочные часы». Над каждой
 //! группой стоят её родители, группы не перемешиваются. См. `order_kids` и `attach_in_laws`.
+//! Ветка одного родителя корня никогда не заходит на сторону второго (`Branches`, `branch_range`).
 //! Результат — только координаты (центры карточек); отрисовка — в `ui`.
 
 use crate::model::{PersonId, Relation, Tree};
@@ -322,6 +323,87 @@ fn gen_of(gens: &HashMap<PersonId, i32>, id: PersonId) -> usize {
     gens.get(&id).copied().unwrap_or(0).max(0) as usize
 }
 
+/// Which family a person belongs to, seen from the root's two parents.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Zone {
+    /// Branch of `Branches::parents[i]`: that parent, their ancestors, siblings and in-laws.
+    Branch(usize),
+    /// Descendants of the parents (me, my siblings) and the families that married into them.
+    Centre,
+}
+
+/// Branches of the root's two parents. In every row one branch must stay entirely on one
+/// side of the other, so they never interleave (see `branch_range`).
+struct Branches {
+    parents: [PersonId; 2],
+    zone: HashMap<PersonId, Zone>,
+}
+
+impl Branches {
+    /// `None` unless the root has two parents on the map.
+    fn new(tree: &Tree, adj: &Adj) -> Option<Branches> {
+        let root = tree.root.filter(|r| tree.persons.contains_key(r))?;
+        let ps: Vec<PersonId> =
+            adj.parents(root).iter().copied().filter(|p| tree.persons.contains_key(p)).collect();
+        if ps.len() < 2 {
+            return None;
+        }
+        let parents = [ps[0], ps[1]];
+        // Centre: everyone below the two parents.
+        let mut centre: BTreeSet<PersonId> = BTreeSet::new();
+        let mut stack: Vec<PersonId> = Vec::new();
+        for p in parents {
+            stack.extend_from_slice(adj.children(p));
+        }
+        while let Some(c) = stack.pop() {
+            if parents.contains(&c) || !tree.persons.contains_key(&c) || !centre.insert(c) {
+                continue;
+            }
+            stack.extend_from_slice(adj.children(c));
+        }
+        // Everyone else joins the nearest source (breadth-first over all relations).
+        let mut zone: HashMap<PersonId, Zone> = HashMap::new();
+        let mut queue: VecDeque<PersonId> = VecDeque::new();
+        for (i, &p) in parents.iter().enumerate() {
+            zone.insert(p, Zone::Branch(i));
+            queue.push_back(p);
+        }
+        for &c in &centre {
+            zone.insert(c, Zone::Centre);
+            queue.push_back(c);
+        }
+        while let Some(cur) = queue.pop_front() {
+            let z = zone[&cur];
+            let around = adj
+                .parents(cur)
+                .iter()
+                .chain(adj.children(cur).iter())
+                .chain(adj.partners(cur).iter());
+            for &n in around {
+                if tree.persons.contains_key(&n) && !zone.contains_key(&n) {
+                    zone.insert(n, z);
+                    queue.push_back(n);
+                }
+            }
+        }
+        Some(Branches { parents, zone })
+    }
+
+    fn zone_of(&self, id: PersonId) -> Option<Zone> {
+        self.zone.get(&id).copied()
+    }
+
+    /// Does branch `b` stand left of the other one? `None` while neither parent is placed.
+    fn is_left(&self, b: usize, placed: &HashMap<PersonId, Pt>) -> Option<bool> {
+        match (placed.get(&self.parents[b]), placed.get(&self.parents[1 - b])) {
+            (Some(m), Some(o)) => Some(m.x < o.x),
+            (Some(_), None) => Some(true),
+            (None, Some(_)) => Some(false),
+            (None, None) => None,
+        }
+    }
+}
+
 /// С какой стороны ряда братьев/сестёр стоит человек.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum End {
@@ -367,6 +449,7 @@ struct Ctx<'a> {
     gens: &'a HashMap<PersonId, i32>,
     root: Option<PersonId>,
     hang_max: usize,
+    branches: Option<Branches>,
 }
 
 fn ghost_node(cfg: &LayoutConfig, id: PersonId) -> BuildNode {
@@ -655,6 +738,21 @@ fn right_dx(piece: &Out, out: &Out, cfg: &LayoutConfig) -> f32 {
     (max_x + cfg.card_w + cfg.h_gap * 3.0) - min_x
 }
 
+/// Shift of a piece to the left of everything already placed.
+fn left_dx(piece: &Out, out: &Out, cfg: &LayoutConfig) -> f32 {
+    let Some(max_x) = piece.nodes.iter().map(|n| n.pos.x).reduce(f32::max) else { return 0.0 };
+    let Some(min_x) = out.nodes.iter().map(|n| n.pos.x).reduce(f32::min) else { return 0.0 };
+    (min_x - cfg.card_w - cfg.h_gap * 3.0) - max_x
+}
+
+fn edge_dx(piece: &Out, out: &Out, left: bool, cfg: &LayoutConfig) -> f32 {
+    if left {
+        left_dx(piece, out, cfg)
+    } else {
+        right_dx(piece, out, cfg)
+    }
+}
+
 fn conflicts(piece: &Out, dx: f32, occ: &HashMap<i64, Vec<(f32, f32)>>, cfg: &LayoutConfig) -> bool {
     let half = cfg.card_w / 2.0 + cfg.h_gap / 2.0;
     piece.nodes.iter().any(|n| {
@@ -667,21 +765,31 @@ fn conflicts(piece: &Out, dx: f32, occ: &HashMap<i64, Vec<(f32, f32)>>, cfg: &La
 
 /// Ближайший к `desired` сдвиг без наложений. `prefer` — куда двигать в первую очередь:
 /// `1.0` вправо, `-1.0` влево (от родственника-якоря — прочь, а не сквозь соседей).
+/// `range` — допустимые сдвиги `(min, max)`; за них поиск не выходит.
 fn free_dx(
     piece: &Out,
     desired: f32,
     prefer: f32,
+    range: (f32, f32),
     occ: &HashMap<i64, Vec<(f32, f32)>>,
     cfg: &LayoutConfig,
 ) -> Option<f32> {
-    if !conflicts(piece, desired, occ, cfg) {
-        return Some(desired);
+    let (lo, hi) = range;
+    if lo > hi {
+        return None;
+    }
+    let start = desired.clamp(lo, hi);
+    if !conflicts(piece, start, occ, cfg) {
+        return Some(start);
     }
     let step = cfg.card_w / 2.0;
     let dirs = if prefer >= 0.0 { [1.0_f32, -1.0] } else { [-1.0_f32, 1.0] };
     for dir in dirs {
         for k in 1..=800 {
-            let d = desired + dir * step * k as f32;
+            let d = start + dir * step * k as f32;
+            if d < lo || d > hi {
+                break;
+            }
             if !conflicts(piece, d, occ, cfg) {
                 return Some(d);
             }
@@ -759,6 +867,34 @@ impl Acc {
     }
 }
 
+/// Allowed shifts `(left, min_dx, max_dx)` for the in-law piece of `x`: in every row its people
+/// must stay on their branch's side of the other branch. `None` — `x` is not in a branch.
+fn branch_range(cx: &Ctx, x: PersonId, piece: &Out, acc: &Acc) -> Option<(bool, f32, f32)> {
+    let br = cx.branches.as_ref()?;
+    let Some(Zone::Branch(b)) = br.zone_of(x) else { return None };
+    let left = br.is_left(b, &acc.placed)?;
+    // Per row: the placed person of the other branch nearest to the side we must not cross.
+    let mut limit: HashMap<i64, f32> = HashMap::new();
+    for n in &acc.out.nodes {
+        if br.zone_of(n.id) == Some(Zone::Branch(1 - b)) {
+            let e = limit.entry(row_key(n.pos.y)).or_insert(n.pos.x);
+            let v = *e;
+            *e = if left { v.min(n.pos.x) } else { v.max(n.pos.x) };
+        }
+    }
+    let (mut lo, mut hi) = (f32::NEG_INFINITY, f32::INFINITY);
+    for n in &piece.nodes {
+        if let Some(&lim) = limit.get(&row_key(n.pos.y)) {
+            if left {
+                hi = hi.min(lim - n.pos.x);
+            } else {
+                lo = lo.max(lim - n.pos.x);
+            }
+        }
+    }
+    Some((left, lo, hi))
+}
+
 /// С какого верхнего предка строить семью родителей `x` (если их ещё нет на схеме).
 fn next_in_law_top(cx: &Ctx, x: PersonId, visited: &HashSet<PersonId>) -> Option<PersonId> {
     for &p in cx.adj.parents(x) {
@@ -787,13 +923,17 @@ fn attach_in_laws(cx: &Ctx, visited: &mut HashSet<PersonId>, acc: &mut Acc) {
             let node = build(cx, top, visited, Some(x), side.opposite());
             let mut piece = new_out();
             place(&node, 0.0, cx.cfg, cx.gens, &mut piece);
+            // Branch of a root's parent: never cross into the other branch; else go past everything.
+            let range = branch_range(cx, x, &piece, acc);
+            let (lo, hi) = range.map_or((f32::NEG_INFINITY, f32::INFINITY), |(_, lo, hi)| (lo, hi));
+            let far_left = matches!(range, Some((true, _, _)));
             let dx = match piece.anchor {
                 Some(a) => {
                     let prefer = if side == End::Right { 1.0 } else { -1.0 };
-                    free_dx(&piece, xp.x - a.x, prefer, &acc.occ, cx.cfg)
-                        .unwrap_or_else(|| right_dx(&piece, &acc.out, cx.cfg))
+                    free_dx(&piece, xp.x - a.x, prefer, (lo, hi), &acc.occ, cx.cfg)
+                        .unwrap_or_else(|| edge_dx(&piece, &acc.out, far_left, cx.cfg))
                 }
-                None => right_dx(&piece, &acc.out, cx.cfg),
+                None => edge_dx(&piece, &acc.out, far_left, cx.cfg),
             };
             acc.add(piece, dx, cx.cfg);
         }
@@ -1067,6 +1207,7 @@ fn compute_with(
         gens,
         root: tree.root.filter(|r| tree.persons.contains_key(r)),
         hang_max,
+        branches: Branches::new(tree, adj),
     };
     let mut visited: HashSet<PersonId> = HashSet::new();
     let mut acc = Acc::new();
@@ -1825,6 +1966,111 @@ mod tests {
             for &(q, d) in &tops[i + 1..] {
                 assert_eq!(x(p) < x(q), x(c) < x(d), "порядок верхних пар = порядок их детей");
             }
+        }
+    }
+
+    /// In every row everything in `left` must stand left of everything in `right`.
+    fn assert_sides(l: &Layout, left: &[PersonId], right: &[PersonId]) {
+        let mut rows: BTreeMap<i64, (f32, f32)> = BTreeMap::new();
+        for id in left {
+            let p = l.pos_of(*id).unwrap();
+            let e = rows.entry(row_key(p.y)).or_insert((f32::MIN, f32::MAX));
+            e.0 = e.0.max(p.x);
+        }
+        for id in right {
+            let p = l.pos_of(*id).unwrap();
+            let e = rows.entry(row_key(p.y)).or_insert((f32::MIN, f32::MAX));
+            e.1 = e.1.min(p.x);
+        }
+        for (row, (lmax, rmin)) in rows {
+            if lmax > f32::MIN && rmin < f32::MAX {
+                assert!(lmax < rmin, "branches interleave in row {row}: {lmax} vs {rmin}");
+            }
+        }
+    }
+
+    #[test]
+    fn parental_branches_never_interleave() {
+        // Dad's mother and uncle's wife married in with big families; mom has siblings with kids.
+        let cfg = plain();
+        let mut t = Tree::new();
+        let mut pa: Vec<PersonId> = Vec::new(); // dad's branch
+        let mut ma: Vec<PersonId> = Vec::new(); // mom's branch
+        let gf = add(&mut t, "Дед по папе", Some(1930));
+        let gm = add(&mut t, "Бабка по папе", Some(1932));
+        t.add_partners(gf, gm).unwrap();
+        let dad = add(&mut t, "Папа", Some(1958));
+        let uncle = add(&mut t, "Дядя", Some(1960));
+        for k in [dad, uncle] {
+            t.add_parent_child(gf, k).unwrap();
+            t.add_parent_child(gm, k).unwrap();
+        }
+        pa.extend([gf, gm, dad, uncle]);
+        // Family of dad's mother: parents and a sister with two kids.
+        let (gp1, gp2) = pair(&mut t, 1905);
+        let gms = add(&mut t, "Сестра бабки", Some(1935));
+        for c in [gm, gms] {
+            for p in [gp1, gp2] {
+                t.add_parent_child(p, c).unwrap();
+            }
+        }
+        pa.extend([gp1, gp2, gms]);
+        for i in 0..2 {
+            let c = add(&mut t, "Двоюродный", Some(1962 + 2 * i));
+            t.add_parent_child(gms, c).unwrap();
+            pa.push(c);
+        }
+        // Uncle's wife: parents and two siblings.
+        let wife = add(&mut t, "Жена дяди", Some(1962));
+        t.add_partners(uncle, wife).unwrap();
+        let (wp1, wp2) = pair(&mut t, 1935);
+        pa.extend([wife, wp1, wp2]);
+        for p in [wp1, wp2] {
+            t.add_parent_child(p, wife).unwrap();
+        }
+        for i in 0..2 {
+            let s = add(&mut t, "Брат жены", Some(1960 + 3 * i));
+            for p in [wp1, wp2] {
+                t.add_parent_child(p, s).unwrap();
+            }
+            pa.push(s);
+        }
+        // Mom's side: parents and two siblings with two kids each.
+        let (mp1, mp2) = pair(&mut t, 1932);
+        let mom = add(&mut t, "Мама", Some(1960));
+        t.add_partners(dad, mom).unwrap();
+        ma.extend([mp1, mp2, mom]);
+        for p in [mp1, mp2] {
+            t.add_parent_child(p, mom).unwrap();
+        }
+        for i in 0..2 {
+            let s = add(&mut t, "Брат мамы", Some(1958 + 5 * i));
+            for p in [mp1, mp2] {
+                t.add_parent_child(p, s).unwrap();
+            }
+            ma.push(s);
+            for j in 0..2 {
+                let c = add(&mut t, "Двоюродный", Some(1985 + j));
+                t.add_parent_child(s, c).unwrap();
+                ma.push(c);
+            }
+        }
+        let me = add(&mut t, "Я", Some(1985));
+        let sis = add(&mut t, "Сестра", Some(1988));
+        for k in [me, sis] {
+            t.add_parent_child(dad, k).unwrap();
+            t.add_parent_child(mom, k).unwrap();
+        }
+        t.root = Some(me);
+
+        let l = compute(&t, &cfg);
+        assert_eq!(l.nodes.len(), t.persons.len());
+        assert!(l.unplaced.is_empty());
+        assert_no_overlap(&l, &cfg);
+        if l.pos_of(dad).unwrap().x < l.pos_of(mom).unwrap().x {
+            assert_sides(&l, &pa, &ma);
+        } else {
+            assert_sides(&l, &ma, &pa);
         }
     }
 
