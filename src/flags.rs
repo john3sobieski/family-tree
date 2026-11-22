@@ -1,6 +1,7 @@
 //! All countries of the world and their flags. Flags are drawn in code (no images), emblems are simplified.
 
 use eframe::egui::{pos2, Color32, Mesh, Painter, Pos2, Rect, Sense, Shape, Stroke, Ui, Vec2};
+use crate::i18n::Lang;
 use std::f32::consts::{FRAC_PI_2, PI, TAU};
 
 /// Сколько национальностей может быть у одного человека.
@@ -212,9 +213,51 @@ pub const COUNTRIES: &[(&str, &str)] = &[
     ("JP", "Япония"),
 ];
 
-/// Название страны по коду.
+/// Country name in the current interface language.
 pub fn name(code: &str) -> Option<&'static str> {
-    COUNTRIES.iter().find(|(c, _)| *c == code).map(|(_, n)| *n)
+    name_in(crate::i18n::current(), code)
+}
+
+pub fn name_in(lang: Lang, code: &str) -> Option<&'static str> {
+    match lang.column() {
+        None => COUNTRIES.iter().find(|(c, _)| *c == code).map(|(_, n)| *n),
+        Some(col) => crate::countries::NAMES.iter().find(|(c, _)| *c == code).map(|(_, n)| n[col]),
+    }
+}
+
+/// Lowercase and strip diacritics so that "Égypte" sorts under E and "Łotwa" under L.
+fn fold(s: &str) -> String {
+    s.chars()
+        .flat_map(|c| c.to_lowercase())
+        .map(|c| match c {
+            'à' | 'á' | 'â' | 'ã' | 'ä' | 'å' | 'ą' => 'a',
+            'ç' | 'ć' | 'č' => 'c',
+            'è' | 'é' | 'ê' | 'ë' | 'ę' | 'ě' => 'e',
+            'ì' | 'í' | 'î' | 'ï' => 'i',
+            'ł' => 'l',
+            'ñ' | 'ń' => 'n',
+            'ò' | 'ó' | 'ô' | 'õ' | 'ö' | 'ø' => 'o',
+            'ř' => 'r',
+            'ś' | 'š' => 's',
+            'ù' | 'ú' | 'û' | 'ü' | 'ů' => 'u',
+            'ý' => 'y',
+            'ź' | 'ż' | 'ž' => 'z',
+            other => other,
+        })
+        .collect()
+}
+
+/// All countries as (code, name in `lang`), sorted for that language.
+/// Chinese has no alphabet order here, so it follows the English names.
+pub fn sorted(lang: Lang) -> Vec<(&'static str, &'static str)> {
+    let mut v: Vec<(&'static str, &'static str)> =
+        COUNTRIES.iter().map(|(c, ru)| (*c, name_in(lang, c).unwrap_or(*ru))).collect();
+    match lang {
+        Lang::Ru => {}
+        Lang::Zh => v.sort_by_cached_key(|(c, _)| fold(name_in(Lang::En, c).unwrap_or(""))),
+        _ => v.sort_by_cached_key(|(_, n)| fold(n)),
+    }
+    v
 }
 
 /// Маленький флаг для интерфейса (редактор, окно человека).
@@ -1836,6 +1879,36 @@ mod tests {
         for (code, _) in COUNTRIES {
             assert!(src.contains(&format!("\"{code}\" =>")), "no flag drawn for {code}");
         }
+    }
+
+    #[test]
+    fn translated_names_cover_every_country() {
+        assert_eq!(crate::countries::NAMES.len(), COUNTRIES.len());
+        for ((code, _), (code2, names)) in COUNTRIES.iter().zip(crate::countries::NAMES) {
+            assert_eq!(code, code2, "order differs from COUNTRIES");
+            assert!(names.iter().all(|n| !n.trim().is_empty()), "empty name for {code}");
+        }
+    }
+
+    #[test]
+    fn names_are_unique_in_every_language() {
+        for lang in Lang::ALL {
+            let mut seen = HashSet::new();
+            for (code, _) in COUNTRIES {
+                let n = name_in(lang, code).unwrap();
+                assert!(seen.insert(n), "{lang:?}: duplicate name {n}");
+            }
+        }
+    }
+
+    #[test]
+    fn sorting_ignores_diacritics() {
+        let pos = |lang: Lang, name: &str| sorted(lang).iter().position(|c| c.1 == name).unwrap();
+        assert!(pos(Lang::Fr, "Égypte") < pos(Lang::Fr, "Espagne"));
+        assert!(pos(Lang::Fr, "Équateur") < pos(Lang::Fr, "Érythrée"));
+        assert!(pos(Lang::De, "Ägypten") < pos(Lang::De, "Albanien"));
+        assert!(pos(Lang::Pl, "Łotwa") < pos(Lang::Pl, "Malta"));
+        assert_eq!(sorted(Lang::Zh).len(), COUNTRIES.len());
     }
 
     #[test]

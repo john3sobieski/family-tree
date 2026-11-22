@@ -51,7 +51,7 @@ impl Lang {
     }
 
     /// Column in `TABLE`; Russian is the key itself.
-    fn column(self) -> Option<usize> {
+    pub fn column(self) -> Option<usize> {
         match self {
             Lang::Ru => None,
             Lang::En => Some(0),

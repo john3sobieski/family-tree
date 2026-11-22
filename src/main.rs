@@ -6,6 +6,7 @@ mod assoc;
 mod chrome;
 #[allow(dead_code)]
 mod container;
+mod countries;
 mod demo;
 mod edit;
 mod flags;

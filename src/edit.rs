@@ -262,17 +262,22 @@ fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
                     ui.add(egui::TextEdit::singleline(&mut filter).hint_text(tr("Поиск…")));
                     ui.data_mut(|d| d.insert_temp(fid, filter.clone()));
                     let query = filter.trim().to_lowercase();
-                    for (code, name) in crate::flags::COUNTRIES {
-                        if list.iter().any(|c| c.as_str() == *code) {
+                    for (code, name) in crate::flags::sorted(crate::i18n::current()) {
+                        if list.iter().any(|c| c.as_str() == code) {
                             continue;
                         }
-                        if !query.is_empty() && !name.to_lowercase().contains(&query) {
+                        // Match the name in the current language or the English one.
+                        let english = crate::flags::name_in(crate::i18n::Lang::En, code).unwrap_or("");
+                        if !query.is_empty()
+                            && !name.to_lowercase().contains(&query)
+                            && !english.to_lowercase().contains(&query)
+                        {
                             continue;
                         }
                         ui.horizontal(|ui| {
                             crate::flags::icon(ui, code, 14.0);
-                            if ui.selectable_label(false, *name).clicked() {
-                                add = Some(*code);
+                            if ui.selectable_label(false, name).clicked() {
+                                add = Some(code);
                             }
                         });
                     }
