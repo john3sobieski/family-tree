@@ -71,7 +71,18 @@ pub fn apply(ctx: &egui::Context) {
     });
 }
 
-/// Segoe UI from Windows (Cyrillic, modern look); a CJK fallback font is added only for Chinese.
+/// Set once the language menu has been opened: its "中文" entry needs the CJK font in any language.
+static CJK_REQUESTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Loads the CJK font on demand (the file is ~19 MB, so not at every startup).
+pub fn ensure_cjk(ctx: &egui::Context, lang: crate::i18n::Lang) {
+    if !CJK_REQUESTED.swap(true, std::sync::atomic::Ordering::Relaxed) {
+        set_fonts(ctx, lang);
+        ctx.request_repaint();
+    }
+}
+
+/// Segoe UI from Windows (Cyrillic, modern look); a CJK fallback font is added for Chinese and on demand.
 pub fn set_fonts(ctx: &egui::Context, lang: crate::i18n::Lang) {
     let mut fonts = egui::FontDefinitions::default();
     if let Ok(bytes) = std::fs::read(r"C:\Windows\Fonts\segoeui.ttf") {
@@ -80,7 +91,7 @@ pub fn set_fonts(ctx: &egui::Context, lang: crate::i18n::Lang) {
             list.insert(0, "segoe".to_owned());
         }
     }
-    if lang == crate::i18n::Lang::Zh {
+    if lang == crate::i18n::Lang::Zh || CJK_REQUESTED.load(std::sync::atomic::Ordering::Relaxed) {
         for name in ["msyh.ttc", "msyh.ttf", "simsun.ttc", "simhei.ttf"] {
             if let Ok(bytes) = std::fs::read(format!(r"C:\Windows\Fonts\{name}")) {
                 fonts.font_data.insert("cjk".to_owned(), egui::FontData::from_owned(bytes));

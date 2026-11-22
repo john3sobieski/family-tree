@@ -395,6 +395,7 @@ impl eframe::App for FamTreeApp {
                     }
                 });
                 ui.menu_button(tr("Язык"), |ui| {
+                    theme::ensure_cjk(ctx, i18n::current());
                     for lang in Lang::ALL {
                         if ui.selectable_label(i18n::current() == lang, lang.native_name()).clicked() {
                             self.set_language(ctx, lang);
