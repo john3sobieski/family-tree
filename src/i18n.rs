@@ -146,12 +146,17 @@ fn years_text_for(lang: Lang, n: i32) -> String {
 
 // ---- language choice: saved in a small file, otherwise the system UI language ----
 
-fn settings_file() -> Option<PathBuf> {
+/// Folder for the app's small settings files (`language.txt`, `theme.txt`).
+pub fn settings_dir() -> Option<PathBuf> {
     let base = std::env::var_os("APPDATA")
         .or_else(|| std::env::var_os("XDG_CONFIG_HOME"))
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))?;
-    Some(base.join("FamTree").join("language.txt"))
+    Some(base.join("FamTree"))
+}
+
+fn settings_file() -> Option<PathBuf> {
+    Some(settings_dir()?.join("language.txt"))
 }
 
 pub fn save(lang: Lang) {
@@ -201,6 +206,8 @@ pub fn init() {
 const TABLE: &[(&str, [&str; 6])] = &[
     ("Семейное дерево", ["Family Tree", "家谱", "Árbol genealógico", "Arbre généalogique", "Stammbaum", "Drzewo genealogiczne"]),
     ("Новое дерево", ["New tree", "新家谱", "Árbol nuevo", "Nouvel arbre", "Neuer Stammbaum", "Nowe drzewo"]),
+    ("Светлая тема", ["Light theme", "浅色主题", "Tema claro", "Thème clair", "Helles Design", "Jasny motyw"]),
+    ("Тёмная тема", ["Dark theme", "深色主题", "Tema oscuro", "Thème sombre", "Dunkles Design", "Ciemny motyw"]),
     ("Язык", ["Language", "语言", "Idioma", "Langue", "Sprache", "Język"]),
     ("Не удалось открыть {path}: {err}", ["Could not open {path}: {err}", "无法打开 {path}：{err}", "No se pudo abrir {path}: {err}", "Impossible d’ouvrir {path} : {err}", "{path} konnte nicht geöffnet werden: {err}", "Nie udało się otworzyć {path}: {err}"]),
     ("Несохранённые изменения", ["Unsaved changes", "未保存的更改", "Cambios sin guardar", "Modifications non enregistrées", "Ungespeicherte Änderungen", "Niezapisane zmiany"]),

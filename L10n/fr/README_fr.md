@@ -25,6 +25,7 @@ Une application de bureau pour Windows destinée à construire, modifier et parc
 - **Sauvegarde automatique.** Une fois que l'arbre est associé à un fichier, chaque modification est enregistrée automatiquement un instant après que vous avez arrêté de saisir. Pour un nouvel arbre, utilisez d'abord **Enregistrer sous…**. L'application vous prévient aussi avant la fermeture si quelque chose n'a pas pu être enregistré.
 - **Langues de l'interface.** Русский, English, 中文, Español, Français, Deutsch et Polski. Changez de langue dans le menu **Langue** ; le choix est mémorisé. Au premier lancement, l'application suit la langue d'affichage de Windows et, à défaut, utilise l'anglais. Les noms des pays sont eux aussi traduits.
 - **Ouverture par double-clic.** Dans le menu **Fichier**, vous pouvez associer les fichiers `.famtree` à l'application.
+- **Thème sombre et clair.** Se change avec le bouton soleil/lune à droite de la barre d'état ; le choix est mémorisé.
 
 ## Installation
 

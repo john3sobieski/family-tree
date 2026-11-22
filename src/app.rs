@@ -433,7 +433,7 @@ impl eframe::App for FamTreeApp {
 
         egui::TopBottomPanel::bottom("status").exact_height(26.0).frame(theme::bar_frame(14.0, 3.0)).show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
-                let dim = |t: String| egui::RichText::new(t).small().color(theme::MUTED);
+                let dim = |t: String| egui::RichText::new(t).small().color(theme::p().muted);
                 match &self.path {
                     Some(p) => ui.label(dim(p.display().to_string())),
                     None => ui.label(dim(tr("Новое дерево").into())),
@@ -449,14 +449,19 @@ impl eframe::App for FamTreeApp {
                     ui.label(dim(trf("·  Выбран: {name}", &[("name", name.to_string())])));
                 }
                 if self.dirty {
-                    ui.label(egui::RichText::new(tr("●  не сохранено")).small().color(theme::TEXT));
+                    ui.label(egui::RichText::new(tr("●  не сохранено")).small().color(theme::p().text));
                     if self.path.is_none() {
                         ui.label(dim(tr("(автосохранение заработает после «Сохранить как…»)").into()));
                     }
                 }
                 if !self.status.is_empty() {
-                    ui.label(egui::RichText::new(&self.status).small().color(theme::DANGER));
+                    ui.label(egui::RichText::new(&self.status).small().color(theme::p().danger));
                 }
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if theme::mode_toggle(ui) {
+                        theme::set_dark(ctx, !theme::is_dark());
+                    }
+                });
             });
         });
 

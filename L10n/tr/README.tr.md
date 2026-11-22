@@ -25,6 +25,7 @@ Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüst�
 - **Otomatik kaydetme.** Ağacın bir dosyası olduktan sonra, yazmayı bıraktıktan kısa bir süre sonra her değişiklik otomatik olarak kaydedilir. Yeni bir ağaç için önce **Farklı kaydet…** (*Save as…*) seçeneğini kullanın. Bir şey kaydedilemediyse kapatmadan önce size sorulur.
 - **Arayüz dilleri.** Русский, English, 中文, Español, Français, Deutsch ve Polski. Dili **Language** menüsünden değiştirebilirsiniz; seçiminiz hatırlanır. İlk açılışta uygulama Windows görüntüleme dilini izler, bu dillerden biri değilse İngilizceyi kullanır. Ülke adları da çevrilir.
 - **Çift tıklayarak açma.** **Dosya** (*File*) menüsünden `.famtree` dosyalarını uygulamayla ilişkilendirebilirsiniz.
+- **Koyu ve açık tema.** Durum çubuğunun sağındaki güneş/ay düğmesiyle değiştirilir; seçim hatırlanır.
 
 ## Kurulum
 

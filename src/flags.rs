@@ -1846,7 +1846,7 @@ pub fn draw(painter: &Painter, r: Rect, code: &str, detail: bool) {
         }
         _ => fill(p, r, rgb(90, 90, 90)),
     }
-    painter.rect_stroke(r, 0.0, Stroke::new(1.0_f32, crate::theme::BORDER_HI));
+    painter.rect_stroke(r, 0.0, Stroke::new(1.0_f32, crate::theme::p().border_hi));
 }
 
 #[cfg(test)]

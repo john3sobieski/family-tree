@@ -25,6 +25,7 @@ Una aplicación de escritorio para Windows para crear, editar y explorar tu árb
 - **Guardado automático.** Cuando el árbol ya tiene un archivo, cada cambio se guarda automáticamente un instante después de que dejes de escribir. Para un árbol nuevo, usa primero **Guardar como…**. Además, se te avisa antes de cerrar si algo no se pudo guardar.
 - **Idiomas de la interfaz.** Русский, English, 中文, Español, Français, Deutsch y Polski. Cambia el idioma en el menú **Idioma**; la elección se recuerda. En el primer inicio, la aplicación sigue el idioma de visualización de Windows y, si no es uno de estos, usa inglés. Los nombres de los países también se traducen.
 - **Doble clic para abrir.** En el menú **Archivo** puedes asociar los archivos `.famtree` con la aplicación.
+- **Tema oscuro y claro.** Se cambia con el botón de sol/luna a la derecha de la barra de estado; la elección se recuerda.
 
 ## Instalación
 

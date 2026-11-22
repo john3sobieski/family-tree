@@ -23,6 +23,7 @@ A desktop app for Windows for building, editing and browsing your family tree. E
 - **Autosave.** Once the tree has a file, every change is saved automatically a moment after you stop typing. For a new tree, use **Save as…** first. You are also asked before closing if something could not be saved.
 - **Interface languages.** Русский, English, 中文, Español, Français, Deutsch and Polski. Use the **Language** menu to switch; the choice is remembered. On the first launch the app follows the Windows display language and falls back to English. Country names are translated as well.
 - **Double-click to open.** In the **File** menu you can associate `.famtree` files with the app.
+- **Dark and light theme.** Switch with the sun/moon button at the right end of the status bar; the choice is remembered.
 
 ## Installation
 

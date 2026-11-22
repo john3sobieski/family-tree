@@ -301,7 +301,7 @@ impl ViewState {
         let ctx = ui.ctx().clone();
         let card_bg = visuals.widgets.noninteractive.bg_fill;
         let card_stroke = visuals.widgets.noninteractive.bg_stroke;
-        let accent = crate::theme::ACCENT;
+        let accent = crate::theme::p().accent;
         let text_color = visuals.text_color();
         let ph_fg = visuals.widgets.noninteractive.bg_stroke.color;
         let ph_bg = visuals.faint_bg_color;
@@ -329,8 +329,8 @@ impl ViewState {
             let Some(person) = tree.persons.get(&n.id) else { continue };
 
             let strip_color = match person.gender {
-                Gender::Male => Some(crate::theme::GENDER_MALE),
-                Gender::Female => Some(crate::theme::GENDER_FEMALE),
+                Gender::Male => Some(crate::theme::p().gender_male),
+                Gender::Female => Some(crate::theme::p().gender_female),
                 Gender::Unknown => None,
             };
 

@@ -31,6 +31,7 @@ fn main() -> eframe::Result {
     // Двойной клик по .famtree передаёт путь первым аргументом.
     let path: Option<PathBuf> = std::env::args_os().nth(1).map(PathBuf::from);
     i18n::init();
+    theme::init();
 
     let mut viewport = egui::ViewportBuilder::default()
         .with_inner_size([1200.0, 800.0])

@@ -25,6 +25,7 @@ Um aplicativo de desktop para Windows para montar, editar e navegar pela sua ár
 - **Salvamento automático.** Quando a árvore já tem um arquivo, cada alteração é salva automaticamente um instante depois que você para de digitar. Para uma árvore nova, use **Salvar como…** (*Save as…*) primeiro. Você também é avisado antes de fechar se algo não pôde ser salvo.
 - **Idiomas da interface.** Русский, English, 中文, Español, Français, Deutsch e Polski. Troque o idioma no menu **Language**; a escolha é lembrada. Na primeira execução, o aplicativo segue o idioma de exibição do Windows e, se ele não estiver entre esses, usa inglês. Os nomes dos países também são traduzidos.
 - **Duplo clique para abrir.** No menu **Arquivo** (*File*) você pode associar os arquivos `.famtree` ao aplicativo.
+- **Tema escuro e claro.** Troque com o botão de sol/lua à direita da barra de status; a escolha é lembrada.
 
 ## Instalação
 

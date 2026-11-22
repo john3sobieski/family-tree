@@ -25,6 +25,7 @@ Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon kel
 - **Simpan otomatis.** Setelah pohon memiliki berkas, setiap perubahan disimpan otomatis sesaat setelah Anda berhenti mengetik. Untuk pohon baru, gunakan **Simpan sebagai…** (*Save as…*) terlebih dahulu. Anda juga akan ditanya sebelum menutup jika ada yang tidak berhasil disimpan.
 - **Bahasa antarmuka.** Русский, English, 中文, Español, Français, Deutsch, dan Polski. Ganti bahasa lewat menu **Language**; pilihan Anda diingat. Saat pertama kali dijalankan, aplikasi mengikuti bahasa tampilan Windows dan memakai bahasa Inggris jika bahasa tersebut tidak tersedia. Nama negara juga diterjemahkan.
 - **Klik ganda untuk membuka.** Di menu **Berkas** (*File*), Anda bisa mengaitkan berkas `.famtree` dengan aplikasi.
+- **Tema gelap dan terang.** Ganti dengan tombol matahari/bulan di sisi kanan bilah status; pilihan Anda diingat.
 
 ## Instalasi
 

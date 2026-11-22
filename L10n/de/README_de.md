@@ -25,6 +25,7 @@ Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bear
 - **Autosave.** Sobald der Baum eine Datei hat, wird jede Änderung kurz nach dem Aufhören mit dem Tippen automatisch gespeichert. Für einen neuen Baum nutze zuerst **Speichern unter…**. Vor dem Schließen wirst du außerdem gefragt, wenn etwas nicht gespeichert werden konnte.
 - **Oberflächensprachen.** Русский, English, 中文, Español, Français, Deutsch und Polski. Über das Menü **Sprache** wechselst du die Sprache; die Auswahl wird gespeichert. Beim ersten Start folgt die App der Windows-Anzeigesprache und verwendet sonst Englisch. Auch die Ländernamen werden übersetzt.
 - **Doppelklick zum Öffnen.** Im Menü **Datei** kannst du `.famtree`-Dateien mit der App verknüpfen.
+- **Dunkles und helles Design.** Umschalten mit der Sonne/Mond-Schaltfläche rechts in der Statusleiste; die Auswahl wird gespeichert.
 
 ## Installation
 
