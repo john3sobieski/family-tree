@@ -6,7 +6,7 @@
 
 가계도를 만들고, 편집하고, 둘러볼 수 있는 Windows 데스크톱 앱입니다. 사람, 관계, 모든 사진이 하나의 `.famtree` 파일에 담깁니다.
 
-> **상태:** 초기 개발 단계입니다. 아직 완성된 릴리스는 없으며, 현재는 GitHub Actions로 직접 빌드해야만 앱을 사용할 수 있습니다([설치](#설치) 참고).
+> **상태:** 초기 개발 단계입니다. 설치 프로그램은 [Releases](https://github.com/john3sobieski/family-tree/releases)에서 받을 수 있습니다([설치](#설치) 참고).
 
 ## 기능
 
@@ -28,21 +28,22 @@
 
 ## 설치
 
-앱은 Windows 10과 Windows 11에서 같은 exe로 동작하며 GitHub Actions가 소스에서 빌드하므로, 컴퓨터에 Rust나 다른 도구를 설치할 필요가 없습니다. 단, GitHub 계정은 필요합니다.
+앱은 Windows 10과 Windows 11에서 동작합니다. 두 버전 모두 같은 설치 프로그램과 같은 exe를 사용합니다.
 
-1. [저장소](https://github.com/john3sobieski/family-tree)를 **Fork**합니다(또는 본인의 사본을 사용합니다).
-2. 포크에서 **Actions** 탭을 엽니다. GitHub에서 요청하면 포크의 워크플로를 활성화합니다.
-3. **Build** 워크플로를 선택하고 **Run workflow**를 클릭한 뒤 끝날 때까지 기다립니다(약 2~3분). push할 때마다 자동으로도 실행됩니다.
-4. 완료된 실행을 열고 아래쪽 *Artifacts* 섹션에서 **`famtree-windows`** 아티팩트를 다운로드합니다.
-5. 압축을 풉니다. 안에 `famtree.exe`가 있습니다. 설치할 것은 없고, 바로 실행하면 됩니다.
+1. [Releases](https://github.com/john3sobieski/family-tree/releases) 페이지를 열고 **`FamTree-Setup-<버전>.exe`**를 다운로드합니다.
+2. 실행합니다. 현재 사용자에게만 설치되므로 관리자 권한이 필요 없습니다. 마법사에서 `.famtree` 파일을 FamTree로 열도록 연결하고 바탕 화면 바로 가기를 추가할 수 있습니다.
+3. 시작 메뉴에서 **FamTree**를 실행합니다.
 
 참고:
 
-- `.exe`가 서명되지 않았기 때문에 Windows에서 SmartScreen 경고가 표시될 수 있습니다. 직접 빌드한 파일을 신뢰한다면 *추가 정보 → 실행*을 선택하세요.
-- GitHub는 아티팩트를 제한된 기간(기본 90일) 동안만 보관하므로, `.exe`는 다른 곳에 따로 저장해 두세요.
-- `famtree.exe`를 옮겼다면, 연결이 exe의 위치를 가리키므로 **파일** 메뉴의 `.famtree` 연결 버튼을 다시 누르세요.
+- 설치 프로그램과 `.exe`가 서명되지 않았기 때문에 Windows에서 SmartScreen 경고가 표시될 수 있습니다. *추가 정보 → 실행*을 선택하세요.
+- 업데이트하려면 새 Setup을 이전 버전 위에 실행하세요. 가계도와 설정은 유지됩니다.
+- 제거는 *설정 → 앱*에서 합니다. `.famtree` 파일은 삭제되지 않습니다.
+- 포터블 exe를 사용하다가 옮겼다면 **파일** 메뉴의 `.famtree` 연결 버튼을 다시 누르세요.
 
-제대로 된 설치 프로그램이 나오면 **Releases**에 게시되고, 이 섹션은 교체될 예정입니다.
+### 직접 빌드하기
+
+도구를 설치하지 않고도 GitHub Actions에서 설치 프로그램을 받을 수 있습니다(GitHub 계정 필요). [저장소](https://github.com/john3sobieski/family-tree)를 Fork하고 **Actions → Build → Run workflow**를 실행한 뒤, 완료된 실행에서 **`famtree-setup`** 아티팩트를 다운로드합니다(기본 90일간 보관).
 
 ## 빠른 시작
 
@@ -81,7 +82,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 계획 중인 개선 사항입니다(순서 무관).
 
-- [ ] Actions에서 받는 `.exe` 대신 Releases에 게시되는 **제대로 된 설치 프로그램**.
 - [ ] **레이아웃 버그 수정**: 가끔 사람이 지도에서 잘못된 위치에 놓입니다.
 
 ## 소스에서 빌드하기

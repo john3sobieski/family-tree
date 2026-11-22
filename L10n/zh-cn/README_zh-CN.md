@@ -6,7 +6,7 @@
 
 一款用于创建、编辑和浏览家谱的 Windows 桌面应用。所有内容都保存在单个 `.famtree` 文件中：人物、关系以及全部照片。
 
-> **状态：** 早期开发阶段。目前没有现成的发行版，只能通过 GitHub Actions 自行构建来获得应用（见[安装](#安装)）。
+> **状态：** 早期开发阶段。请在 [Releases](https://github.com/john3sobieski/family-tree/releases) 页面下载安装程序（见[安装](#安装)）。
 
 ## 功能
 
@@ -28,21 +28,22 @@
 
 ## 安装
 
-应用在 Windows 10 和 Windows 11 上使用同一个 exe 运行，并由 GitHub Actions 从源码构建，因此你的电脑上不需要安装 Rust 或其他工具。但你需要一个 GitHub 账号。
+应用可在 Windows 10 和 Windows 11 上运行，两者使用同一个安装程序和同一个 exe。
 
-1. **Fork** [仓库](https://github.com/john3sobieski/family-tree)（或使用你自己的副本）。
-2. 在你的 fork 中打开 **Actions** 标签页。如果 GitHub 提示，请为该 fork 启用工作流。
-3. 选择 **Build** 工作流，点击 **Run workflow**，等待其完成（约 2–3 分钟）。每次 push 时它也会自动运行。
-4. 打开已完成的运行记录，在底部的 *Artifacts* 区域下载 **`famtree-windows`** 产物。
-5. 解压。里面是 `famtree.exe`。无需安装，直接运行即可。
+1. 打开 [Releases](https://github.com/john3sobieski/family-tree/releases) 页面，下载 **`FamTree-Setup-<版本>.exe`**。
+2. 运行它。安装仅针对当前用户，不需要管理员权限。向导中可以选择用 FamTree 打开 `.famtree` 文件，以及添加桌面快捷方式。
+3. 从开始菜单启动 **FamTree**。
 
 注意事项：
 
-- 由于 `.exe` 未签名，Windows 可能会显示 SmartScreen 警告。如果你信任自己构建的程序，请选择*更多信息 → 仍要运行*。
-- GitHub 对产物的保留时间有限（默认 90 天），请把 `.exe` 保存到长期存放的位置。
-- 如果移动了 `famtree.exe`，请再次点击**文件**菜单中的 `.famtree` 关联按钮，因为关联指向的是 exe 的位置。
+- 由于安装程序和 `.exe` 未签名，Windows 可能会显示 SmartScreen 警告。请选择*更多信息 → 仍要运行*。
+- 更新时，在旧版本上直接运行新的 Setup 即可。你的家谱和设置会保留。
+- 卸载请使用*设置 → 应用*。你的 `.famtree` 文件不会被删除。
+- 如果使用便携版 exe 并移动了它，请再次点击**文件**菜单中的 `.famtree` 关联按钮。
 
-正式的安装程序出现后，将发布在 **Releases** 中，本节也会随之替换。
+### 自行构建
+
+无需安装任何工具，也可以从 GitHub Actions 获取安装程序（需要 GitHub 账号）：**Fork** [仓库](https://github.com/john3sobieski/family-tree)，打开 **Actions → Build → Run workflow**，然后从完成的运行记录中下载 **`famtree-setup`** 产物（默认保留 90 天）。
 
 ## 快速上手
 
@@ -81,7 +82,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 计划中的改进，不分先后：
 
-- [ ] **正式的安装程序**，取代 Actions 产出的裸 `.exe`，并发布在 Releases 中。
 - [ ] **修复布局 bug**：人物偶尔会出现在导图上的错误位置。
 
 ## 从源码构建

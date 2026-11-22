@@ -2,7 +2,12 @@ name: Build
 
 on:
   push:
+    tags: ["v*"]
+    branches: ["**"]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -15,8 +20,25 @@ jobs:
         run: cargo test --release
       - name: Build release
         run: cargo build --release
-      - name: Upload exe
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.+)"').Matches[0].Groups[1].Value
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          & $iscc "/DAppVersion=$version" installer\famtree.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: famtree-windows
-          path: target/release/famtree.exe
+          name: famtree-setup
+          path: dist/FamTree-Setup-*.exe
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$env:GITHUB_REF_NAME" dist\FamTree-Setup-*.exe --title "FamTree $env:GITHUB_REF_NAME" --generate-notes

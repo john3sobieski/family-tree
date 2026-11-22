@@ -6,7 +6,7 @@ Creado y mantenido por **[john3sobieski](https://github.com/john3sobieski)**. Re
 
 Una aplicación de escritorio para Windows para crear, editar y explorar tu árbol genealógico. Todo vive en un único archivo `.famtree`: personas, relaciones y todas las fotos.
 
-> **Estado:** desarrollo temprano. Todavía no hay versiones listas para descargar, y la aplicación solo está disponible compilándola con GitHub Actions (consulta [Instalación](#instalación)).
+> **Estado:** desarrollo temprano. Descarga el instalador en [Releases](https://github.com/john3sobieski/family-tree/releases) (consulta [Instalación](#instalación)).
 
 ## Características
 
@@ -28,21 +28,21 @@ Una aplicación de escritorio para Windows para crear, editar y explorar tu árb
 
 ## Instalación
 
-La aplicación funciona en Windows 10 y Windows 11 (el mismo exe) y se compila desde el código fuente con GitHub Actions, así que no necesitas Rust ni ninguna otra herramienta en tu equipo. Eso sí, necesitas una cuenta de GitHub.
+La aplicación funciona en Windows 10 y Windows 11. Es el mismo instalador y el mismo exe para ambos.
 
-1. Haz un **fork** del [repositorio](https://github.com/john3sobieski/family-tree) (o usa tu propia copia).
-2. En tu fork, abre la pestaña **Actions**. Si GitHub te lo pide, habilita los workflows del fork.
-3. Selecciona el workflow **Build**, haz clic en **Run workflow** y espera a que termine (unos 2–3 minutos). También se ejecuta en cada push.
-4. Abre la ejecución terminada y descarga el artefacto **`famtree-windows`** desde la sección *Artifacts* al final de la página.
-5. Descomprímelo. Dentro hay un `famtree.exe`. No hay nada que instalar, simplemente ejecútalo.
+1. Abre la página de [Releases](https://github.com/john3sobieski/family-tree/releases) y descarga **`FamTree-Setup-<versión>.exe`**.
+2. Ejecútalo. Se instala solo para tu usuario, así que no hacen falta permisos de administrador. El asistente ofrece abrir los archivos `.famtree` con FamTree y crear un acceso directo en el escritorio.
+3. Inicia **FamTree** desde el menú Inicio.
 
 Notas:
 
-- Windows puede mostrar una advertencia de SmartScreen porque el `.exe` no está firmado. Elige *Más información → Ejecutar de todas formas* si confías en tu propia compilación.
-- GitHub conserva los artefactos durante un tiempo limitado (90 días por defecto), así que guarda el `.exe` en un lugar permanente.
-- Si mueves `famtree.exe`, vuelve a pulsar el botón de asociación de `.famtree` en el menú **Archivo**, porque la asociación apunta a la ubicación del exe.
+- Windows puede mostrar una advertencia de SmartScreen porque el instalador y el `.exe` no están firmados. Elige *Más información → Ejecutar de todas formas*.
+- Para actualizar, ejecuta un Setup más reciente sobre la versión anterior. Tus árboles y ajustes se conservan.
+- Para desinstalar, usa *Configuración → Aplicaciones*. Tus archivos `.famtree` nunca se borran.
 
-Cuando exista un instalador de verdad, se publicará en **Releases** y esta sección se reemplazará.
+### Compilarlo tú mismo
+
+También puedes obtener el instalador de GitHub Actions sin instalar ninguna herramienta (hace falta una cuenta de GitHub): haz un fork del [repositorio](https://github.com/john3sobieski/family-tree), abre **Actions → Build → Run workflow** y descarga el artefacto **`famtree-setup`** de la ejecución terminada (se conserva 90 días por defecto).
 
 ## Inicio rápido
 
@@ -81,7 +81,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 Mejoras previstas, sin ningún orden concreto:
 
-- [ ] **Un instalador de verdad**, en lugar de un `.exe` suelto de Actions, publicado en Releases.
 - [ ] **Corrección de errores de diseño**: de vez en cuando hay personas que acaban en un lugar equivocado del mapa.
 
 ## Compilar desde el código fuente

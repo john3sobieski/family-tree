@@ -6,7 +6,7 @@
 
 Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüstü uygulaması. Her şey tek bir `.famtree` dosyasında durur: kişiler, ilişkiler ve tüm fotoğraflar.
 
-> **Durum:** erken geliştirme aşamasında. Henüz hazır sürüm yok ve uygulama şu anda yalnızca GitHub Actions ile derlenerek edinilebiliyor ([Kurulum](#kurulum) bölümüne bakın).
+> **Durum:** erken geliştirme aşamasında. Yükleyiciyi [Releases](https://github.com/john3sobieski/family-tree/releases) sayfasından indirin ([Kurulum](#kurulum) bölümüne bakın).
 
 ## Özellikler
 
@@ -28,21 +28,22 @@ Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüst�
 
 ## Kurulum
 
-Uygulama Windows 10 ve Windows 11'de (aynı exe) çalışır ve GitHub Actions tarafından kaynak koddan derlenir; bu yüzden makinenizde Rust veya başka bir araca ihtiyacınız yoktur. Ancak bir GitHub hesabına ihtiyacınız var.
+Uygulama Windows 10 ve Windows 11'de çalışır. İkisi için de aynı yükleyici ve aynı exe kullanılır.
 
-1. [Depoyu](https://github.com/john3sobieski/family-tree) **Fork** edin (veya kendi kopyanızı kullanın).
-2. Fork'unuzda **Actions** sekmesini açın. GitHub isterse, fork için workflow'ları etkinleştirin.
-3. **Build** workflow'unu seçin, **Run workflow**'a tıklayın ve bitmesini bekleyin (yaklaşık 2–3 dakika). Her push'ta da çalışır.
-4. Tamamlanan çalıştırmayı açın ve en alttaki *Artifacts* bölümünden **`famtree-windows`** çıktısını indirin.
-5. Arşivi açın. İçinde `famtree.exe` var. Kurulacak bir şey yok, doğrudan çalıştırın.
+1. [Releases](https://github.com/john3sobieski/family-tree/releases) sayfasını açın ve **`FamTree-Setup-<sürüm>.exe`** dosyasını indirin.
+2. Çalıştırın. Yalnızca kullanıcınız için kurulur, yönetici hakkı gerekmez. Sihirbaz, `.famtree` dosyalarının FamTree ile açılmasını ve masaüstü kısayolu eklenmesini önerir.
+3. **FamTree**'yi Başlat menüsünden açın.
 
 Notlar:
 
-- `.exe` imzalı olmadığı için Windows bir SmartScreen uyarısı gösterebilir. Kendi derlemenize güveniyorsanız *Daha fazla bilgi → Yine de çalıştır* seçeneğini seçin.
-- Artifact'ler GitHub tarafından sınırlı bir süre saklanır (varsayılan olarak 90 gün), bu yüzden `.exe` dosyasını kalıcı bir yere kaydedin.
-- `famtree.exe` dosyasını taşırsanız, ilişkilendirme exe'nin konumunu gösterdiği için **Dosya** menüsündeki `.famtree` ilişkilendirme düğmesine yeniden basın.
+- Yükleyici ve `.exe` imzalı olmadığı için Windows bir SmartScreen uyarısı gösterebilir. *Daha fazla bilgi → Yine de çalıştır* seçeneğini seçin.
+- Güncellemek için daha yeni bir Setup'ı eski sürümün üzerine çalıştırın. Ağaçlarınız ve ayarlarınız korunur.
+- Kaldırmak için *Ayarlar → Uygulamalar* bölümünü kullanın. `.famtree` dosyalarınız asla silinmez.
+- Taşınabilir exe'yi kullanıp taşırsanız, **Dosya** menüsündeki `.famtree` ilişkilendirme düğmesine yeniden basın.
 
-Gerçek bir yükleyici hazır olduğunda **Releases** bölümünde yayımlanacak ve bu bölüm değiştirilecek.
+### Kendiniz derleyin
+
+Yükleyiciyi hiçbir araç kurmadan GitHub Actions'tan alabilirsiniz (bir GitHub hesabı gerekir): [Depoyu](https://github.com/john3sobieski/family-tree) fork edin, **Actions → Build → Run workflow** yolunu izleyin ve tamamlanan çalıştırmadan **`famtree-setup`** çıktısını indirin (varsayılan olarak 90 gün saklanır).
 
 ## Hızlı başlangıç
 
@@ -81,7 +82,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 Planlanan iyileştirmeler, belirli bir sırayla değil:
 
-- [ ] Actions'tan alınan çıplak bir `.exe` yerine Releases'ta yayımlanan **gerçek bir yükleyici**.
 - [ ] **Yerleşim hatalarının düzeltilmesi**: kişiler zaman zaman haritada yanlış yere düşüyor.
 
 ## Kaynaktan derleme

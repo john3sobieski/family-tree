@@ -6,7 +6,7 @@ Dibuat dan dikelola oleh **[john3sobieski](https://github.com/john3sobieski)**. 
 
 Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon keluarga Anda. Semuanya tersimpan dalam satu berkas `.famtree`: orang, hubungan, dan semua foto.
 
-> **Status:** tahap pengembangan awal. Belum ada rilis siap pakai, dan aplikasi saat ini hanya bisa didapat dengan membangunnya lewat GitHub Actions (lihat [Instalasi](#instalasi)).
+> **Status:** tahap pengembangan awal. Unduh installer di [Releases](https://github.com/john3sobieski/family-tree/releases) (lihat [Instalasi](#instalasi)).
 
 ## Fitur
 
@@ -28,21 +28,22 @@ Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon kel
 
 ## Instalasi
 
-Aplikasi berjalan di Windows 10 dan Windows 11 (exe yang sama) dan dibangun dari kode sumber oleh GitHub Actions, jadi Anda tidak memerlukan Rust atau alat lain di komputer Anda. Anda memerlukan akun GitHub.
+Aplikasi berjalan di Windows 10 dan Windows 11. Installer dan exe-nya sama untuk keduanya.
 
-1. **Fork** [repositori](https://github.com/john3sobieski/family-tree) (atau gunakan salinan Anda sendiri).
-2. Di fork Anda, buka tab **Actions**. Jika GitHub memintanya, aktifkan workflow untuk fork tersebut.
-3. Pilih workflow **Build**, klik **Run workflow**, lalu tunggu hingga selesai (sekitar 2–3 menit). Workflow ini juga berjalan pada setiap push.
-4. Buka hasil run yang sudah selesai dan unduh artefak **`famtree-windows`** dari bagian *Artifacts* di bagian bawah.
-5. Ekstrak. Di dalamnya ada `famtree.exe`. Tidak ada yang perlu diinstal, cukup jalankan.
+1. Buka halaman [Releases](https://github.com/john3sobieski/family-tree/releases) dan unduh **`FamTree-Setup-<versi>.exe`**.
+2. Jalankan. Instalasi hanya untuk pengguna Anda, jadi hak administrator tidak diperlukan. Wizard menawarkan untuk membuka berkas `.famtree` dengan FamTree dan menambahkan pintasan desktop.
+3. Jalankan **FamTree** dari menu Start.
 
 Catatan:
 
-- Windows mungkin menampilkan peringatan SmartScreen karena `.exe` tidak ditandatangani. Pilih *Info lebih lanjut → Tetap jalankan* jika Anda memercayai hasil build Anda sendiri.
-- GitHub menyimpan artefak dalam waktu terbatas (secara bawaan 90 hari), jadi simpan `.exe` di tempat yang permanen.
-- Jika Anda memindahkan `famtree.exe`, tekan lagi tombol asosiasi `.famtree` di menu **Berkas**, karena asosiasi tersebut menunjuk ke lokasi exe.
+- Windows mungkin menampilkan peringatan SmartScreen karena installer dan `.exe` tidak ditandatangani. Pilih *Info lebih lanjut → Tetap jalankan*.
+- Untuk memperbarui, jalankan Setup yang lebih baru di atas versi lama. Pohon dan pengaturan Anda tetap tersimpan.
+- Untuk menghapus, gunakan *Pengaturan → Aplikasi*. Berkas `.famtree` Anda tidak pernah dihapus.
+- Jika Anda memakai exe portabel dan memindahkannya, tekan lagi tombol asosiasi `.famtree` di menu **Berkas**.
 
-Setelah ada installer yang sebenarnya, installer itu akan dipublikasikan di **Releases** dan bagian ini akan diganti.
+### Membangun sendiri
+
+Anda juga bisa mendapatkan installer dari GitHub Actions tanpa memasang alat apa pun (perlu akun GitHub): fork [repositori](https://github.com/john3sobieski/family-tree), buka **Actions → Build → Run workflow**, lalu unduh artefak **`famtree-setup`** dari run yang selesai (disimpan 90 hari secara bawaan).
 
 ## Mulai cepat
 
@@ -81,7 +82,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 Perbaikan yang direncanakan, tanpa urutan tertentu:
 
-- [ ] **Installer yang sebenarnya**, bukan `.exe` polos dari Actions, yang dipublikasikan di Releases.
 - [ ] **Perbaikan bug tata letak**: sesekali orang berakhir di posisi yang salah pada peta.
 
 ## Membangun dari kode sumber

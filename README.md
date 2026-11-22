@@ -4,7 +4,7 @@ Created and maintained by **[john3sobieski](https://github.com/john3sobieski)**.
 
 A desktop app for Windows for building, editing and browsing your family tree. Everything lives in a single `.famtree` file: people, relationships and all photos.
 
-> **Status:** early development. There are no ready-made releases yet, and the app is currently available only by building it through GitHub Actions (see [Installation](#installation)).
+> **Status:** early development. Download the installer from [Releases](https://github.com/john3sobieski/family-tree/releases) (see [Installation](#installation)).
 
 ## Features
 
@@ -26,21 +26,21 @@ A desktop app for Windows for building, editing and browsing your family tree. E
 
 ## Installation
 
-The app runs on Windows 10 and Windows 11 (the same exe) and is built from source by GitHub Actions, so you don't need Rust or any other tools on your machine. You do need a GitHub account.
+The app runs on Windows 10 and Windows 11. It is the same installer and the same exe for both.
 
-1. **Fork** the [repository](https://github.com/john3sobieski/family-tree) (or use your own copy).
-2. In your fork, open the **Actions** tab. If GitHub asks, enable workflows for the fork.
-3. Select the **Build** workflow, click **Run workflow** and wait for it to finish (about 2–3 minutes). It runs on every push as well.
-4. Open the finished run and download the **`famtree-windows`** artifact from the *Artifacts* section at the bottom.
-5. Unzip it. Inside is `famtree.exe`. There is nothing to install, just run it.
+1. Open the [Releases](https://github.com/john3sobieski/family-tree/releases) page and download **`FamTree-Setup-<version>.exe`**.
+2. Run it. It installs for your user only, so no administrator rights are needed. The wizard offers to open `.famtree` files with FamTree and to add a desktop shortcut.
+3. Start **FamTree** from the Start menu.
 
 Notes:
 
-- Windows may show a SmartScreen warning because the `.exe` is not signed. Choose *More info → Run anyway* if you trust your own build.
-- Artifacts are kept by GitHub for a limited time (90 days by default), so save the `.exe` somewhere permanent.
-- If you move `famtree.exe`, press the `.famtree` association button in the **File** menu again, because the association points to the exe's location.
+- Windows may show a SmartScreen warning because the installer and the `.exe` are not signed. Choose *More info → Run anyway*.
+- To update, run a newer Setup over the old version. Your trees and settings are kept.
+- To uninstall, use *Settings → Apps*. Your `.famtree` files are never deleted.
 
-Once a proper installer exists, it will be published in **Releases** and this section will be replaced.
+### Building it yourself
+
+You can also get the installer from GitHub Actions without installing any tools (a GitHub account is needed): fork the [repository](https://github.com/john3sobieski/family-tree), open **Actions → Build → Run workflow**, and download the **`famtree-setup`** artifact from the finished run (kept for 90 days by default).
 
 ## Quick start
 
@@ -79,7 +79,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 Planned improvements, in no particular order:
 
-- [ ] **A real installer**, instead of a bare `.exe` from Actions, published in Releases.
 - [ ] **Fixes for layout bugs**: people occasionally end up in the wrong place on the map.
 
 ## Building from source
