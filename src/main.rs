@@ -9,6 +9,7 @@ mod container;
 mod demo;
 mod edit;
 mod flags;
+mod i18n;
 #[allow(dead_code)]
 mod layout;
 mod list;
@@ -27,10 +28,11 @@ use std::path::PathBuf;
 fn main() -> eframe::Result {
     // Двойной клик по .famtree передаёт путь первым аргументом.
     let path: Option<PathBuf> = std::env::args_os().nth(1).map(PathBuf::from);
+    i18n::init();
 
     let mut viewport = egui::ViewportBuilder::default()
         .with_inner_size([1200.0, 800.0])
-        .with_title("Семейное дерево")
+        .with_title(i18n::tr("Семейное дерево"))
         .with_decorations(false)
         .with_min_inner_size([900.0, 560.0])
         .with_maximized(true);

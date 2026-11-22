@@ -47,7 +47,7 @@ mod imp {
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
         let exe = exe.display().to_string();
         set_default(EXT_KEY, PROG_ID)?;
-        set_default(PROG_KEY, "Семейное дерево (.famtree)")?;
+        set_default(PROG_KEY, crate::i18n::tr("Семейное дерево (.famtree)"))?;
         set_default(&format!(r"{PROG_KEY}\DefaultIcon"), &format!("\"{exe}\",0"))?;
         set_default(
             &format!(r"{PROG_KEY}\shell\open\command"),
@@ -72,10 +72,10 @@ mod imp {
         false
     }
     pub fn register() -> Result<(), String> {
-        Err("только Windows".into())
+        Err(crate::i18n::tr("только Windows").into())
     }
     pub fn unregister() -> Result<(), String> {
-        Err("только Windows".into())
+        Err(crate::i18n::tr("только Windows").into())
     }
 }
 

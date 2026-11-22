@@ -1,5 +1,6 @@
 //! Своя шапка окна (без рамки Windows): перетаскивание, свернуть/развернуть/закрыть.
 
+use crate::i18n::tr;
 use crate::theme;
 use eframe::egui::{self, pos2, vec2, Align2, Color32, FontId, Id, Rect, Sense, Stroke, ViewportCommand};
 
@@ -36,7 +37,7 @@ pub fn title_bar(ctx: &egui::Context, file: &str, dirty: bool) {
             p.circle_filled(pos2(c.x, c.y - 4.5), 2.0, theme::BG);
 
             let name_pos = pos2(logo.right() + 10.0, rect.center().y);
-            let r1 = p.text(name_pos, Align2::LEFT_CENTER, "Семейное дерево", FontId::proportional(13.0), theme::TEXT);
+            let r1 = p.text(name_pos, Align2::LEFT_CENTER, tr("Семейное дерево"), FontId::proportional(13.0), theme::TEXT);
             let label = format!("{}{}", file, if dirty { "  ●" } else { "" });
             p.text(
                 pos2(r1.right() + 12.0, rect.center().y),

@@ -7,6 +7,7 @@
 //! Сохранение атомарное: пишем во временный файл, затем переименовываем.
 //! Память ограничена: фото копируются из старого файла по одному.
 
+use crate::i18n::trf;
 use crate::model::{ModelError, Tree};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
@@ -63,11 +64,11 @@ pub enum ContainerError {
 impl fmt::Display for ContainerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ContainerError::Io(e) => write!(f, "Ошибка файла: {e}"),
-            ContainerError::Zip(e) => write!(f, "Ошибка архива: {e}"),
+            ContainerError::Io(e) => write!(f, "{}", trf("Ошибка файла: {err}", &[("err", e.to_string())])),
+            ContainerError::Zip(e) => write!(f, "{}", trf("Ошибка архива: {err}", &[("err", e.to_string())])),
             ContainerError::Model(e) => write!(f, "{e}"),
-            ContainerError::MissingEntry(n) => write!(f, "В файле нет записи {n}"),
-            ContainerError::MissingMedia(h) => write!(f, "Не найдено фото {h}"),
+            ContainerError::MissingEntry(n) => write!(f, "{}", trf("В файле нет записи {name}", &[("name", n.to_string())])),
+            ContainerError::MissingMedia(h) => write!(f, "{}", trf("Не найдено фото {hash}", &[("hash", h.to_string())])),
         }
     }
 }

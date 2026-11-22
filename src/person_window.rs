@@ -2,6 +2,7 @@
 //! заметки и галерея фото. Только чтение (редактирование — шаг 9).
 
 use crate::container::{MediaKind, MediaStore};
+use crate::i18n::{self, tr, trf};
 use crate::model::{Gender, PartialDate, Person, PersonId, Tree};
 use crate::view::draw_placeholder;
 use eframe::egui::{self, Align2, FontId, RichText, Sense, TextureHandle, Vec2};
@@ -122,7 +123,7 @@ impl PersonWindow {
                     ui.painter().text(
                         rect.center(),
                         Align2::CENTER_CENTER,
-                        "не удалось загрузить фото",
+                        tr("не удалось загрузить фото"),
                         FontId::proportional(13.0),
                         v.weak_text_color(),
                     );
@@ -141,7 +142,7 @@ impl PersonWindow {
             return;
         }
         ui.add_space(6.0);
-        ui.label(RichText::new(format!("Фото: {}", photos.len())).weak());
+        ui.label(RichText::new(trf("Фото: {n}", &[("n", photos.len().to_string())])).weak());
         let accent = crate::theme::ACCENT;
         ui.horizontal_wrapped(|ui| {
             for (i, (hash, _)) in photos.iter().enumerate() {
@@ -236,7 +237,7 @@ pub(crate) fn full_name(p: &Person) -> String {
     ];
     let s = parts.iter().filter(|x| !x.is_empty()).cloned().collect::<Vec<_>>().join(" ");
     if s.is_empty() {
-        "Без имени".to_string()
+        tr("Без имени").to_string()
     } else {
         s
     }
@@ -249,20 +250,20 @@ fn info_panel(ui: &mut egui::Ui, tree: &Tree, p: &Person) -> Option<WindowEvent>
     ui.add_space(4.0);
 
     let gender = match p.gender {
-        Gender::Male => Some("Мужской"),
-        Gender::Female => Some("Женский"),
+        Gender::Male => Some(tr("Мужской")),
+        Gender::Female => Some(tr("Женский")),
         Gender::Unknown => None,
     };
     let (ty, tm, td) = today();
     let rows: Vec<(&str, String)> = [
-        ("Пол", gender.map(|g| g.to_string())),
-        ("Родился(ась)", format_date(&p.birth)),
-        ("Место рождения", non_empty(&p.birth_place)),
-        ("Умер(ла)", format_date(&p.death)),
-        ("Место смерти", non_empty(&p.death_place)),
-        ("Возраст", age_text(&p.birth, &p.death, (ty, tm, td))),
-        ("Национальность", nationalities_text(p)),
-        ("Специальность", non_empty(&p.profession)),
+        (tr("Пол"), gender.map(|g| g.to_string())),
+        (tr("Родился(ась)"), format_date(&p.birth)),
+        (tr("Место рождения"), non_empty(&p.birth_place)),
+        (tr("Умер(ла)"), format_date(&p.death)),
+        (tr("Место смерти"), non_empty(&p.death_place)),
+        (tr("Возраст"), age_text(&p.birth, &p.death, (ty, tm, td))),
+        (tr("Национальность"), nationalities_text(p)),
+        (tr("Специальность"), non_empty(&p.profession)),
     ]
     .into_iter()
     .filter_map(|(k, v)| v.map(|v| (k, v)))
@@ -279,9 +280,9 @@ fn info_panel(ui: &mut egui::Ui, tree: &Tree, p: &Person) -> Option<WindowEvent>
     }
 
     let groups: [(&str, Vec<PersonId>); 3] = [
-        ("Родители", tree.parents_of(p.id)),
-        ("Партнёры", tree.partners_of(p.id)),
-        ("Дети", tree.children_of(p.id)),
+        (tr("Родители"), tree.parents_of(p.id)),
+        (tr("Партнёры"), tree.partners_of(p.id)),
+        (tr("Дети"), tree.children_of(p.id)),
     ];
     for (title, ids) in groups {
         if ids.is_empty() {
@@ -307,7 +308,7 @@ fn info_panel(ui: &mut egui::Ui, tree: &Tree, p: &Person) -> Option<WindowEvent>
 
     if !p.notes.trim().is_empty() {
         ui.add_space(10.0);
-        ui.label(RichText::new("Заметки").strong());
+        ui.label(RichText::new(tr("Заметки")).strong());
         ui.label(p.notes.trim());
     }
     event
@@ -350,8 +351,8 @@ pub fn format_date(d: &PartialDate) -> Option<String> {
 pub(crate) fn format_years(p: &Person) -> String {
     match (p.birth.year, p.death.year) {
         (Some(b), Some(d)) => format!("{b}–{d}"),
-        (Some(b), None) => format!("р. {b}"),
-        (None, Some(d)) => format!("ум. {d}"),
+        (Some(b), None) => trf("р. {year}", &[("year", b.to_string())]),
+        (None, Some(d)) => trf("ум. {year}", &[("year", d.to_string())]),
         (None, None) => String::new(),
     }
 }
@@ -384,15 +385,16 @@ pub fn age_text(
     if years < 0 {
         return None;
     }
-    let word = years_word(years);
+    let age = i18n::years_text(years);
     let prefix = if exact { "" } else { "≈ " };
     Some(if dead {
-        format!("{prefix}{years} {word} (прожил(а))")
+        format!("{prefix}{age} {}", tr("(прожил(а))"))
     } else {
-        format!("{prefix}{years} {word}")
+        format!("{prefix}{age}")
     })
 }
 
+#[allow(dead_code)]
 fn years_word(n: i32) -> &'static str {
     let (a, b) = (n % 10, n % 100);
     if (11..=14).contains(&b) {

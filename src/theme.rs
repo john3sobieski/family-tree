@@ -33,7 +33,7 @@ fn wv(bg: Color32, weak: Color32, stroke: Color32, fg: Color32) -> egui::style::
 }
 
 pub fn apply(ctx: &egui::Context) {
-    load_fonts(ctx);
+    set_fonts(ctx, crate::i18n::current());
 
     let mut v = egui::Visuals::dark();
     v.override_text_color = None;
@@ -71,13 +71,27 @@ pub fn apply(ctx: &egui::Context) {
     });
 }
 
-/// Segoe UI из системы Windows (кириллица, современный вид); если нет — шрифты egui по умолчанию.
-fn load_fonts(ctx: &egui::Context) {
-    let Ok(bytes) = std::fs::read(r"C:\Windows\Fonts\segoeui.ttf") else { return };
+/// Segoe UI from Windows (Cyrillic, modern look); a CJK fallback font is added only for Chinese.
+pub fn set_fonts(ctx: &egui::Context, lang: crate::i18n::Lang) {
     let mut fonts = egui::FontDefinitions::default();
-    fonts.font_data.insert("segoe".to_owned(), egui::FontData::from_owned(bytes));
-    if let Some(list) = fonts.families.get_mut(&FontFamily::Proportional) {
-        list.insert(0, "segoe".to_owned());
+    if let Ok(bytes) = std::fs::read(r"C:\Windows\Fonts\segoeui.ttf") {
+        fonts.font_data.insert("segoe".to_owned(), egui::FontData::from_owned(bytes));
+        if let Some(list) = fonts.families.get_mut(&FontFamily::Proportional) {
+            list.insert(0, "segoe".to_owned());
+        }
+    }
+    if lang == crate::i18n::Lang::Zh {
+        for name in ["msyh.ttc", "msyh.ttf", "simsun.ttc", "simhei.ttf"] {
+            if let Ok(bytes) = std::fs::read(format!(r"C:\Windows\Fonts\{name}")) {
+                fonts.font_data.insert("cjk".to_owned(), egui::FontData::from_owned(bytes));
+                for family in [FontFamily::Proportional, FontFamily::Monospace] {
+                    if let Some(list) = fonts.families.get_mut(&family) {
+                        list.push("cjk".to_owned());
+                    }
+                }
+                break;
+            }
+        }
     }
     ctx.set_fonts(fonts);
 }

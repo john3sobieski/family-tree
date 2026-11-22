@@ -2,6 +2,7 @@
 //! по клику на заголовок. Строки рисуются виртуально (только видимые) — быстро на тысячах людей.
 
 use crate::container::{MediaKind, MediaStore};
+use crate::i18n::{tr, trf};
 use crate::model::{Gender, Person, PersonId, Tree};
 use crate::person_window::{age_text, format_date, full_name, load_texture, today};
 use eframe::egui::{self, Align2, Color32, FontId, Pos2, Rect, Sense, TextureHandle, Vec2};
@@ -46,10 +47,10 @@ enum GenderFilter {
 impl GenderFilter {
     fn label(self) -> &'static str {
         match self {
-            GenderFilter::All => "Все",
-            GenderFilter::Male => "Мужчины",
-            GenderFilter::Female => "Женщины",
-            GenderFilter::Unknown => "Пол не указан",
+            GenderFilter::All => tr("Все"),
+            GenderFilter::Male => tr("Мужчины"),
+            GenderFilter::Female => tr("Женщины"),
+            GenderFilter::Unknown => tr("Пол не указан"),
         }
     }
 
@@ -136,8 +137,8 @@ fn gender_rank(g: &Gender) -> u8 {
 
 fn gender_text(g: &Gender) -> &'static str {
     match g {
-        Gender::Male => "Мужской",
-        Gender::Female => "Женский",
+        Gender::Male => tr("Мужской"),
+        Gender::Female => tr("Женский"),
         Gender::Unknown => "",
     }
 }
@@ -220,26 +221,29 @@ pub fn show(
     ui.add_space(4.0);
     ui.horizontal(|ui| {
         ui.add_space(6.0);
-        ui.label("Поиск:");
+        ui.label(tr("Поиск:"));
         ui.add(
             egui::TextEdit::singleline(&mut st.search)
-                .hint_text("имя, специальность, заметки…")
+                .hint_text(tr("имя, специальность, заметки…"))
                 .desired_width(280.0),
         );
-        ui.label("Пол:");
+        ui.label(tr("Пол:"));
         egui::ComboBox::from_id_salt("list-gender").selected_text(st.gender.label()).show_ui(ui, |ui| {
             for g in [GenderFilter::All, GenderFilter::Male, GenderFilter::Female, GenderFilter::Unknown] {
                 ui.selectable_value(&mut st.gender, g, g.label());
             }
         });
-        if !st.search.is_empty() && ui.button("✕").on_hover_text("Очистить поиск").clicked() {
+        if !st.search.is_empty() && ui.button("✕").on_hover_text(tr("Очистить поиск")).clicked() {
             st.search.clear();
         }
     });
     st.rebuild(tree);
     ui.horizontal(|ui| {
         ui.add_space(6.0);
-        ui.weak(format!("Показано: {} из {}", st.order.len(), tree.persons.len()));
+        ui.weak(trf(
+            "Показано: {shown} из {total}",
+            &[("shown", st.order.len().to_string()), ("total", tree.persons.len().to_string())],
+        ));
     });
     ui.add_space(2.0);
 
@@ -269,7 +273,7 @@ pub fn show(
         ui.painter().with_clip_rect(cell).text(
             Pos2::new(x + 6.0, cell.center().y),
             Align2::LEFT_CENTER,
-            format!("{title}{arrow}"),
+            format!("{}{arrow}", tr(title)),
             FontId::proportional(14.0),
             ui.visuals().strong_text_color(),
         );

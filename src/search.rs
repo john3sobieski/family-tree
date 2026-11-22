@@ -2,6 +2,7 @@
 //! (автодополнение). Выбор подсказки или Enter возвращает id — приложение плавно
 //! перелетает камерой к человеку и подсвечивает его.
 
+use crate::i18n::tr;
 use crate::layout::Layout;
 use crate::model::{Person, PersonId, Tree};
 use crate::person_window::{format_years, full_name};
@@ -73,7 +74,7 @@ pub fn show(
     let resp = ui.add(
         egui::TextEdit::singleline(&mut st.text)
             .id(egui::Id::new(FIELD_ID))
-            .hint_text("🔍 Найти человека…")
+            .hint_text(tr("🔍 Найти человека…"))
             .desired_width(200.0),
     );
     if resp.changed() {
@@ -120,7 +121,7 @@ pub fn show(
                 egui::Frame::popup(ui.style()).show(ui, |ui| {
                     ui.set_min_width(260.0);
                     if matches.is_empty() {
-                        ui.label(egui::RichText::new("Никого не найдено").weak());
+                        ui.label(egui::RichText::new(tr("Никого не найдено")).weak());
                     }
                     for (i, id) in matches.iter().enumerate() {
                         let Some(p) = tree.persons.get(id) else { continue };

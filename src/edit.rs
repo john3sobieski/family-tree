@@ -2,6 +2,7 @@
 //! (данные, фото, связи, удаление). Схема посередине — обычный `view`.
 
 use crate::container::{MediaKind, MediaStore};
+use crate::i18n::{tr, trf};
 use crate::media;
 use crate::model::{Gender, PartialDate, Person, PersonId, Photo, Tree};
 use crate::person_window::{format_years, full_name, load_texture};
@@ -68,13 +69,13 @@ pub fn people_list(
     selected: Option<PersonId>,
 ) -> ListAction {
     let mut action = ListAction::None;
-    ui.heading("Люди");
+    ui.heading(tr("Люди"));
     ui.add(
         egui::TextEdit::singleline(&mut st.list_search)
-            .hint_text("Поиск по имени…")
+            .hint_text(tr("Поиск по имени…"))
             .desired_width(f32::INFINITY),
     );
-    if ui.button("＋ Новый человек").clicked() {
+    if ui.button(tr("＋ Новый человек")).clicked() {
         action = ListAction::New;
     }
     ui.separator();
@@ -110,9 +111,19 @@ pub fn people_list(
     action
 }
 
+/// Placeholder name for a new person: the translated phrase split into first and last name.
+fn placeholder_name(key: &'static str) -> (String, String) {
+    let s = tr(key);
+    match s.split_once(' ') {
+        Some((a, b)) => (a.to_string(), b.to_string()),
+        None => (s.to_string(), String::new()),
+    }
+}
+
 /// Создаёт нового человека. Первый человек в пустом дереве становится «я».
 pub fn new_person(tree: &mut Tree) -> PersonId {
-    let id = tree.add_person(Person::new("Новый", "человек"));
+    let (first, last) = placeholder_name("Новый человек");
+    let id = tree.add_person(Person::new(&first, &last));
     if tree.root.is_none() {
         tree.root = Some(id);
     }
@@ -124,7 +135,7 @@ pub fn new_person(tree: &mut Tree) -> PersonId {
 pub(crate) fn link_parent(tree: &mut Tree, parent: PersonId, child: PersonId) -> Result<(), String> {
     let existing = tree.parents_of(child);
     if existing.len() >= 2 {
-        return Err("У человека уже есть два родителя".to_string());
+        return Err(tr("У человека уже есть два родителя").to_string());
     }
     tree.add_parent_child(parent, child).map_err(|e| e.to_string())?;
     if existing.len() == 1 {
@@ -179,17 +190,17 @@ fn date_row(ui: &mut egui::Ui, id: PersonId, tag: &str, d: &mut PartialDate) {
     ui.horizontal(|ui| {
         let k = ui.id().with((id, tag, "day"));
         let mut day = d.day.map(i64::from);
-        num_field(ui, k, &mut day, 1, 31, "день", 42.0);
+        num_field(ui, k, &mut day, 1, 31, tr("день"), 48.0);
         d.day = day.map(|v| v as u8);
 
         let k = ui.id().with((id, tag, "month"));
         let mut month = d.month.map(i64::from);
-        num_field(ui, k, &mut month, 1, 12, "месяц", 52.0);
+        num_field(ui, k, &mut month, 1, 12, tr("месяц"), 66.0);
         d.month = month.map(|v| v as u8);
 
         let k = ui.id().with((id, tag, "year"));
         let mut year = d.year.map(i64::from);
-        num_field(ui, k, &mut year, 1, 2999, "год", 56.0);
+        num_field(ui, k, &mut year, 1, 2999, tr("год"), 58.0);
         d.year = year.map(|v| v as i32);
     });
 }
@@ -208,7 +219,7 @@ fn thumb_image(ui: &mut egui::Ui, st: &mut EditState, store: &MediaStore, hash: 
 
 /// Диалог выбора фото + импорт. Возвращает hash успешно импортированных.
 fn import_dialog(store: &mut MediaStore, multiple: bool, errors: &mut Vec<String>) -> Vec<String> {
-    let dlg = rfd::FileDialog::new().add_filter("Изображения", &["jpg", "jpeg", "png", "webp", "bmp"]);
+    let dlg = rfd::FileDialog::new().add_filter(tr("Изображения"), &["jpg", "jpeg", "png", "webp", "bmp"]);
     let files: Vec<std::path::PathBuf> = if multiple {
         dlg.pick_files().unwrap_or_default()
     } else {
@@ -232,7 +243,7 @@ fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
             ui.horizontal(|ui| {
                 crate::flags::icon(ui, code, 16.0);
                 ui.label(crate::flags::name(code).unwrap_or(code.as_str()));
-                if ui.small_button("Убрать").clicked() {
+                if ui.small_button(tr("Убрать")).clicked() {
                     remove = Some(i);
                 }
             });
@@ -243,12 +254,12 @@ fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
         if list.len() < crate::flags::MAX_PER_PERSON {
             let mut add: Option<&'static str> = None;
             egui::ComboBox::from_id_salt("nationality-add")
-                .selected_text("Добавить страну…")
+                .selected_text(tr("Добавить страну…"))
                 .show_ui(ui, |ui| {
                     // Search box: the list has ~200 countries.
                     let fid = egui::Id::new("nationality-filter");
                     let mut filter: String = ui.data_mut(|d| d.get_temp(fid)).unwrap_or_default();
-                    ui.add(egui::TextEdit::singleline(&mut filter).hint_text("Поиск…"));
+                    ui.add(egui::TextEdit::singleline(&mut filter).hint_text(tr("Поиск…")));
                     ui.data_mut(|d| d.insert_temp(fid, filter.clone()));
                     let query = filter.trim().to_lowercase();
                     for (code, name) in crate::flags::COUNTRIES {
@@ -285,7 +296,7 @@ pub fn editor(
     let mut ch = Change::default();
     let Some(id) = id.filter(|i| tree.persons.contains_key(i)) else {
         ui.add_space(8.0);
-        ui.label("Выберите человека в списке или кликните по карточке на схеме.");
+        ui.label(tr("Выберите человека в списке или кликните по карточке на схеме."));
         return ch;
     };
     if st.confirm_delete.is_some() && st.confirm_delete != Some(id) {
@@ -312,59 +323,59 @@ pub fn editor(
 
         egui::Grid::new("edit-main").num_columns(2).spacing([10.0, 6.0]).show(ui, |ui| {
             let w = (ui.available_width() - 4.0).max(120.0);
-            ui.label("Имя");
+            ui.label(tr("Имя"));
             ui.add(egui::TextEdit::singleline(&mut p.first_name).desired_width(w));
             ui.end_row();
             let female = p.gender == Gender::Female;
-            ui.label(if female { "Фамилия (сейчас)" } else { "Фамилия" });
+            ui.label(if female { tr("Фамилия (сейчас)") } else { tr("Фамилия") });
             ui.add(egui::TextEdit::singleline(&mut p.last_name).desired_width(w));
             ui.end_row();
             if female {
-                ui.label("Фамилия при рождении");
+                ui.label(tr("Фамилия при рождении"));
                 ui.add(
                     egui::TextEdit::singleline(&mut p.maiden_name)
-                        .hint_text("если сменила после свадьбы")
+                        .hint_text(tr("если сменила после свадьбы"))
                         .desired_width(w),
                 );
                 ui.end_row();
             }
-            ui.label("Отчество");
+            ui.label(tr("Отчество"));
             ui.add(egui::TextEdit::singleline(&mut p.patronymic).desired_width(w));
             ui.end_row();
-            ui.label("Национальность");
+            ui.label(tr("Национальность"));
             nationality_row(ui, &mut p.nationalities);
             ui.end_row();
-            ui.label("Пол");
+            ui.label(tr("Пол"));
             let gender_text = match p.gender {
-                Gender::Male => "Мужской",
-                Gender::Female => "Женский",
-                Gender::Unknown => "Не указан",
+                Gender::Male => tr("Мужской"),
+                Gender::Female => tr("Женский"),
+                Gender::Unknown => tr("Не указан"),
             };
             egui::ComboBox::from_id_salt("gender").selected_text(gender_text).show_ui(ui, |ui| {
-                ui.selectable_value(&mut p.gender, Gender::Unknown, "Не указан");
-                ui.selectable_value(&mut p.gender, Gender::Male, "Мужской");
-                ui.selectable_value(&mut p.gender, Gender::Female, "Женский");
+                ui.selectable_value(&mut p.gender, Gender::Unknown, tr("Не указан"));
+                ui.selectable_value(&mut p.gender, Gender::Male, tr("Мужской"));
+                ui.selectable_value(&mut p.gender, Gender::Female, tr("Женский"));
             });
             ui.end_row();
-            ui.label("Родился(ась)");
+            ui.label(tr("Родился(ась)"));
             date_row(ui, id, "birth", &mut p.birth);
             ui.end_row();
-            ui.label("Место рождения");
+            ui.label(tr("Место рождения"));
             ui.add(egui::TextEdit::singleline(&mut p.birth_place).desired_width(w));
             ui.end_row();
-            ui.label("Умер(ла)");
+            ui.label(tr("Умер(ла)"));
             date_row(ui, id, "death", &mut p.death);
             ui.end_row();
-            ui.label("Место смерти");
+            ui.label(tr("Место смерти"));
             ui.add(egui::TextEdit::singleline(&mut p.death_place).desired_width(w));
             ui.end_row();
-            ui.label("Специальность");
+            ui.label(tr("Специальность"));
             ui.add(egui::TextEdit::singleline(&mut p.profession).desired_width(w));
             ui.end_row();
         });
 
         ui.add_space(6.0);
-        ui.label("Заметки");
+        ui.label(tr("Заметки"));
         ui.add(
             egui::TextEdit::multiline(&mut p.notes)
                 .desired_rows(5)
@@ -373,21 +384,21 @@ pub fn editor(
 
         // --- Фото ---
         ui.separator();
-        ui.label(RichText::new("Главное фото (на карточке)").strong());
+        ui.label(RichText::new(tr("Главное фото (на карточке)")).strong());
         ui.horizontal(|ui| {
             match p.main_photo.clone() {
                 Some(h) => thumb_image(ui, st, store, &h, THUMB_MAIN),
                 None => {
-                    ui.label("нет");
+                    ui.label(tr("нет"));
                 }
             }
             ui.vertical(|ui| {
-                if ui.button("Выбрать…").clicked() {
+                if ui.button(tr("Выбрать…")).clicked() {
                     if let Some(h) = import_dialog(store, false, &mut errors).into_iter().next() {
                         p.main_photo = Some(h);
                     }
                 }
-                if p.main_photo.is_some() && ui.button("Убрать").clicked() {
+                if p.main_photo.is_some() && ui.button(tr("Убрать")).clicked() {
                     p.main_photo = None;
                 }
             });
@@ -395,8 +406,8 @@ pub fn editor(
 
         ui.add_space(6.0);
         ui.horizontal(|ui| {
-            ui.label(RichText::new(format!("Фото в заметках: {}", p.photos.len())).strong());
-            if ui.button("Добавить…").clicked() {
+            ui.label(RichText::new(trf("Фото в заметках: {n}", &[("n", p.photos.len().to_string())])).strong());
+            if ui.button(tr("Добавить…")).clicked() {
                 for h in import_dialog(store, true, &mut errors) {
                     if !p.photos.iter().any(|ph| ph.hash == h) {
                         p.photos.push(Photo { hash: h, caption: String::new() });
@@ -412,14 +423,14 @@ pub fn editor(
                 ui.vertical(|ui| {
                     ui.add(
                         egui::TextEdit::singleline(&mut ph.caption)
-                            .hint_text("Подпись…")
+                            .hint_text(tr("Подпись…"))
                             .desired_width(ui.available_width().max(100.0)),
                     );
                     ui.horizontal(|ui| {
-                        if ui.small_button("Сделать главным").clicked() {
+                        if ui.small_button(tr("Сделать главным")).clicked() {
                             make_main = Some(i);
                         }
-                        if ui.small_button("✕ Убрать").clicked() {
+                        if ui.small_button(tr("✕ Убрать")).clicked() {
                             remove_photo = Some(i);
                         }
                     });
@@ -440,11 +451,11 @@ pub fn editor(
 
         // --- Связи ---
         ui.separator();
-        ui.label(RichText::new("Связи").strong());
+        ui.label(RichText::new(tr("Связи")).strong());
         let groups = [
-            ("Родители", Rel::Parent, tree.parents_of(id)),
-            ("Партнёры", Rel::Partner, partners.clone()),
-            ("Дети", Rel::Child, tree.children_of(id)),
+            (tr("Родители"), Rel::Parent, tree.parents_of(id)),
+            (tr("Партнёры"), Rel::Partner, partners.clone()),
+            (tr("Дети"), Rel::Child, tree.children_of(id)),
         ];
         for (title, rel, ids) in groups {
             ui.label(RichText::new(title).weak());
@@ -461,7 +472,7 @@ pub fn editor(
                     if !years.is_empty() {
                         ui.label(RichText::new(years).weak());
                     }
-                    if ui.small_button("✕").on_hover_text("Убрать связь").clicked() {
+                    if ui.small_button("✕").on_hover_text(tr("Убрать связь")).clicked() {
                         actions.push(Action::Remove(rel, rid));
                     }
                 });
@@ -469,27 +480,27 @@ pub fn editor(
         }
 
         ui.add_space(6.0);
-        ui.label("Добавить нового человека:");
+        ui.label(tr("Добавить нового человека:"));
         ui.horizontal_wrapped(|ui| {
-            if ui.button("＋ Родитель").clicked() {
+            if ui.button(tr("＋ Родитель")).clicked() {
                 actions.push(Action::New(Rel::Parent));
             }
-            if ui.button("＋ Партнёр").clicked() {
+            if ui.button(tr("＋ Партнёр")).clicked() {
                 actions.push(Action::New(Rel::Partner));
             }
-            if ui.button("＋ Ребёнок").clicked() {
+            if ui.button(tr("＋ Ребёнок")).clicked() {
                 actions.push(Action::New(Rel::Child));
             }
-            if ui.button("＋ Брат/сестра").clicked() {
+            if ui.button(tr("＋ Брат/сестра")).clicked() {
                 actions.push(Action::New(Rel::Sibling));
             }
         });
 
         ui.add_space(6.0);
-        ui.label("Связать с существующим человеком:");
+        ui.label(tr("Связать с существующим человеком:"));
         ui.add(
             egui::TextEdit::singleline(&mut st.rel_search)
-                .hint_text("Начните вводить имя…")
+                .hint_text(tr("Начните вводить имя…"))
                 .desired_width(f32::INFINITY),
         );
         let q = st.rel_search.trim().to_lowercase();
@@ -501,7 +512,7 @@ pub fn editor(
                 .take(MAX_REL_RESULTS)
                 .collect();
             if found.is_empty() {
-                ui.label(RichText::new("Никого не найдено").weak());
+                ui.label(RichText::new(tr("Никого не найдено")).weak());
             }
             for o in found {
                 ui.horizontal_wrapped(|ui| {
@@ -512,13 +523,13 @@ pub fn editor(
                         format!("{} ({years})", full_name(o))
                     };
                     ui.label(name);
-                    if ui.small_button("родитель").clicked() {
+                    if ui.small_button(tr("родитель")).clicked() {
                         actions.push(Action::Link(Rel::Parent, o.id));
                     }
-                    if ui.small_button("партнёр").clicked() {
+                    if ui.small_button(tr("партнёр")).clicked() {
                         actions.push(Action::Link(Rel::Partner, o.id));
                     }
-                    if ui.small_button("ребёнок").clicked() {
+                    if ui.small_button(tr("ребёнок")).clicked() {
                         actions.push(Action::Link(Rel::Child, o.id));
                     }
                 });
@@ -528,22 +539,22 @@ pub fn editor(
         // --- Корень и удаление ---
         ui.separator();
         if is_root {
-            ui.label("✔ Это «я» — схема строится от предков этого человека.");
-        } else if ui.button("Это «я» (сделать корнем дерева)").clicked() {
+            ui.label(tr("✔ Это «я» — схема строится от предков этого человека."));
+        } else if ui.button(tr("Это «я» (сделать корнем дерева)")).clicked() {
             actions.push(Action::SetRoot);
         }
         ui.add_space(8.0);
         if st.confirm_delete == Some(id) {
-            ui.colored_label(Color32::from_rgb(220, 70, 70), "Удалить человека вместе со всеми его связями?");
+            ui.colored_label(Color32::from_rgb(220, 70, 70), tr("Удалить человека вместе со всеми его связями?"));
             ui.horizontal(|ui| {
-                if ui.button("Да, удалить").clicked() {
+                if ui.button(tr("Да, удалить")).clicked() {
                     actions.push(Action::Delete);
                 }
-                if ui.button("Отмена").clicked() {
+                if ui.button(tr("Отмена")).clicked() {
                     st.confirm_delete = None;
                 }
             });
-        } else if ui.button("Удалить человека…").clicked() {
+        } else if ui.button(tr("Удалить человека…")).clicked() {
             st.confirm_delete = Some(id);
         }
         ui.add_space(20.0);
@@ -577,7 +588,7 @@ pub fn editor(
                     Rel::Parent => link_parent(tree, o, id),
                     Rel::Partner => tree.add_partners(id, o).map_err(|e| e.to_string()),
                     Rel::Child => link_parent(tree, id, o),
-                    Rel::Sibling => Err("Нельзя связать так".to_string()),
+                    Rel::Sibling => Err(tr("Нельзя связать так").to_string()),
                 };
                 match r {
                     Ok(()) => {
@@ -589,18 +600,18 @@ pub fn editor(
                 }
             }
             Action::New(rel) => {
-                let (first, last) = match rel {
-                    Rel::Parent => ("Новый", "родитель"),
-                    Rel::Partner => ("Новый", "партнёр"),
-                    Rel::Child => ("Новый", "ребёнок"),
-                    Rel::Sibling => ("Новый", "брат/сестра"),
-                };
+                let (first, last) = placeholder_name(match rel {
+                    Rel::Parent => "Новый родитель",
+                    Rel::Partner => "Новый партнёр",
+                    Rel::Child => "Новый ребёнок",
+                    Rel::Sibling => "Новый брат/сестра",
+                });
                 let my_parents = tree.parents_of(id);
                 if rel == Rel::Sibling && my_parents.is_empty() {
-                    errors.push("Чтобы добавить брата/сестру, сначала добавьте родителя".to_string());
+                    errors.push(tr("Чтобы добавить брата/сестру, сначала добавьте родителя").to_string());
                     continue;
                 }
-                let nid = tree.add_person(Person::new(first, last));
+                let nid = tree.add_person(Person::new(&first, &last));
                 let r = match rel {
                     Rel::Parent => link_parent(tree, nid, id),
                     Rel::Partner => tree.add_partners(id, nid).map_err(|e| e.to_string()),

@@ -1,5 +1,6 @@
 //! Модель данных семейного дерева. Сериализуется в `tree.json` внутри `.famtree`.
 
+use crate::i18n::{tr, trf};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, HashSet};
@@ -133,14 +134,14 @@ pub enum ModelError {
 impl fmt::Display for ModelError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ModelError::NoSuchPerson(id) => write!(f, "Человек {id} не найден"),
-            ModelError::SelfRelation => write!(f, "Связь человека с самим собой"),
-            ModelError::Duplicate => write!(f, "Такая связь уже есть"),
-            ModelError::Cycle => write!(f, "Связь создаёт цикл в родстве"),
+            ModelError::NoSuchPerson(id) => write!(f, "{}", trf("Человек {id} не найден", &[("id", id.to_string())])),
+            ModelError::SelfRelation => write!(f, "{}", tr("Связь человека с самим собой")),
+            ModelError::Duplicate => write!(f, "{}", tr("Такая связь уже есть")),
+            ModelError::Cycle => write!(f, "{}", tr("Связь создаёт цикл в родстве")),
             ModelError::UnsupportedVersion(v) => {
-                write!(f, "Версия файла {v} новее, чем поддерживает приложение")
+                write!(f, "{}", trf("Версия файла {v} новее, чем поддерживает приложение", &[("v", v.to_string())]))
             }
-            ModelError::Json(e) => write!(f, "Ошибка данных: {e}"),
+            ModelError::Json(e) => write!(f, "{}", trf("Ошибка данных: {err}", &[("err", e.to_string())])),
         }
     }
 }

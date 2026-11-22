@@ -2,6 +2,7 @@
 //! Результат кладётся в `MediaStore` (полное фото + миниатюра для карточки).
 
 use crate::container::{MediaKind, MediaStore};
+use crate::i18n::trf;
 use image::codecs::jpeg::JpegEncoder;
 use image::imageops::FilterType;
 use image::{DynamicImage, ImageDecoder, ImageReader};
@@ -26,8 +27,8 @@ pub enum MediaError {
 impl fmt::Display for MediaError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MediaError::Io(e) => write!(f, "Ошибка чтения файла: {e}"),
-            MediaError::Image(e) => write!(f, "Не удалось обработать фото: {e}"),
+            MediaError::Io(e) => write!(f, "{}", trf("Ошибка чтения файла: {err}", &[("err", e.to_string())])),
+            MediaError::Image(e) => write!(f, "{}", trf("Не удалось обработать фото: {err}", &[("err", e.to_string())])),
         }
     }
 }

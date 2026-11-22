@@ -6,6 +6,7 @@ use crate::theme;
 use crate::container::{self, MediaStore};
 use crate::demo;
 use crate::edit::{self, EditState, ListAction};
+use crate::i18n::{self, tr, trf, Lang};
 use crate::layout::{self, Layout, LayoutConfig};
 use crate::list::{self, ListState};
 use crate::model::{PersonId, Tree};
@@ -105,7 +106,12 @@ impl FamTreeApp {
                 self.set_tree(tree, store, Some(p));
                 self.status.clear();
             }
-            Err(e) => self.status = format!("Не удалось открыть {}: {e}", p.display()),
+            Err(e) => {
+                self.status = trf(
+                    "Не удалось открыть {path}: {err}",
+                    &[("path", p.display().to_string()), ("err", e.to_string())],
+                )
+            }
         }
     }
 
@@ -159,7 +165,7 @@ impl FamTreeApp {
             Guarded::New => self.set_tree(Tree::new(), MediaStore::new(), None),
             Guarded::Open => {
                 if let Some(p) = rfd::FileDialog::new()
-                    .add_filter("Семейное дерево", &["famtree"])
+                    .add_filter(tr("Семейное дерево"), &["famtree"])
                     .pick_file()
                 {
                     self.open_file(p);
@@ -176,7 +182,7 @@ impl FamTreeApp {
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_else(|| p.display().to_string()),
-            None => "Новое дерево".to_string(),
+            None => tr("Новое дерево").to_string(),
         }
     }
 
@@ -192,21 +198,21 @@ impl FamTreeApp {
         }
         let mut choice = Choice::None;
         let name = self.file_label();
-        egui::Window::new("Несохранённые изменения")
+        egui::Window::new(tr("Несохранённые изменения"))
             .collapsible(false)
             .resizable(false)
             .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
-                ui.label(format!("В «{name}» есть несохранённые изменения. Сохранить их?"));
+                ui.label(trf("В «{name}» есть несохранённые изменения. Сохранить их?", &[("name", name.to_string())]));
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
-                    if ui.button("Сохранить").clicked() {
+                    if ui.button(tr("Сохранить")).clicked() {
                         choice = Choice::Save;
                     }
-                    if ui.button("Не сохранять").clicked() {
+                    if ui.button(tr("Не сохранять")).clicked() {
                         choice = Choice::Discard;
                     }
-                    if ui.button("Отмена").clicked() {
+                    if ui.button(tr("Отмена")).clicked() {
                         choice = Choice::Cancel;
                     }
                 });
@@ -241,8 +247,8 @@ impl FamTreeApp {
 
     pub fn save_as(&mut self) {
         if let Some(mut p) = rfd::FileDialog::new()
-            .add_filter("Семейное дерево", &["famtree"])
-            .set_file_name("семья.famtree")
+            .add_filter(tr("Семейное дерево"), &["famtree"])
+            .set_file_name(format!("{}.famtree", tr("семья")))
             .save_file()
         {
             if p.extension().is_none() {
@@ -292,11 +298,19 @@ impl FamTreeApp {
                 self.dirty = false;
                 self.status.clear();
             }
-            Err(e) => self.status = format!("Не удалось сохранить: {e}"),
+            Err(e) => self.status = trf("Не удалось сохранить: {err}", &[("err", e.to_string())]),
         }
     }
 
     /// Выделить человека и показать его на схеме.
+    /// Switches the interface language, remembers it and reloads the fonts (Chinese needs a CJK font).
+    fn set_language(&mut self, ctx: &egui::Context, lang: Lang) {
+        i18n::set(lang);
+        i18n::save(lang);
+        theme::set_fonts(ctx, lang);
+        self.status.clear();
+    }
+
     fn select_and_show(&mut self, id: PersonId) {
         self.selected = Some(id);
         self.view.fly_to(id, false);
@@ -321,7 +335,7 @@ impl eframe::App for FamTreeApp {
             self.pending = Some(Guarded::Close);
         }
         // Заголовок окна: имя файла и «*» при несохранённых правках.
-        let title = format!("{}{} — Семейное дерево", self.file_label(), if self.dirty { " *" } else { "" });
+        let title = format!("{}{} — {}", self.file_label(), if self.dirty { " *" } else { "" }, tr("Семейное дерево"));
         if title != self.last_title {
             ctx.send_viewport_cmd(egui::ViewportCommand::Title(title.clone()));
             self.last_title = title;
@@ -339,48 +353,60 @@ impl eframe::App for FamTreeApp {
 
         egui::TopBottomPanel::top("toolbar").exact_height(48.0).frame(theme::bar_frame(14.0, 6.0)).show(ctx, |ui| {
             ui.horizontal_centered(|ui| {
-                if ui.button("Открыть").clicked() {
+                if ui.button(tr("Открыть")).clicked() {
                     self.request(ctx, Guarded::Open);
                 }
-                if theme::primary_button(ui, "Сохранить").clicked() {
+                if theme::primary_button(ui, tr("Сохранить")).clicked() {
                     self.save();
                 }
-                ui.menu_button("Файл", |ui| {
-                    if ui.button("Новое").clicked() {
+                ui.menu_button(tr("Файл"), |ui| {
+                    if ui.button(tr("Новое")).clicked() {
                         self.request(ctx, Guarded::New);
                         ui.close_menu();
                     }
-                    if ui.button("Сохранить как…").clicked() {
+                    if ui.button(tr("Сохранить как…")).clicked() {
                         self.save_as();
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("Демо").clicked() {
+                    if ui.button(tr("Демо")).clicked() {
                         self.request(ctx, Guarded::Demo);
                         ui.close_menu();
                     }
-                    if ui.button("Демо ×1000").clicked() {
+                    if ui.button(tr("Демо ×1000")).clicked() {
                         self.request(ctx, Guarded::BigDemo);
                         ui.close_menu();
                     }
                     ui.separator();
                     let linked = self.assoc_linked;
-                    let label = if linked { "Отвязать .famtree от приложения" } else { "Открывать .famtree двойным кликом" };
+                    let label = if linked {
+                        tr("Отвязать .famtree от приложения")
+                    } else {
+                        tr("Открывать .famtree двойным кликом")
+                    };
                     if ui.button(label).clicked() {
                         let r = if linked { assoc::unregister() } else { assoc::register() };
                         match r {
                             Ok(()) => self.status.clear(),
-                            Err(e) => self.status = format!("Ассоциация .famtree: {e}"),
+                            Err(e) => self.status = trf("Ассоциация .famtree: {err}", &[("err", e.to_string())]),
                         }
                         self.assoc_linked = assoc::is_registered();
                         ui.close_menu();
                     }
                 });
+                ui.menu_button(tr("Язык"), |ui| {
+                    for lang in Lang::ALL {
+                        if ui.selectable_label(i18n::current() == lang, lang.native_name()).clicked() {
+                            self.set_language(ctx, lang);
+                            ui.close_menu();
+                        }
+                    }
+                });
 
                 ui.add_space(12.0);
-                ui.selectable_value(&mut self.mode, Mode::View, "Просмотр");
-                ui.selectable_value(&mut self.mode, Mode::Edit, "Редакция");
-                ui.selectable_value(&mut self.mode, Mode::List, "Список");
+                ui.selectable_value(&mut self.mode, Mode::View, tr("Просмотр"));
+                ui.selectable_value(&mut self.mode, Mode::Edit, tr("Редакция"));
+                ui.selectable_value(&mut self.mode, Mode::List, tr("Список"));
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if self.mode != Mode::List {
@@ -389,7 +415,7 @@ impl eframe::App for FamTreeApp {
                             self.view.fly_to(id, true);
                         }
                     }
-                    if self.mode == Mode::View && ui.button("По размеру").clicked() {
+                    if self.mode == Mode::View && ui.button(tr("По размеру")).clicked() {
                         self.view.fitted = false;
                     }
                 });
@@ -409,20 +435,22 @@ impl eframe::App for FamTreeApp {
                 let dim = |t: String| egui::RichText::new(t).small().color(theme::MUTED);
                 match &self.path {
                     Some(p) => ui.label(dim(p.display().to_string())),
-                    None => ui.label(dim("Новое дерево".into())),
+                    None => ui.label(dim(tr("Новое дерево").into())),
                 };
-                ui.label(dim(format!(
-                    "·  Людей: {}  ·  на схеме: {}",
-                    self.tree.persons.len(),
-                    self.layout.nodes.len()
+                ui.label(dim(trf(
+                    "·  Людей: {total}  ·  на схеме: {shown}",
+                    &[
+                        ("total", self.tree.persons.len().to_string()),
+                        ("shown", self.layout.nodes.len().to_string()),
+                    ],
                 )));
                 if let Some(name) = self.selected_name() {
-                    ui.label(dim(format!("·  Выбран: {name}")));
+                    ui.label(dim(trf("·  Выбран: {name}", &[("name", name.to_string())])));
                 }
                 if self.dirty {
-                    ui.label(egui::RichText::new("●  не сохранено").small().color(theme::TEXT));
+                    ui.label(egui::RichText::new(tr("●  не сохранено")).small().color(theme::TEXT));
                     if self.path.is_none() {
-                        ui.label(dim("(автосохранение заработает после «Сохранить как…»)".into()));
+                        ui.label(dim(tr("(автосохранение заработает после «Сохранить как…»)").into()));
                     }
                 }
                 if !self.status.is_empty() {

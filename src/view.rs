@@ -2,6 +2,7 @@
 //! ленивая загрузка миниатюр в текстуры.
 
 use crate::container::{MediaKind, MediaStore};
+use crate::i18n::tr;
 use crate::layout::{Layout, LayoutConfig};
 use crate::model::{Gender, PersonId, Tree};
 use eframe::egui::{
@@ -163,7 +164,7 @@ impl ViewState {
             painter.text(
                 rect.center(),
                 Align2::CENTER_CENTER,
-                "Дерево пусто. Откройте файл или нажмите «Демо».",
+                tr("Дерево пусто. Откройте файл или нажмите «Демо»."),
                 FontId::proportional(18.0),
                 visuals.weak_text_color(),
             );
