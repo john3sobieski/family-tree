@@ -6,14 +6,14 @@ Creado y mantenido por **[john3sobieski](https://github.com/john3sobieski)**. Re
 
 Una aplicación de escritorio para Windows para crear, editar y explorar tu árbol genealógico. Todo vive en un único archivo `.famtree`: personas, relaciones y todas las fotos.
 
-> **Estado:** desarrollo temprano. Todavía no hay versiones listas para descargar, y la aplicación solo está disponible compilándola con GitHub Actions (consulta [Instalación](#instalación)). Por ahora la interfaz está en ruso (consulta [Hoja de ruta](#hoja-de-ruta)).
+> **Estado:** desarrollo temprano. Todavía no hay versiones listas para descargar, y la aplicación solo está disponible compilándola con GitHub Actions (consulta [Instalación](#instalación)).
 
 ## Características
 
 - **Tres modos**
-  - **Vista** (*Просмотр*) – mapa mental de solo lectura con zoom y desplazamiento fluidos.
-  - **Edición** (*Редакция*) – añade y modifica personas, fotos y relaciones.
-  - **Lista** (*Список*) – una tabla ordenable y filtrable con todas las personas del árbol.
+  - **Vista** – mapa mental de solo lectura con zoom y desplazamiento fluidos.
+  - **Edición** – añade y modifica personas, fotos y relaciones.
+  - **Lista** – una tabla ordenable y filtrable con todas las personas del árbol.
 - **Mapa mental construido a tu alrededor.** Marca a una persona como «yo» y el árbol se dibuja desde tus antepasados más lejanos hacia abajo, de modo que padres, hermanos, tíos, primos y parientes más lejanos aparecen automáticamente. Ambas ramas de la familia se colocan una junto a la otra, y también se incluyen las familias políticas.
 - **Tarjetas con foto.** Cada tarjeta muestra una foto tipo carnet, el nombre, el apellido (con el apellido de soltera entre paréntesis en el caso de las mujeres), el patronímico, una franja de color para el género y hasta dos banderas de nacionalidad.
 - **Ventana de persona.** Haz clic en una tarjeta para abrir una ventana más grande con la foto completa, una galería (más de 10 fotos por persona no es problema), fechas, edad, lugares de nacimiento y fallecimiento, profesión, notas y enlaces clicables a padres, parejas e hijos.
@@ -22,8 +22,9 @@ Una aplicación de escritorio para Windows para crear, editar y explorar tu árb
 - **Fechas incompletas.** ¿Solo conoces el año? Sin problema: cualquier parte de una fecha se puede dejar vacía.
 - **Nacionalidades.** Elige hasta dos por persona de una lista integrada de 197 países (todos los miembros de la ONU más el Vaticano, Palestina, Taiwán y Kosovo). Las banderas las dibuja la propia aplicación.
 - **Pensado para árboles grandes.** Solo se dibujan las tarjetas visibles, las miniaturas se cargan de forma diferida y el diseño solo se recalcula cuando cambia la estructura. Se ha probado con árboles de miles de personas.
-- **Guardado automático.** Cuando el árbol ya tiene un archivo, cada cambio se guarda automáticamente un instante después de que dejes de escribir. Para un árbol nuevo, usa primero **Guardar como…** (*Сохранить как…*). Además, se te avisa antes de cerrar si algo no se pudo guardar.
-- **Doble clic para abrir.** En el menú **Archivo** (*Файл*) puedes asociar los archivos `.famtree` con la aplicación.
+- **Guardado automático.** Cuando el árbol ya tiene un archivo, cada cambio se guarda automáticamente un instante después de que dejes de escribir. Para un árbol nuevo, usa primero **Guardar como…**. Además, se te avisa antes de cerrar si algo no se pudo guardar.
+- **Idiomas de la interfaz.** Русский, English, 中文, Español, Français, Deutsch y Polski. Cambia el idioma en el menú **Idioma**; la elección se recuerda. En el primer inicio, la aplicación sigue el idioma de visualización de Windows y, si no es uno de estos, usa inglés. Los nombres de los países también se traducen.
+- **Doble clic para abrir.** En el menú **Archivo** puedes asociar los archivos `.famtree` con la aplicación.
 
 ## Instalación
 
@@ -45,11 +46,11 @@ Cuando exista un instalador de verdad, se publicará en **Releases** y esta secc
 
 ## Inicio rápido
 
-1. Abre `famtree.exe`. Usa **Archivo → Demo** (*Файл → Демо*) para ver un árbol de ejemplo, o **Archivo → Nuevo** (*Файл → Новое*) para empezar el tuyo.
-2. Cambia al modo **Edición** y añade a la primera persona (*＋ Новый человек*). En un árbol vacío, esa persona pasa a ser automáticamente «yo».
-3. Selecciona a una persona y usa **＋ Padre/madre**, **＋ Pareja**, **＋ Hijo/a** o **＋ Hermano/a** (*＋ Родитель*, *＋ Партнёр*, *＋ Ребёнок*, *＋ Брат/сестра*) para hacer crecer el árbol. Rellena nombres, fechas, fotos y notas a la derecha.
+1. Abre `famtree.exe`. Usa **Archivo → Demo** para ver un árbol de ejemplo, o **Archivo → Nuevo** para empezar el tuyo.
+2. Cambia al modo **Edición** y añade a la primera persona (**＋ Nueva persona**). En un árbol vacío, esa persona pasa a ser automáticamente «yo».
+3. Selecciona a una persona y usa **＋ Padre/madre**, **＋ Pareja**, **＋ Hijo/a** o **＋ Hermano/a** para hacer crecer el árbol. Rellena nombres, fechas, fotos y notas a la derecha.
 4. Elige **Guardar como…** y ponle un nombre. A partir de ahí, los cambios se guardan automáticamente.
-5. Cambia a **Vista** para explorar el mapa: arrastra para desplazarte, usa la rueda para hacer zoom, **Ajustar** (*По размеру*) para verlo todo y haz clic en una tarjeta para ver los detalles.
+5. Cambia a **Vista** para explorar el mapa: arrastra para desplazarte, usa la rueda para hacer zoom, **Ajustar** para verlo todo y haz clic en una tarjeta para ver los detalles.
 
 ## El archivo `.famtree`
 
@@ -67,7 +68,8 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 ## Limitaciones conocidas
 
-- La interfaz solo está disponible en ruso por ahora.
+- Las traducciones de la interfaz (salvo el ruso) aún no las han revisado hablantes nativos. Las correcciones son bienvenidas a través de los issues.
+- Las fechas siempre se muestran como `DD.MM.AAAA`, sea cual sea el idioma.
 - Solo Windows 10.
 - Todavía no hay deshacer ni exportación a PNG/PDF.
 - Importar muchas fotos de golpe puede congelar la ventana un momento.
@@ -81,8 +83,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 Mejoras previstas, sin ningún orden concreto:
 
 - [ ] **Un instalador de verdad**, en lugar de un `.exe` suelto de Actions, publicado en Releases.
-- [ ] **Traducción de la aplicación** a otros idiomas.
-- [ ] **Traducción de este README** a otros idiomas.
 - [ ] **Corrección de errores de diseño**: de vez en cuando hay personas que acaban en un lugar equivocado del mapa.
 
 ## Compilar desde el código fuente

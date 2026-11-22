@@ -6,14 +6,14 @@ Créé et maintenu par **[john3sobieski](https://github.com/john3sobieski)**. D�
 
 Une application de bureau pour Windows destinée à construire, modifier et parcourir votre arbre généalogique. Tout tient dans un seul fichier `.famtree` : les personnes, les liens de parenté et toutes les photos.
 
-> **Statut :** développement précoce. Il n'existe pas encore de versions prêtes à l'emploi, et l'application n'est disponible qu'en la compilant via GitHub Actions (voir [Installation](#installation)). L'interface est pour l'instant en russe (voir [Feuille de route](#feuille-de-route)).
+> **Statut :** développement précoce. Il n'existe pas encore de versions prêtes à l'emploi, et l'application n'est disponible qu'en la compilant via GitHub Actions (voir [Installation](#installation)).
 
 ## Fonctionnalités
 
 - **Trois modes**
-  - **Consultation** (*Просмотр*) – carte mentale en lecture seule, avec zoom et déplacement fluides.
-  - **Édition** (*Редакция*) – ajout et modification des personnes, des photos et des liens.
-  - **Liste** (*Список*) – un tableau triable et filtrable de toutes les personnes de l'arbre.
+  - **Consultation** – carte mentale en lecture seule, avec zoom et déplacement fluides.
+  - **Édition** – ajout et modification des personnes, des photos et des liens.
+  - **Liste** – un tableau triable et filtrable de toutes les personnes de l'arbre.
 - **Une carte mentale construite autour de vous.** Marquez une personne comme « moi » et l'arbre est dessiné de vos ancêtres les plus lointains vers le bas : parents, frères et sœurs, oncles, tantes, cousins et parents plus éloignés apparaissent donc automatiquement. Les deux côtés de la famille sont placés côte à côte, et les familles des alliés sont également incluses.
 - **Cartes avec photo.** Chaque carte affiche une photo d'identité, le prénom, le nom de famille (avec le nom de jeune fille entre parenthèses pour les femmes), le patronyme, une bande de couleur pour le sexe et jusqu'à deux drapeaux de nationalité.
 - **Fenêtre de la personne.** Cliquez sur une carte pour ouvrir une fenêtre plus grande avec la photo en grand, une galerie (plus de 10 photos par personne, aucun souci), les dates, l'âge, les lieux de naissance et de décès, la profession, des notes et des liens cliquables vers les parents, les partenaires et les enfants.
@@ -22,8 +22,9 @@ Une application de bureau pour Windows destinée à construire, modifier et parc
 - **Dates incomplètes.** Vous ne connaissez que l'année ? Aucun problème, n'importe quelle partie d'une date peut rester vide.
 - **Nationalités.** Choisissez-en jusqu'à deux par personne dans une liste intégrée de 197 pays (tous les membres de l'ONU plus le Vatican, la Palestine, Taïwan et le Kosovo). Les drapeaux sont dessinés par l'application elle-même.
 - **Conçu pour les grands arbres.** Seules les cartes visibles sont dessinées, les miniatures sont chargées à la demande (lazy loading), et la disposition n'est recalculée que lorsque la structure change. Testé avec des arbres de plusieurs milliers de personnes.
-- **Sauvegarde automatique.** Une fois que l'arbre est associé à un fichier, chaque modification est enregistrée automatiquement un instant après que vous avez arrêté de saisir. Pour un nouvel arbre, utilisez d'abord **Enregistrer sous…** (*Сохранить как…*). L'application vous prévient aussi avant la fermeture si quelque chose n'a pas pu être enregistré.
-- **Ouverture par double-clic.** Dans le menu **Fichier** (*Файл*), vous pouvez associer les fichiers `.famtree` à l'application.
+- **Sauvegarde automatique.** Une fois que l'arbre est associé à un fichier, chaque modification est enregistrée automatiquement un instant après que vous avez arrêté de saisir. Pour un nouvel arbre, utilisez d'abord **Enregistrer sous…**. L'application vous prévient aussi avant la fermeture si quelque chose n'a pas pu être enregistré.
+- **Langues de l'interface.** Русский, English, 中文, Español, Français, Deutsch et Polski. Changez de langue dans le menu **Langue** ; le choix est mémorisé. Au premier lancement, l'application suit la langue d'affichage de Windows et, à défaut, utilise l'anglais. Les noms des pays sont eux aussi traduits.
+- **Ouverture par double-clic.** Dans le menu **Fichier**, vous pouvez associer les fichiers `.famtree` à l'application.
 
 ## Installation
 
@@ -45,11 +46,11 @@ Lorsqu'un véritable installateur existera, il sera publié dans **Releases** et
 
 ## Démarrage rapide
 
-1. Lancez `famtree.exe`. Utilisez **Fichier → Démo** (*Файл → Демо*) pour voir un arbre d'exemple, ou **Fichier → Nouveau** (*Файл → Новое*) pour commencer le vôtre.
-2. Passez en mode **Édition** et ajoutez la première personne (*＋ Новый человек*). Dans un arbre vide, elle devient automatiquement « moi ».
-3. Sélectionnez une personne et utilisez **＋ Parent**, **＋ Partenaire**, **＋ Enfant** ou **＋ Frère/sœur** (*＋ Родитель*, *＋ Партнёр*, *＋ Ребёнок*, *＋ Брат/сестра*) pour faire grandir l'arbre. Renseignez les noms, les dates, les photos et les notes sur la droite.
+1. Lancez `famtree.exe`. Utilisez **Fichier → Démo** pour voir un arbre d'exemple, ou **Fichier → Nouveau** pour commencer le vôtre.
+2. Passez en mode **Édition** et ajoutez la première personne (**＋ Nouvelle personne**). Dans un arbre vide, elle devient automatiquement « moi ».
+3. Sélectionnez une personne et utilisez **＋ Parent**, **＋ Partenaire**, **＋ Enfant** ou **＋ Frère/sœur** pour faire grandir l'arbre. Renseignez les noms, les dates, les photos et les notes sur la droite.
 4. Choisissez **Enregistrer sous…** et donnez un nom. À partir de là, les modifications sont enregistrées automatiquement.
-5. Passez en **Consultation** pour explorer la carte : faites glisser pour vous déplacer, utilisez la molette pour zoomer, **Ajuster** (*По размеру*) pour tout voir, et cliquez sur une carte pour afficher les détails.
+5. Passez en **Consultation** pour explorer la carte : faites glisser pour vous déplacer, utilisez la molette pour zoomer, **Ajuster** pour tout voir, et cliquez sur une carte pour afficher les détails.
 
 ## Le fichier `.famtree`
 
@@ -67,7 +68,8 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 ## Limitations connues
 
-- L'interface n'est actuellement disponible qu'en russe.
+- Les traductions de l'interface (hors russe) n'ont pas encore été relues par des locuteurs natifs. Les corrections sont les bienvenues via les issues.
+- Les dates s'affichent toujours au format `JJ.MM.AAAA`, quelle que soit la langue.
 - Windows 10 uniquement.
 - Pas encore d'annulation ni d'export en PNG/PDF.
 - L'importation d'un grand lot de photos d'un coup peut figer la fenêtre un instant.
@@ -81,8 +83,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 Améliorations prévues, sans ordre particulier :
 
 - [ ] **Un véritable installateur**, à la place d'un simple `.exe` issu d'Actions, publié dans Releases.
-- [ ] **Traduction de l'application** dans d'autres langues.
-- [ ] **Traduction de ce README** dans d'autres langues.
 - [ ] **Correction des bugs de disposition** : il arrive que des personnes se retrouvent au mauvais endroit sur la carte.
 
 ## Compiler depuis les sources

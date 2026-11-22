@@ -6,14 +6,14 @@ Erstellt und gepflegt von **[john3sobieski](https://github.com/john3sobieski)**.
 
 Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bearbeiten und durchstöbern kannst. Alles steckt in einer einzigen `.famtree`-Datei: Personen, Beziehungen und alle Fotos.
 
-> **Status:** frühe Entwicklung. Es gibt noch keine fertigen Releases, und die App ist derzeit nur verfügbar, wenn man sie über GitHub Actions selbst baut (siehe [Installation](#installation)). Die Oberfläche ist vorerst auf Russisch (siehe [Roadmap](#roadmap)).
+> **Status:** frühe Entwicklung. Es gibt noch keine fertigen Releases, und die App ist derzeit nur verfügbar, wenn man sie über GitHub Actions selbst baut (siehe [Installation](#installation)).
 
 ## Funktionen
 
 - **Drei Modi**
-  - **Ansicht** (*Просмотр*) – schreibgeschützte Mindmap mit flüssigem Zoomen und Verschieben.
-  - **Bearbeiten** (*Редакция*) – Personen, Fotos und Beziehungen hinzufügen und ändern.
-  - **Liste** (*Список*) – eine sortier- und filterbare Tabelle aller Personen im Stammbaum.
+  - **Ansicht** – schreibgeschützte Mindmap mit flüssigem Zoomen und Verschieben.
+  - **Bearbeiten** – Personen, Fotos und Beziehungen hinzufügen und ändern.
+  - **Liste** – eine sortier- und filterbare Tabelle aller Personen im Stammbaum.
 - **Mindmap, die um dich herum aufgebaut wird.** Markiere eine Person als „ich“, und der Baum wird von deinen obersten Vorfahren abwärts gezeichnet. Eltern, Geschwister, Onkel, Tanten, Cousins und Cousinen sowie entferntere Verwandte erscheinen dadurch automatisch. Beide Seiten der Familie werden nebeneinander angeordnet, auch die Familien der angeheirateten Verwandten werden einbezogen.
 - **Fotokarten.** Jede Karte zeigt ein Passfoto, den Vornamen, den Nachnamen (bei Frauen mit dem Mädchennamen in Klammern), den Vatersnamen, einen Farbstreifen für das Geschlecht und bis zu zwei Flaggen für die Staatsangehörigkeit.
 - **Personenfenster.** Ein Klick auf eine Karte öffnet ein größeres Fenster mit dem vollständigen Foto, einer Galerie (10+ Fotos pro Person sind kein Problem), Daten, Alter, Geburts- und Sterbeort, Beruf, Notizen und anklickbaren Links zu Eltern, Partnern und Kindern.
@@ -22,8 +22,9 @@ Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bear
 - **Unvollständige Daten.** Du kennst nur das Jahr? Kein Problem, jeder Teil eines Datums kann leer bleiben.
 - **Staatsangehörigkeiten.** Wähle pro Person bis zu zwei aus einer eingebauten Liste von 197 Ländern (alle UN-Mitglieder plus Vatikan, Palästina, Taiwan und Kosovo). Die Flaggen zeichnet die App selbst.
 - **Für große Bäume gebaut.** Es werden nur sichtbare Karten gezeichnet, Vorschaubilder werden per Lazy Loading nachgeladen, und das Layout wird nur neu berechnet, wenn sich die Struktur ändert. Getestet mit Bäumen aus Tausenden von Personen.
-- **Autosave.** Sobald der Baum eine Datei hat, wird jede Änderung kurz nach dem Aufhören mit dem Tippen automatisch gespeichert. Für einen neuen Baum nutze zuerst **Speichern unter…** (*Сохранить как…*). Vor dem Schließen wirst du außerdem gefragt, wenn etwas nicht gespeichert werden konnte.
-- **Doppelklick zum Öffnen.** Im Menü **Datei** (*Файл*) kannst du `.famtree`-Dateien mit der App verknüpfen.
+- **Autosave.** Sobald der Baum eine Datei hat, wird jede Änderung kurz nach dem Aufhören mit dem Tippen automatisch gespeichert. Für einen neuen Baum nutze zuerst **Speichern unter…**. Vor dem Schließen wirst du außerdem gefragt, wenn etwas nicht gespeichert werden konnte.
+- **Oberflächensprachen.** Русский, English, 中文, Español, Français, Deutsch und Polski. Über das Menü **Sprache** wechselst du die Sprache; die Auswahl wird gespeichert. Beim ersten Start folgt die App der Windows-Anzeigesprache und verwendet sonst Englisch. Auch die Ländernamen werden übersetzt.
+- **Doppelklick zum Öffnen.** Im Menü **Datei** kannst du `.famtree`-Dateien mit der App verknüpfen.
 
 ## Installation
 
@@ -45,11 +46,11 @@ Sobald es einen richtigen Installer gibt, wird er unter **Releases** veröffentl
 
 ## Schnellstart
 
-1. Starte `famtree.exe`. Mit **Datei → Demo** (*Файл → Демо*) siehst du einen Beispielbaum, mit **Datei → Neu** (*Файл → Новое*) beginnst du deinen eigenen.
-2. Wechsle in den Modus **Bearbeiten** und füge die erste Person hinzu (*＋ Новый человек*). In einem leeren Baum wird sie automatisch zu „ich“.
-3. Wähle eine Person aus und nutze **＋ Elternteil**, **＋ Partner**, **＋ Kind** oder **＋ Geschwister** (*＋ Родитель*, *＋ Партнёр*, *＋ Ребёнок*, *＋ Брат/сестра*), um den Baum wachsen zu lassen. Namen, Daten, Fotos und Notizen trägst du rechts ein.
+1. Starte `famtree.exe`. Mit **Datei → Demo** siehst du einen Beispielbaum, mit **Datei → Neu** beginnst du deinen eigenen.
+2. Wechsle in den Modus **Bearbeiten** und füge die erste Person hinzu (**＋ Neue Person**). In einem leeren Baum wird sie automatisch zu „ich“.
+3. Wähle eine Person aus und nutze **＋ Elternteil**, **＋ Partner**, **＋ Kind** oder **＋ Geschwister**, um den Baum wachsen zu lassen. Namen, Daten, Fotos und Notizen trägst du rechts ein.
 4. Wähle **Speichern unter…** und vergib einen Namen. Ab dann werden Änderungen automatisch gespeichert.
-5. Wechsle zu **Ansicht**, um die Karte zu erkunden: Ziehen zum Verschieben, Scrollen zum Zoomen, **Einpassen** (*По размеру*), um alles zu sehen, und ein Klick auf eine Karte für Details.
+5. Wechsle zu **Ansicht**, um die Karte zu erkunden: Ziehen zum Verschieben, Scrollen zum Zoomen, **Einpassen**, um alles zu sehen, und ein Klick auf eine Karte für Details.
 
 ## Die `.famtree`-Datei
 
@@ -67,7 +68,8 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 ## Bekannte Einschränkungen
 
-- Die Oberfläche gibt es derzeit nur auf Russisch.
+- Die Übersetzungen der Oberfläche (außer Russisch) wurden noch nicht von Muttersprachlern geprüft. Korrekturen sind über Issues willkommen.
+- Datumsangaben werden unabhängig von der Sprache immer als `TT.MM.JJJJ` angezeigt.
 - Nur Windows 10.
 - Noch kein Rückgängig und kein Export nach PNG/PDF.
 - Der Import vieler Fotos auf einmal kann das Fenster kurz einfrieren lassen.
@@ -81,8 +83,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 Geplante Verbesserungen, in beliebiger Reihenfolge:
 
 - [ ] **Ein richtiger Installer** statt einer nackten `.exe` aus Actions, veröffentlicht unter Releases.
-- [ ] **Übersetzung der App** in andere Sprachen.
-- [ ] **Übersetzung dieser README** in andere Sprachen.
 - [ ] **Behebung von Layout-Fehlern**: Gelegentlich landen Personen an der falschen Stelle auf der Karte.
 
 ## Aus dem Quellcode bauen

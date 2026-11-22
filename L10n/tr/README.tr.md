@@ -6,14 +6,14 @@
 
 Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüstü uygulaması. Her şey tek bir `.famtree` dosyasında durur: kişiler, ilişkiler ve tüm fotoğraflar.
 
-> **Durum:** erken geliştirme aşamasında. Henüz hazır sürüm yok ve uygulama şu anda yalnızca GitHub Actions ile derlenerek edinilebiliyor ([Kurulum](#kurulum) bölümüne bakın). Arayüz şimdilik Rusça ([Yol haritası](#yol-haritası) bölümüne bakın).
+> **Durum:** erken geliştirme aşamasında. Henüz hazır sürüm yok ve uygulama şu anda yalnızca GitHub Actions ile derlenerek edinilebiliyor ([Kurulum](#kurulum) bölümüne bakın).
 
 ## Özellikler
 
 - **Üç mod**
-  - **Görüntüleme** (*Просмотр*) – akıcı yakınlaştırma ve kaydırma sunan, salt okunur zihin haritası.
-  - **Düzenleme** (*Редакция*) – kişi, fotoğraf ve ilişki ekleyin ve değiştirin.
-  - **Liste** (*Список*) – ağaçtaki herkesin sıralanabilir ve filtrelenebilir tablosu.
+  - **Görüntüleme** (*View*) – akıcı yakınlaştırma ve kaydırma sunan, salt okunur zihin haritası.
+  - **Düzenleme** (*Edit*) – kişi, fotoğraf ve ilişki ekleyin ve değiştirin.
+  - **Liste** (*List*) – ağaçtaki herkesin sıralanabilir ve filtrelenebilir tablosu.
 - **Sizin etrafınızda kurulan zihin haritası.** Bir kişiyi "ben" olarak işaretleyin; ağaç en üstteki atalarınızdan aşağıya doğru çizilir. Böylece anne-baba, kardeşler, amca/dayı, hala/teyze, kuzenler ve daha uzak akrabalar otomatik olarak görünür. Ailenin her iki tarafı yan yana yerleştirilir, evlilik yoluyla akraba olunan aileler de dahil edilir.
 - **Fotoğraflı kartlar.** Her kart vesikalık tarzı bir fotoğraf, ad, soyadı (kadınlarda kızlık soyadı parantez içinde), baba adı (patronimik), cinsiyeti gösteren renkli bir şerit ve en fazla iki uyruk bayrağı gösterir.
 - **Kişi penceresi.** Bir karta tıklamak; tam fotoğraf, galeri (kişi başına 10+ fotoğraf sorun değil), tarihler, yaş, doğum ve ölüm yerleri, meslek, notlar ve anne-baba, partnerler ve çocuklara tıklanabilir bağlantılar içeren daha büyük bir pencere açar.
@@ -22,8 +22,9 @@ Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüst�
 - **Eksik tarihler.** Yalnızca yılı mı biliyorsunuz? Sorun değil, bir tarihin herhangi bir kısmı boş bırakılabilir.
 - **Uyruklar.** Kişi başına, 197 ülkelik yerleşik bir listeden (tüm BM üyeleri artı Vatikan, Filistin, Tayvan ve Kosova) en fazla iki uyruk seçin. Bayrakları uygulamanın kendisi çizer.
 - **Büyük ağaçlar için tasarlandı.** Yalnızca görünen kartlar çizilir, küçük resimler tembel yükleme (lazy loading) ile yüklenir ve yerleşim yalnızca yapı değiştiğinde yeniden hesaplanır. Binlerce kişilik ağaçlarla test edilmiştir.
-- **Otomatik kaydetme.** Ağacın bir dosyası olduktan sonra, yazmayı bıraktıktan kısa bir süre sonra her değişiklik otomatik olarak kaydedilir. Yeni bir ağaç için önce **Farklı kaydet…** (*Сохранить как…*) seçeneğini kullanın. Bir şey kaydedilemediyse kapatmadan önce size sorulur.
-- **Çift tıklayarak açma.** **Dosya** (*Файл*) menüsünden `.famtree` dosyalarını uygulamayla ilişkilendirebilirsiniz.
+- **Otomatik kaydetme.** Ağacın bir dosyası olduktan sonra, yazmayı bıraktıktan kısa bir süre sonra her değişiklik otomatik olarak kaydedilir. Yeni bir ağaç için önce **Farklı kaydet…** (*Save as…*) seçeneğini kullanın. Bir şey kaydedilemediyse kapatmadan önce size sorulur.
+- **Arayüz dilleri.** Русский, English, 中文, Español, Français, Deutsch ve Polski. Dili **Language** menüsünden değiştirebilirsiniz; seçiminiz hatırlanır. İlk açılışta uygulama Windows görüntüleme dilini izler, bu dillerden biri değilse İngilizceyi kullanır. Ülke adları da çevrilir.
+- **Çift tıklayarak açma.** **Dosya** (*File*) menüsünden `.famtree` dosyalarını uygulamayla ilişkilendirebilirsiniz.
 
 ## Kurulum
 
@@ -45,11 +46,11 @@ Gerçek bir yükleyici hazır olduğunda **Releases** bölümünde yayımlanacak
 
 ## Hızlı başlangıç
 
-1. `famtree.exe` dosyasını başlatın. Örnek bir ağaca bakmak için **Dosya → Demo** (*Файл → Демо*), kendi ağacınızı başlatmak için **Dosya → Yeni** (*Файл → Новое*) seçeneğini kullanın.
-2. **Düzenleme** moduna geçin ve ilk kişiyi ekleyin (*＋ Новый человек*). Boş bir ağaçta bu kişi otomatik olarak "ben" olur.
-3. Bir kişi seçin ve ağacı büyütmek için **＋ Ebeveyn**, **＋ Partner**, **＋ Çocuk** veya **＋ Kardeş** (*＋ Родитель*, *＋ Партнёр*, *＋ Ребёнок*, *＋ Брат/сестра*) düğmelerini kullanın. Ad, tarih, fotoğraf ve notları sağ tarafta doldurun.
+1. `famtree.exe` dosyasını başlatın. Örnek bir ağaca bakmak için **Dosya → Demo** (*File → Demo*), kendi ağacınızı başlatmak için **Dosya → Yeni** (*File → New*) seçeneğini kullanın.
+2. **Düzenleme** moduna geçin ve ilk kişiyi ekleyin (*＋ New person*). Boş bir ağaçta bu kişi otomatik olarak "ben" olur.
+3. Bir kişi seçin ve ağacı büyütmek için **＋ Ebeveyn**, **＋ Partner**, **＋ Çocuk** veya **＋ Kardeş** (*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*) düğmelerini kullanın. Ad, tarih, fotoğraf ve notları sağ tarafta doldurun.
 4. **Farklı kaydet…** seçeneğini seçin ve bir ad verin. Bundan sonra değişiklikler otomatik kaydedilir.
-5. Haritayı keşfetmek için **Görüntüleme**'ye geçin: kaydırmak için sürükleyin, yakınlaştırmak için tekerleği çevirin, her şeyi görmek için **Sığdır** (*По размеру*) düğmesine basın, ayrıntılar için bir karta tıklayın.
+5. Haritayı keşfetmek için **Görüntüleme**'ye geçin: kaydırmak için sürükleyin, yakınlaştırmak için tekerleği çevirin, her şeyi görmek için **Sığdır** (*Fit to view*) düğmesine basın, ayrıntılar için bir karta tıklayın.
 
 ## `.famtree` dosyası
 
@@ -67,7 +68,8 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 ## Bilinen sınırlamalar
 
-- Arayüz şu anda yalnızca Rusça.
+- Arayüz çevirileri (Rusça dışında) henüz ana dili konuşanlar tarafından gözden geçirilmedi. Düzeltmeler issue üzerinden memnuniyetle karşılanır.
+- Tarihler dilden bağımsız olarak her zaman `GG.AA.YYYY` biçiminde gösterilir.
 - Yalnızca Windows 10.
 - Henüz geri alma ve PNG/PDF dışa aktarma yok.
 - Çok sayıda fotoğrafı bir anda içe aktarmak pencereyi kısa süreliğine dondurabilir.
@@ -81,8 +83,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 Planlanan iyileştirmeler, belirli bir sırayla değil:
 
 - [ ] Actions'tan alınan çıplak bir `.exe` yerine Releases'ta yayımlanan **gerçek bir yükleyici**.
-- [ ] **Uygulamanın** diğer dillere **çevirisi**.
-- [ ] **Bu README'nin** diğer dillere **çevirisi**.
 - [ ] **Yerleşim hatalarının düzeltilmesi**: kişiler zaman zaman haritada yanlış yere düşüyor.
 
 ## Kaynaktan derleme

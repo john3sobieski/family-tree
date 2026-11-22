@@ -6,14 +6,14 @@ Dibuat dan dikelola oleh **[john3sobieski](https://github.com/john3sobieski)**. 
 
 Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon keluarga Anda. Semuanya tersimpan dalam satu berkas `.famtree`: orang, hubungan, dan semua foto.
 
-> **Status:** tahap pengembangan awal. Belum ada rilis siap pakai, dan aplikasi saat ini hanya bisa didapat dengan membangunnya lewat GitHub Actions (lihat [Instalasi](#instalasi)). Antarmukanya untuk sementara berbahasa Rusia (lihat [Peta jalan](#peta-jalan)).
+> **Status:** tahap pengembangan awal. Belum ada rilis siap pakai, dan aplikasi saat ini hanya bisa didapat dengan membangunnya lewat GitHub Actions (lihat [Instalasi](#instalasi)).
 
 ## Fitur
 
 - **Tiga mode**
-  - **Lihat** (*Просмотр*) – peta pikiran (mind map) hanya-baca dengan zoom dan geser yang mulus.
-  - **Edit** (*Редакция*) – tambah dan ubah orang, foto, dan hubungan.
-  - **Daftar** (*Список*) – tabel yang bisa diurutkan dan difilter berisi semua orang di dalam pohon.
+  - **Lihat** (*View*) – peta pikiran (mind map) hanya-baca dengan zoom dan geser yang mulus.
+  - **Edit** (*Edit*) – tambah dan ubah orang, foto, dan hubungan.
+  - **Daftar** (*List*) – tabel yang bisa diurutkan dan difilter berisi semua orang di dalam pohon.
 - **Peta pikiran yang dibangun di sekitar Anda.** Tandai satu orang sebagai "saya", dan pohon digambar dari leluhur teratas Anda ke bawah, sehingga orang tua, saudara kandung, paman, bibi, sepupu, dan kerabat yang lebih jauh muncul secara otomatis. Kedua sisi keluarga ditata berdampingan, dan keluarga dari pihak ipar/besan juga disertakan.
 - **Kartu foto.** Setiap kartu menampilkan foto ala pas foto, nama, nama keluarga (nama gadis dalam tanda kurung untuk perempuan), patronimik, strip warna untuk jenis kelamin, dan hingga dua bendera kewarganegaraan.
 - **Jendela orang.** Klik sebuah kartu untuk membuka jendela yang lebih besar dengan foto penuh, galeri (10+ foto per orang tidak masalah), tanggal, usia, tempat lahir dan wafat, profesi, catatan, serta tautan yang bisa diklik ke orang tua, pasangan, dan anak.
@@ -22,8 +22,9 @@ Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon kel
 - **Tanggal tidak lengkap.** Hanya tahu tahunnya? Tidak masalah, bagian mana pun dari tanggal boleh dikosongkan.
 - **Kewarganegaraan.** Pilih hingga dua per orang dari daftar bawaan berisi 197 negara (semua anggota PBB ditambah Vatikan, Palestina, Taiwan, dan Kosovo). Bendera digambar oleh aplikasi itu sendiri.
 - **Dibuat untuk pohon besar.** Hanya kartu yang terlihat yang digambar, thumbnail dimuat secara lazy, dan tata letak hanya dihitung ulang saat struktur berubah. Sudah diuji dengan pohon berisi ribuan orang.
-- **Simpan otomatis.** Setelah pohon memiliki berkas, setiap perubahan disimpan otomatis sesaat setelah Anda berhenti mengetik. Untuk pohon baru, gunakan **Simpan sebagai…** (*Сохранить как…*) terlebih dahulu. Anda juga akan ditanya sebelum menutup jika ada yang tidak berhasil disimpan.
-- **Klik ganda untuk membuka.** Di menu **Berkas** (*Файл*), Anda bisa mengaitkan berkas `.famtree` dengan aplikasi.
+- **Simpan otomatis.** Setelah pohon memiliki berkas, setiap perubahan disimpan otomatis sesaat setelah Anda berhenti mengetik. Untuk pohon baru, gunakan **Simpan sebagai…** (*Save as…*) terlebih dahulu. Anda juga akan ditanya sebelum menutup jika ada yang tidak berhasil disimpan.
+- **Bahasa antarmuka.** Русский, English, 中文, Español, Français, Deutsch, dan Polski. Ganti bahasa lewat menu **Language**; pilihan Anda diingat. Saat pertama kali dijalankan, aplikasi mengikuti bahasa tampilan Windows dan memakai bahasa Inggris jika bahasa tersebut tidak tersedia. Nama negara juga diterjemahkan.
+- **Klik ganda untuk membuka.** Di menu **Berkas** (*File*), Anda bisa mengaitkan berkas `.famtree` dengan aplikasi.
 
 ## Instalasi
 
@@ -45,11 +46,11 @@ Setelah ada installer yang sebenarnya, installer itu akan dipublikasikan di **Re
 
 ## Mulai cepat
 
-1. Jalankan `famtree.exe`. Gunakan **Berkas → Demo** (*Файл → Демо*) untuk melihat contoh pohon, atau **Berkas → Baru** (*Файл → Новое*) untuk memulai pohon Anda sendiri.
-2. Beralih ke mode **Edit** dan tambahkan orang pertama (*＋ Новый человек*). Di pohon kosong, orang tersebut otomatis menjadi "saya".
-3. Pilih seseorang dan gunakan **＋ Orang tua**, **＋ Pasangan**, **＋ Anak**, atau **＋ Saudara** (*＋ Родитель*, *＋ Партнёр*, *＋ Ребёнок*, *＋ Брат/сестра*) untuk mengembangkan pohon. Isi nama, tanggal, foto, dan catatan di sebelah kanan.
+1. Jalankan `famtree.exe`. Gunakan **Berkas → Demo** (*File → Demo*) untuk melihat contoh pohon, atau **Berkas → Baru** (*File → New*) untuk memulai pohon Anda sendiri.
+2. Beralih ke mode **Edit** dan tambahkan orang pertama (*＋ New person*). Di pohon kosong, orang tersebut otomatis menjadi "saya".
+3. Pilih seseorang dan gunakan **＋ Orang tua**, **＋ Pasangan**, **＋ Anak**, atau **＋ Saudara** (*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*) untuk mengembangkan pohon. Isi nama, tanggal, foto, dan catatan di sebelah kanan.
 4. Pilih **Simpan sebagai…** dan beri nama. Sejak saat itu, perubahan disimpan otomatis.
-5. Beralih ke **Lihat** untuk menjelajahi peta: seret untuk menggeser, gulir untuk zoom, **Sesuaikan** (*По размеру*) untuk melihat semuanya, dan klik kartu untuk melihat detail.
+5. Beralih ke **Lihat** untuk menjelajahi peta: seret untuk menggeser, gulir untuk zoom, **Sesuaikan** (*Fit to view*) untuk melihat semuanya, dan klik kartu untuk melihat detail.
 
 ## Berkas `.famtree`
 
@@ -67,7 +68,8 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 ## Keterbatasan yang diketahui
 
-- Antarmuka saat ini hanya tersedia dalam bahasa Rusia.
+- Terjemahan antarmuka (selain bahasa Rusia) belum diperiksa oleh penutur asli. Koreksi sangat disambut lewat issue.
+- Tanggal selalu ditampilkan dalam format `DD.MM.YYYY`, apa pun bahasanya.
 - Hanya Windows 10.
 - Belum ada undo dan ekspor ke PNG/PDF.
 - Mengimpor banyak foto sekaligus bisa membuat jendela membeku sesaat.
@@ -81,8 +83,6 @@ thumb/<hash>.jpg     small thumbnails for cards
 Perbaikan yang direncanakan, tanpa urutan tertentu:
 
 - [ ] **Installer yang sebenarnya**, bukan `.exe` polos dari Actions, yang dipublikasikan di Releases.
-- [ ] **Terjemahan aplikasi** ke bahasa lain.
-- [ ] **Terjemahan README ini** ke bahasa lain.
 - [ ] **Perbaikan bug tata letak**: sesekali orang berakhir di posisi yang salah pada peta.
 
 ## Membangun dari kode sumber
