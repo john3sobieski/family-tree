@@ -2118,4 +2118,119 @@ mod tests {
         assert!(y(m1) < y(mom));
         assert!(y(m1) > y(gp1), "родители мамы не у самого верха");
     }
+
+    // ---- Детерминизм: Android-версия должна рисовать ту же схему, что и ПК ----
+
+    /// FNV-1a по всем числам раскладки в порядке вывода (порядок тоже важен).
+    fn fingerprint(l: &Layout) -> u64 {
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        let mut put = |v: u64| {
+            for b in v.to_le_bytes() {
+                h ^= b as u64;
+                h = h.wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        };
+        let pt = |p: Pt| [p.x.to_bits() as u64, p.y.to_bits() as u64];
+        for n in &l.nodes {
+            put(n.id);
+            pt(n.pos).into_iter().for_each(&mut put);
+        }
+        for u in &l.units {
+            put(u.members.len() as u64);
+            u.members.iter().for_each(|&m| put(m));
+            pt(u.center).into_iter().for_each(&mut put);
+            put(u.width.to_bits() as u64);
+        }
+        for e in &l.edges {
+            pt(e.from).into_iter().for_each(&mut put);
+            pt(e.to).into_iter().for_each(&mut put);
+            put(e.hang as u64);
+            put(e.bus.to_bits() as u64);
+        }
+        pt(l.bounds.min).into_iter().for_each(&mut put);
+        pt(l.bounds.max).into_iter().for_each(&mut put);
+        l.unplaced.iter().for_each(|&id| put(id));
+        h
+    }
+
+    /// Две семьи с большими ветками по бокам (как в тесте про наложения).
+    fn big_families_tree() -> Tree {
+        let mut t = Tree::new();
+        let gf1 = add(&mut t, "Дед", Some(1930));
+        let gf2 = add(&mut t, "Бабка", Some(1932));
+        t.add_partners(gf1, gf2).unwrap();
+        let gm1 = add(&mut t, "Дед2", Some(1931));
+        let gm2 = add(&mut t, "Бабка2", Some(1933));
+        t.add_partners(gm1, gm2).unwrap();
+        let (mut dad_side, mut mom_side) = (Vec::new(), Vec::new());
+        for i in 0..6 {
+            let a = add(&mut t, "Сиблинг", Some(1955 + i));
+            t.add_parent_child(gf1, a).unwrap();
+            t.add_parent_child(gf2, a).unwrap();
+            dad_side.push(a);
+            let b = add(&mut t, "Сиблинг", Some(1957 + i));
+            t.add_parent_child(gm1, b).unwrap();
+            t.add_parent_child(gm2, b).unwrap();
+            mom_side.push(b);
+        }
+        let (dad, mom) = (dad_side[2], mom_side[3]);
+        t.add_partners(dad, mom).unwrap();
+        for &s in dad_side.iter().chain(mom_side.iter()) {
+            if s == dad || s == mom {
+                continue;
+            }
+            let w = add(&mut t, "Партнёр", None);
+            t.add_partners(s, w).unwrap();
+            for j in 0..2 {
+                let c = add(&mut t, "Кузен", Some(1985 + j));
+                t.add_parent_child(s, c).unwrap();
+                t.add_parent_child(w, c).unwrap();
+            }
+        }
+        let mut me = None;
+        for i in 0..6 {
+            let k = add(&mut t, "Я", Some(1985 + i));
+            t.add_parent_child(dad, k).unwrap();
+            t.add_parent_child(mom, k).unwrap();
+            me.get_or_insert(k);
+        }
+        t.root = me;
+        t
+    }
+
+    /// Каждый `HashMap` в одном процессе получает свой случайный порядок обхода,
+    /// поэтому повторные запуски `compute` ловят зависимость результата от него.
+    #[test]
+    fn layout_is_deterministic_across_runs() {
+        let trees: Vec<(&str, Tree)> = vec![
+            ("sample", crate::demo::sample_tree()),
+            ("big60", crate::demo::big_tree(60)),
+            ("big400", crate::demo::big_tree(400)),
+            ("families", big_families_tree()),
+        ];
+        for (name, t) in &trees {
+            for (cfg_name, cfg) in [("plain", plain()), ("default", LayoutConfig::default())] {
+                let first = fingerprint(&compute(t, &cfg));
+                for run in 1..40 {
+                    assert_eq!(
+                        fingerprint(&compute(t, &cfg)),
+                        first,
+                        "раскладка «{name}» ({cfg_name}) отличается на запуске {run}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// В раскладке нет NaN/∞ (иначе на телефоне схема «уедет» иначе, чем на ПК).
+    #[test]
+    fn layout_numbers_are_finite() {
+        for t in [crate::demo::sample_tree(), crate::demo::big_tree(400), big_families_tree()] {
+            let l = compute(&t, &LayoutConfig::default());
+            assert!(l.nodes.iter().all(|n| n.pos.x.is_finite() && n.pos.y.is_finite()));
+            assert!(l.edges.iter().all(|e| {
+                e.from.x.is_finite() && e.from.y.is_finite() && e.to.x.is_finite() && e.to.y.is_finite() && e.bus.is_finite()
+            }));
+        }
+    }
 }
