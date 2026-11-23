@@ -990,7 +990,7 @@ fn write_png(
             return Err(e);
         }
     }
-    Ok(Done { path: path.to_path_buf(), format: Format::Png, width: wpx, height: hpx, scale: s })
+    Ok(Done { path: path.to_path_buf(), format: Format::Png, width: wpx, height: hpx })
 }
 
 // ---------------------------------------------------------------- PDF (written by hand)
@@ -1300,7 +1300,7 @@ fn write_pdf(
             return Err(e);
         }
     }
-    Ok(Done { path: path.to_path_buf(), format: Format::Pdf, width: wpt.round() as u32, height: hpt.round() as u32, scale: s })
+    Ok(Done { path: path.to_path_buf(), format: Format::Pdf, width: wpt.round() as u32, height: hpt.round() as u32 })
 }
 
 // ---------------------------------------------------------------- background job
@@ -1322,7 +1322,6 @@ pub struct Done {
     /// PNG: pixels; PDF: points.
     pub width: u32,
     pub height: u32,
-    pub scale: f32,
 }
 
 pub struct Job {
