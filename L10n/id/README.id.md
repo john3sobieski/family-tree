@@ -24,6 +24,7 @@ Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon kel
 - **Dibuat untuk pohon besar.** Hanya kartu yang terlihat yang digambar, thumbnail dimuat secara lazy, dan tata letak hanya dihitung ulang saat struktur berubah. Sudah diuji dengan pohon berisi ribuan orang.
 - **Simpan otomatis.** Setelah pohon memiliki berkas, setiap perubahan disimpan otomatis sesaat setelah Anda berhenti mengetik. Untuk pohon baru, gunakan **Simpan sebagai…** (*Save as…*) terlebih dahulu. Anda juga akan ditanya sebelum menutup jika ada yang tidak berhasil disimpan.
 - **Bahasa antarmuka.** Русский, English, 中文, Español, Français, Deutsch, dan Polski. Ganti bahasa lewat menu **Language**; pilihan Anda diingat. Saat pertama kali dijalankan, aplikasi mengikuti bahasa tampilan Windows dan memakai bahasa Inggris jika bahasa tersebut tidak tersedia. Nama negara juga diterjemahkan.
+- **Ekspor.** **File → Export…** menyimpan seluruh pohon sebagai PNG atau PDF vektor, dengan margin di tepinya. Untuk PNG Anda memilih latar (transparan, putih, atau hitam) dan warna gelap atau terang; ukuran dipilih otomatis agar semuanya tetap tajam (hingga ×2). PDF bisa diperbesar tanpa kehilangan kualitas. Pohon yang sangat besar lebih baik diekspor ke PDF.
 - **Klik ganda untuk membuka.** Di menu **Berkas** (*File*), Anda bisa mengaitkan berkas `.famtree` dengan aplikasi.
 - **Tema gelap dan terang.** Ganti dengan tombol matahari/bulan di sisi kanan bilah status; pilihan Anda diingat.
 
@@ -72,7 +73,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Terjemahan antarmuka (selain bahasa Rusia) belum diperiksa oleh penutur asli. Koreksi sangat disambut lewat issue.
 - Tanggal selalu ditampilkan dalam format `DD.MM.YYYY`, apa pun bahasanya.
-- Belum ada undo dan ekspor ke PNG/PDF.
+- Belum ada undo.
 - Mengimpor banyak foto sekaligus bisa membuat jendela membeku sesaat.
 - Foto HEIC tidak didukung (JPEG, PNG, WebP, dan BMP didukung).
 - Thumbnail pada kartu adalah potongan di bagian tengah, dan area potongan belum bisa dipilih.

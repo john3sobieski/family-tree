@@ -6,6 +6,7 @@ use crate::theme;
 use crate::container::{self, MediaStore};
 use crate::demo;
 use crate::edit::{self, EditState, ListAction};
+use crate::export::ExportUi;
 use crate::i18n::{self, tr, trf, Lang};
 use crate::layout::{self, Layout, LayoutConfig};
 use crate::list::{self, ListState};
@@ -62,6 +63,7 @@ pub struct FamTreeApp {
     pub edit: EditState,
     pub list: ListState,
     pub search: SearchState,
+    pub export: ExportUi,
     /// Ждёт ответа в окне «Сохранить изменения?».
     pub pending: Option<Guarded>,
     /// Выход подтверждён — не перехватывать закрытие окна.
@@ -90,6 +92,7 @@ impl FamTreeApp {
             edit: EditState::default(),
             list: ListState::default(),
             search: SearchState::default(),
+            export: ExportUi::default(),
             pending: None,
             allow_close: false,
             last_title: String::new(),
@@ -368,6 +371,10 @@ impl eframe::App for FamTreeApp {
                         self.save_as();
                         ui.close_menu();
                     }
+                    if ui.button(tr("Экспорт…")).clicked() {
+                        self.export.open();
+                        ui.close_menu();
+                    }
                     ui.separator();
                     if ui.button(tr("Демо")).clicked() {
                         self.request(ctx, Guarded::Demo);
@@ -447,6 +454,9 @@ impl eframe::App for FamTreeApp {
                 )));
                 if let Some(name) = self.selected_name() {
                     ui.label(dim(trf("·  Выбран: {name}", &[("name", name.to_string())])));
+                }
+                if let Some(t) = self.export.status_text() {
+                    ui.label(dim(format!("·  {t}")));
                 }
                 if self.dirty {
                     ui.label(egui::RichText::new(tr("●  не сохранено")).small().color(theme::p().text));
@@ -539,6 +549,14 @@ impl eframe::App for FamTreeApp {
                 WindowEvent::None => {}
             }
         }
+
+        let base = self
+            .path
+            .as_ref()
+            .and_then(|p| p.file_stem())
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_else(|| tr("семья").to_string());
+        self.export.show(ctx, &self.tree, &self.layout, &self.layout_cfg, &self.store, &base);
 
         self.confirm_dialog(ctx);
         self.autosave_tick(ctx);

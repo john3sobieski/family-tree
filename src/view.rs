@@ -20,11 +20,11 @@ const MAX_TEXTURES: usize = 300;
 /// Сколько миниатюр загружать за кадр, чтобы не вешать интерфейс.
 const LOADS_PER_FRAME: usize = 6;
 /// Отступ фото внутри карточки (в единицах мира).
-const PHOTO_PAD: f32 = 4.0;
+pub(crate) const PHOTO_PAD: f32 = 4.0;
 /// Скругление углов карточки; такое же у главного фото на ней (в единицах мира).
-const CARD_RADIUS: f32 = 8.0;
+pub(crate) const CARD_RADIUS: f32 = 8.0;
 /// Толщина цветной полосы пола внизу карточки (в единицах мира).
-const GENDER_STRIP: f32 = 6.0;
+pub(crate) const GENDER_STRIP: f32 = 6.0;
 
 /// Плавный перелёт камеры: центр (в мире) и масштаб интерполируются по времени.
 #[derive(Clone, Copy)]

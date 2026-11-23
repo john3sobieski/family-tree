@@ -24,6 +24,7 @@ Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüst�
 - **Büyük ağaçlar için tasarlandı.** Yalnızca görünen kartlar çizilir, küçük resimler tembel yükleme (lazy loading) ile yüklenir ve yerleşim yalnızca yapı değiştiğinde yeniden hesaplanır. Binlerce kişilik ağaçlarla test edilmiştir.
 - **Otomatik kaydetme.** Ağacın bir dosyası olduktan sonra, yazmayı bıraktıktan kısa bir süre sonra her değişiklik otomatik olarak kaydedilir. Yeni bir ağaç için önce **Farklı kaydet…** (*Save as…*) seçeneğini kullanın. Bir şey kaydedilemediyse kapatmadan önce size sorulur.
 - **Arayüz dilleri.** Русский, English, 中文, Español, Français, Deutsch ve Polski. Dili **Language** menüsünden değiştirebilirsiniz; seçiminiz hatırlanır. İlk açılışta uygulama Windows görüntüleme dilini izler, bu dillerden biri değilse İngilizceyi kullanır. Ülke adları da çevrilir.
+- **Dışa aktarma.** **File → Export…** tüm ağacı kenar boşluklarıyla PNG veya vektör PDF olarak kaydeder. PNG için arka plan (şeffaf, beyaz veya siyah) ve koyu ya da açık renkler seçilir; boyut her şeyin net kalması için otomatik belirlenir (en fazla ×2). PDF kalite kaybı olmadan yakınlaştırılabilir. Çok büyük ağaçları PDF olarak dışa aktarmak daha iyidir.
 - **Çift tıklayarak açma.** **Dosya** (*File*) menüsünden `.famtree` dosyalarını uygulamayla ilişkilendirebilirsiniz.
 - **Koyu ve açık tema.** Durum çubuğunun sağındaki güneş/ay düğmesiyle değiştirilir; seçim hatırlanır.
 
@@ -72,7 +73,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Arayüz çevirileri (Rusça dışında) henüz ana dili konuşanlar tarafından gözden geçirilmedi. Düzeltmeler issue üzerinden memnuniyetle karşılanır.
 - Tarihler dilden bağımsız olarak her zaman `GG.AA.YYYY` biçiminde gösterilir.
-- Henüz geri alma ve PNG/PDF dışa aktarma yok.
+- Henüz geri alma yok.
 - Çok sayıda fotoğrafı bir anda içe aktarmak pencereyi kısa süreliğine dondurabilir.
 - HEIC fotoğraflar desteklenmez (JPEG, PNG, WebP ve BMP desteklenir).
 - Karttaki küçük resim ortadan kırpılmış bir görüntüdür ve kırpma alanını henüz seçemezsiniz.

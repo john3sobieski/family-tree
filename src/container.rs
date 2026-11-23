@@ -135,6 +135,18 @@ impl MediaStore {
             .ok_or_else(|| ContainerError::MissingMedia(hash.to_string()))
     }
 
+    /// Reads many photos at once (the file is opened only once). Photos that cannot be read are skipped.
+    pub fn get_many(&self, kind: MediaKind, hashes: &[String]) -> HashMap<String, Vec<u8>> {
+        let mut old = self.open_old();
+        let mut out = HashMap::new();
+        for h in hashes {
+            if let Ok(Some(bytes)) = self.fetch(&mut old, kind, h) {
+                out.insert(h.clone(), bytes);
+            }
+        }
+        out
+    }
+
     fn open_old(&self) -> Option<ZipArchive<File>> {
         let p = self.path.as_ref()?;
         let f = File::open(p).ok()?;

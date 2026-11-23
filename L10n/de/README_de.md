@@ -24,6 +24,7 @@ Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bear
 - **Für große Bäume gebaut.** Es werden nur sichtbare Karten gezeichnet, Vorschaubilder werden per Lazy Loading nachgeladen, und das Layout wird nur neu berechnet, wenn sich die Struktur ändert. Getestet mit Bäumen aus Tausenden von Personen.
 - **Autosave.** Sobald der Baum eine Datei hat, wird jede Änderung kurz nach dem Aufhören mit dem Tippen automatisch gespeichert. Für einen neuen Baum nutze zuerst **Speichern unter…**. Vor dem Schließen wirst du außerdem gefragt, wenn etwas nicht gespeichert werden konnte.
 - **Oberflächensprachen.** Русский, English, 中文, Español, Français, Deutsch und Polski. Über das Menü **Sprache** wechselst du die Sprache; die Auswahl wird gespeichert. Beim ersten Start folgt die App der Windows-Anzeigesprache und verwendet sonst Englisch. Auch die Ländernamen werden übersetzt.
+- **Export.** **Datei → Exportieren…** speichert den ganzen Baum als PNG oder als Vektor-PDF, mit Rand an den Seiten. Bei PNG wählen Sie den Hintergrund (transparent, weiß oder schwarz) sowie dunkle oder helle Farben; die Größe wird automatisch so gewählt, dass alles scharf bleibt (bis ×2). Das PDF lässt sich ohne Qualitätsverlust zoomen. Sehr große Bäume exportiert man besser als PDF.
 - **Doppelklick zum Öffnen.** Im Menü **Datei** kannst du `.famtree`-Dateien mit der App verknüpfen.
 - **Dunkles und helles Design.** Umschalten mit der Sonne/Mond-Schaltfläche rechts in der Statusleiste; die Auswahl wird gespeichert.
 
@@ -71,7 +72,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Die Übersetzungen der Oberfläche (außer Russisch) wurden noch nicht von Muttersprachlern geprüft. Korrekturen sind über Issues willkommen.
 - Datumsangaben werden unabhängig von der Sprache immer als `TT.MM.JJJJ` angezeigt.
-- Noch kein Rückgängig und kein Export nach PNG/PDF.
+- Noch kein Rückgängig.
 - Der Import vieler Fotos auf einmal kann das Fenster kurz einfrieren lassen.
 - HEIC-Fotos werden nicht unterstützt (JPEG, PNG, WebP und BMP schon).
 - Das Vorschaubild auf einer Karte ist ein zentrierter Ausschnitt, und den Ausschnitt kann man noch nicht selbst wählen.

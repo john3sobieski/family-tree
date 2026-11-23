@@ -82,6 +82,15 @@ pub fn is_dark() -> bool {
     IS_DARK.load(Ordering::Relaxed)
 }
 
+/// Colors of a given theme (not necessarily the current one): the export may use either.
+pub fn palette(dark: bool) -> &'static Palette {
+    if dark {
+        &DARK
+    } else {
+        &LIGHT
+    }
+}
+
 fn settings_file() -> Option<std::path::PathBuf> {
     Some(crate::i18n::settings_dir()?.join("theme.txt"))
 }
@@ -204,6 +213,12 @@ pub fn ensure_cjk(ctx: &egui::Context, lang: crate::i18n::Lang) {
 
 /// Segoe UI from Windows (Cyrillic, modern look); a CJK fallback font is added for Chinese and on demand.
 pub fn set_fonts(ctx: &egui::Context, lang: crate::i18n::Lang) {
+    let cjk = lang == crate::i18n::Lang::Zh || CJK_REQUESTED.load(std::sync::atomic::Ordering::Relaxed);
+    ctx.set_fonts(font_definitions(cjk));
+}
+
+/// The fonts of the interface (also used by the PDF/PNG export to turn text into outlines).
+pub fn font_definitions(cjk: bool) -> egui::FontDefinitions {
     let mut fonts = egui::FontDefinitions::default();
     if let Ok(bytes) = std::fs::read(crate::platform::system_font("segoeui.ttf")) {
         fonts.font_data.insert("segoe".to_owned(), egui::FontData::from_owned(bytes));
@@ -211,7 +226,7 @@ pub fn set_fonts(ctx: &egui::Context, lang: crate::i18n::Lang) {
             list.insert(0, "segoe".to_owned());
         }
     }
-    if lang == crate::i18n::Lang::Zh || CJK_REQUESTED.load(std::sync::atomic::Ordering::Relaxed) {
+    if cjk {
         for name in ["msyh.ttc", "msyh.ttf", "simsun.ttc", "simhei.ttf"] {
             if let Ok(bytes) = std::fs::read(crate::platform::system_font(name)) {
                 fonts.font_data.insert("cjk".to_owned(), egui::FontData::from_owned(bytes));
@@ -224,7 +239,7 @@ pub fn set_fonts(ctx: &egui::Context, lang: crate::i18n::Lang) {
             }
         }
     }
-    ctx.set_fonts(fonts);
+    fonts
 }
 
 /// Светлая основная кнопка (чёрный текст на белом).

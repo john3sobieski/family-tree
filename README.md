@@ -22,6 +22,7 @@ A desktop app for Windows for building, editing and browsing your family tree. E
 - **Built for big trees.** Only visible cards are drawn, thumbnails are loaded lazily, and the layout is recalculated only when the structure changes. It is tested with trees of thousands of people.
 - **Autosave.** Once the tree has a file, every change is saved automatically a moment after you stop typing. For a new tree, use **Save as…** first. You are also asked before closing if something could not be saved.
 - **Interface languages.** Русский, English, 中文, Español, Français, Deutsch and Polski. Use the **Language** menu to switch; the choice is remembered. On the first launch the app follows the Windows display language and falls back to English. Country names are translated as well.
+- **Export.** **File → Export…** saves the whole tree as a PNG or a vector PDF, with margins around the edges. For PNG you choose the background (transparent, white or black) and dark or light colors; the size is picked automatically so that everything stays sharp (up to ×2). The PDF can be zoomed without losing quality. Very large trees are better exported to PDF.
 - **Double-click to open.** In the **File** menu you can associate `.famtree` files with the app.
 - **Dark and light theme.** Switch with the sun/moon button at the right end of the status bar; the choice is remembered.
 
@@ -69,7 +70,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Interface translations other than Russian have not been reviewed by native speakers yet. Corrections are welcome via issues.
 - Dates are always shown as `DD.MM.YYYY`, whatever the language.
-- No undo and no export to PNG/PDF yet.
+- No undo yet.
 - Importing a large batch of photos at once can freeze the window for a moment.
 - HEIC photos are not supported (JPEG, PNG, WebP and BMP are).
 - The thumbnail on a card is a centered crop, and you can't choose the crop area yet.

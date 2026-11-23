@@ -24,6 +24,7 @@ Une application de bureau pour Windows destinée à construire, modifier et parc
 - **Conçu pour les grands arbres.** Seules les cartes visibles sont dessinées, les miniatures sont chargées à la demande (lazy loading), et la disposition n'est recalculée que lorsque la structure change. Testé avec des arbres de plusieurs milliers de personnes.
 - **Sauvegarde automatique.** Une fois que l'arbre est associé à un fichier, chaque modification est enregistrée automatiquement un instant après que vous avez arrêté de saisir. Pour un nouvel arbre, utilisez d'abord **Enregistrer sous…**. L'application vous prévient aussi avant la fermeture si quelque chose n'a pas pu être enregistré.
 - **Langues de l'interface.** Русский, English, 中文, Español, Français, Deutsch et Polski. Changez de langue dans le menu **Langue** ; le choix est mémorisé. Au premier lancement, l'application suit la langue d'affichage de Windows et, à défaut, utilise l'anglais. Les noms des pays sont eux aussi traduits.
+- **Export.** **Fichier → Exporter…** enregistre l'arbre entier en PNG ou en PDF vectoriel, avec des marges sur les bords. Pour le PNG, vous choisissez le fond (transparent, blanc ou noir) et des couleurs sombres ou claires ; la taille est choisie automatiquement pour que tout reste net (jusqu'à ×2). Le PDF se zoome sans perte de qualité. Les très grands arbres sont à exporter plutôt en PDF.
 - **Ouverture par double-clic.** Dans le menu **Fichier**, vous pouvez associer les fichiers `.famtree` à l'application.
 - **Thème sombre et clair.** Se change avec le bouton soleil/lune à droite de la barre d'état ; le choix est mémorisé.
 
@@ -71,7 +72,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Les traductions de l'interface (hors russe) n'ont pas encore été relues par des locuteurs natifs. Les corrections sont les bienvenues via les issues.
 - Les dates s'affichent toujours au format `JJ.MM.AAAA`, quelle que soit la langue.
-- Pas encore d'annulation ni d'export en PNG/PDF.
+- Pas encore d'annulation.
 - L'importation d'un grand lot de photos d'un coup peut figer la fenêtre un instant.
 - Les photos HEIC ne sont pas prises en charge (JPEG, PNG, WebP et BMP le sont).
 - La miniature d'une carte est un recadrage centré, et vous ne pouvez pas encore choisir la zone recadrée.

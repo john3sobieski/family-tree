@@ -24,6 +24,7 @@ Um aplicativo de desktop para Windows para montar, editar e navegar pela sua ár
 - **Feito para árvores grandes.** Só os cartões visíveis são desenhados, as miniaturas são carregadas sob demanda e o layout só é recalculado quando a estrutura muda. Já foi testado com árvores de milhares de pessoas.
 - **Salvamento automático.** Quando a árvore já tem um arquivo, cada alteração é salva automaticamente um instante depois que você para de digitar. Para uma árvore nova, use **Salvar como…** (*Save as…*) primeiro. Você também é avisado antes de fechar se algo não pôde ser salvo.
 - **Idiomas da interface.** Русский, English, 中文, Español, Français, Deutsch e Polski. Troque o idioma no menu **Language**; a escolha é lembrada. Na primeira execução, o aplicativo segue o idioma de exibição do Windows e, se ele não estiver entre esses, usa inglês. Os nomes dos países também são traduzidos.
+- **Exportação.** **File → Export…** salva a árvore inteira como PNG ou PDF vetorial, com margens nas bordas. No PNG você escolhe o fundo (transparente, branco ou preto) e cores escuras ou claras; o tamanho é escolhido automaticamente para manter tudo nítido (até ×2). O PDF pode ser ampliado sem perder qualidade. Árvores muito grandes é melhor exportar em PDF.
 - **Duplo clique para abrir.** No menu **Arquivo** (*File*) você pode associar os arquivos `.famtree` ao aplicativo.
 - **Tema escuro e claro.** Troque com o botão de sol/lua à direita da barra de status; a escolha é lembrada.
 
@@ -72,7 +73,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - As traduções da interface (exceto o russo) ainda não foram revisadas por falantes nativos. Correções são bem-vindas por meio de issues.
 - As datas são sempre exibidas como `DD.MM.AAAA`, em qualquer idioma.
-- Ainda não há desfazer nem exportação para PNG/PDF.
+- Ainda não há desfazer.
 - Importar muitas fotos de uma vez pode travar a janela por um instante.
 - Fotos HEIC não são compatíveis (JPEG, PNG, WebP e BMP são).
 - A miniatura de um cartão é um recorte centralizado, e ainda não dá para escolher a área do recorte.

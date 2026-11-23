@@ -24,6 +24,7 @@ Una aplicación de escritorio para Windows para crear, editar y explorar tu árb
 - **Pensado para árboles grandes.** Solo se dibujan las tarjetas visibles, las miniaturas se cargan de forma diferida y el diseño solo se recalcula cuando cambia la estructura. Se ha probado con árboles de miles de personas.
 - **Guardado automático.** Cuando el árbol ya tiene un archivo, cada cambio se guarda automáticamente un instante después de que dejes de escribir. Para un árbol nuevo, usa primero **Guardar como…**. Además, se te avisa antes de cerrar si algo no se pudo guardar.
 - **Idiomas de la interfaz.** Русский, English, 中文, Español, Français, Deutsch y Polski. Cambia el idioma en el menú **Idioma**; la elección se recuerda. En el primer inicio, la aplicación sigue el idioma de visualización de Windows y, si no es uno de estos, usa inglés. Los nombres de los países también se traducen.
+- **Exportación.** **Archivo → Exportar…** guarda todo el árbol como PNG o como PDF vectorial, con márgenes en los bordes. En PNG se elige el fondo (transparente, blanco o negro) y colores oscuros o claros; el tamaño se calcula solo para que todo se vea nítido (hasta ×2). El PDF se puede ampliar sin perder calidad. Los árboles muy grandes es mejor exportarlos a PDF.
 - **Doble clic para abrir.** En el menú **Archivo** puedes asociar los archivos `.famtree` con la aplicación.
 - **Tema oscuro y claro.** Se cambia con el botón de sol/luna a la derecha de la barra de estado; la elección se recuerda.
 
@@ -71,7 +72,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 
 - Las traducciones de la interfaz (salvo el ruso) aún no las han revisado hablantes nativos. Las correcciones son bienvenidas a través de los issues.
 - Las fechas siempre se muestran como `DD.MM.AAAA`, sea cual sea el idioma.
-- Todavía no hay deshacer ni exportación a PNG/PDF.
+- Todavía no hay deshacer.
 - Importar muchas fotos de golpe puede congelar la ventana un momento.
 - Las fotos HEIC no son compatibles (JPEG, PNG, WebP y BMP sí lo son).
 - La miniatura de una tarjeta es un recorte centrado, y todavía no se puede elegir el área de recorte.
