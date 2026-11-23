@@ -1,6 +1,6 @@
 [package]
 name = "famtree_android"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Read-only Android viewer for FamTree family trees"
 license = "PolyForm-Noncommercial-1.0.0"
