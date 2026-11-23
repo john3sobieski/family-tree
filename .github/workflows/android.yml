@@ -14,6 +14,11 @@ jobs:
     # Android SDK and NDK come preinstalled on ubuntu-latest.
     steps:
       - uses: actions/checkout@v4
+      # Java 17: newer JDKs make apksigner print "restricted method" warnings.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
@@ -39,7 +44,10 @@ jobs:
         env:
           CARGO_APK_RELEASE_KEYSTORE: ${{ runner.temp }}/ci.keystore
           CARGO_APK_RELEASE_KEYSTORE_PASSWORD: android
-        run: cargo apk build --release
+        run: |
+          # ANDROID_SDK_ROOT is deprecated; ANDROID_HOME is already set on the runner.
+          unset ANDROID_SDK_ROOT
+          cargo apk build --release
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
