@@ -53,7 +53,7 @@
 
 ## Заметки по A1 (для следующей сессии)
 - Файлы: `android/Cargo.toml` (cdylib, свой `[workspace]`, метаданные `cargo-apk`: пакет `io.github.john3sobieski.famtree`, minSdk 29, targetSdk 34, только `aarch64-linux-android`), `android/src/lib.rs` (`android_main` + заглушка с текстом), `.github/workflows/android.yml` (ubuntu-latest, `cargo install cargo-apk`, `cargo apk build --release`, артефакт `famtree-android`), `.gitignore` (+`/android/target`).
-- Версии взяты по памяти из примера `hello_android` в egui 0.29 (загрузить сам пример не удалось): `eframe` с фичей `android-native-activity`, `winit 0.30` с той же фичей, `android_logger 0.14`, `NativeOptions.android_app`. Если CI упадёт — сначала сверять с `examples/hello_android` в репозитории egui (тег 0.29.x).
+- Версии взяты по памяти из примера `hello_android` в egui 0.29 (загрузить сам пример не удалось): `eframe` с фичей `android-native-activity`, `winit 0.30` с той же фичей, `android_logger 0.14`, `NativeOptions.android_app` (**в 0.29 его нет** — используется `event_loop_builder`). Если CI упадёт — сначала сверять с `examples/hello_android` в репозитории egui (тег 0.29.x).
 - APK подписывается отладочным ключом (годится только для ручной установки). Подпись релиза — шаг A8.
 - Типичные места падения: версия `android_logger`; `cargo-apk` не находит NDK/SDK (`ANDROID_NDK_ROOT` ставится из `ANDROID_NDK_LATEST_HOME`); путь артефакта `android/target/release/apk/*.apk`; `sdkmanager` не найден (`cmdline-tools/latest`).
 - Текст в окне пока английский и без `tr()` — i18n подключим вместе с остальными модулями (A4+).
@@ -62,3 +62,4 @@
 - Сессия A1: проект просмотрен поверхностно (`PROGRESS.md`, структура `src/`, зависимости). Создан этот файл. Решения по архитектуре, сборке и открытию файлов записаны как предложения **(?)**. Код не менялся.
 - Сессия A2: пользователь подтвердил все предложенные решения; minSdk изменён с 26 на 29. Код не менялся. Дальше — A1 (каркас и workflow).
 - Сессия A3: шаг A1 — каркас `android/` и workflow `android.yml`. Десктопный код не менялся (только `.gitignore`). Не компилировалось — смотреть CI.
+- Сессия A4: первый прогон CI упал на `NativeOptions.android_app` (в eframe 0.29 такого поля нет). Исправлено: `AndroidApp` передаётся через `NativeOptions.event_loop_builder` + `winit::platform::android::EventLoopBuilderExtAndroid::with_android_app` (`android/src/lib.rs`). Зависимости и SDK/NDK/cargo-apk дошли до компиляции без ошибок. Не компилировалось — смотреть CI.
