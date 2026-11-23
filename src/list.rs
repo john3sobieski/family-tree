@@ -233,7 +233,7 @@ pub fn show(
                 ui.selectable_value(&mut st.gender, g, g.label());
             }
         });
-        if !st.search.is_empty() && ui.button("✕").on_hover_text(tr("Очистить поиск")).clicked() {
+        if !st.search.is_empty() && crate::widgets::icon_button(ui, crate::widgets::Icon::Cross, tr("Очистить поиск"), false).clicked() {
             st.search.clear();
         }
     });

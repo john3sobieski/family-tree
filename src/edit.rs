@@ -6,13 +6,17 @@ use crate::i18n::{tr, trf};
 use crate::media;
 use crate::model::{Gender, PartialDate, Person, PersonId, Photo, Tree};
 use crate::person_window::{format_years, full_name, load_texture};
-use eframe::egui::{self, Color32, RichText, Sense, TextureHandle, Vec2};
+use crate::widgets::{centered_text, icon_button, icon_text_button, inline_icon, section, Icon};
+use eframe::egui::{self, Align, Color32, Layout, RichText, Sense, Stroke, TextureHandle, Vec2};
 use std::collections::HashMap;
 
 const THUMB_SMALL: Vec2 = Vec2::new(45.0, 60.0);
 const THUMB_MAIN: Vec2 = Vec2::new(75.0, 100.0);
 const MAX_THUMBS: usize = 200;
 const MAX_REL_RESULTS: usize = 8;
+/// Width of the label column in the forms and the gap between columns.
+const LABEL_W: f32 = 132.0;
+const GRID_GAP: f32 = 10.0;
 
 #[derive(Default)]
 pub struct EditState {
@@ -75,7 +79,8 @@ pub fn people_list(
             .hint_text(tr("Поиск по имени…"))
             .desired_width(f32::INFINITY),
     );
-    if ui.button(tr("＋ Новый человек")).clicked() {
+    let full = ui.available_width();
+    if icon_text_button(ui, Icon::Plus, tr("Новый человек"), Some(full)).clicked() {
         action = ListAction::New;
     }
     ui.separator();
@@ -149,7 +154,7 @@ enum Rel {
     Parent,
     Partner,
     Child,
-    /// Только для «＋ Брат/сестра» (в списках связей не используется).
+    /// Только для кнопки «Брат/сестра» (в списках связей не используется).
     Sibling,
 }
 
@@ -186,21 +191,23 @@ fn num_field(ui: &mut egui::Ui, key: egui::Id, val: &mut Option<i64>, lo: i64, h
     }
 }
 
-fn date_row(ui: &mut egui::Ui, id: PersonId, tag: &str, d: &mut PartialDate) {
+fn date_row(ui: &mut egui::Ui, id: PersonId, tag: &str, d: &mut PartialDate, width: f32) {
     ui.horizontal(|ui| {
+        // The three fields together are exactly as wide as the text fields below/above.
+        let free = (width - 2.0 * ui.spacing().item_spacing.x).max(90.0);
         let k = ui.id().with((id, tag, "day"));
         let mut day = d.day.map(i64::from);
-        num_field(ui, k, &mut day, 1, 31, tr("день"), 48.0);
+        num_field(ui, k, &mut day, 1, 31, tr("день"), free * 0.26);
         d.day = day.map(|v| v as u8);
 
         let k = ui.id().with((id, tag, "month"));
         let mut month = d.month.map(i64::from);
-        num_field(ui, k, &mut month, 1, 12, tr("месяц"), 66.0);
+        num_field(ui, k, &mut month, 1, 12, tr("месяц"), free * 0.34);
         d.month = month.map(|v| v as u8);
 
         let k = ui.id().with((id, tag, "year"));
         let mut year = d.year.map(i64::from);
-        num_field(ui, k, &mut year, 1, 2999, tr("год"), 58.0);
+        num_field(ui, k, &mut year, 1, 2999, tr("год"), free * 0.40);
         d.year = year.map(|v| v as i32);
     });
 }
@@ -235,17 +242,31 @@ fn import_dialog(store: &mut MediaStore, multiple: bool, errors: &mut Vec<String
     hashes
 }
 
+/// Name of a field in the label column of a form: muted, one line, cut with an ellipsis if too long.
+fn field_label(ui: &mut egui::Ui, text: &str) {
+    ui.allocate_ui_with_layout(
+        egui::vec2(LABEL_W, ui.spacing().interact_size.y),
+        Layout::left_to_right(Align::Center),
+        |ui| {
+            ui.add(egui::Label::new(RichText::new(text).color(crate::theme::p().muted)).truncate())
+                .on_hover_text(text);
+        },
+    );
+}
+
 /// Выбор национальностей (до двух, все страны мира).
-fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
+fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>, width: f32) {
     ui.vertical(|ui| {
         let mut remove: Option<usize> = None;
         for (i, code) in list.iter().enumerate() {
-            ui.horizontal(|ui| {
+            ui.allocate_ui_with_layout(egui::vec2(width, 24.0), Layout::left_to_right(Align::Center), |ui| {
                 crate::flags::icon(ui, code, 16.0);
                 ui.label(crate::flags::name(code).unwrap_or(code.as_str()));
-                if ui.small_button(tr("Убрать")).clicked() {
-                    remove = Some(i);
-                }
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if icon_button(ui, Icon::Cross, tr("Убрать"), true).clicked() {
+                        remove = Some(i);
+                    }
+                });
             });
         }
         if let Some(i) = remove {
@@ -254,6 +275,7 @@ fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>) {
         if list.len() < crate::flags::MAX_PER_PERSON {
             let mut add: Option<&'static str> = None;
             egui::ComboBox::from_id_salt("nationality-add")
+                .width(width)
                 .selected_text(tr("Добавить страну…"))
                 .show_ui(ui, |ui| {
                     // Search box: the list has ~200 countries.
@@ -315,254 +337,312 @@ pub fn editor(
     let is_root = tree.root == Some(id);
     let partners = tree.partners_of(id);
 
+    let muted = crate::theme::p().muted;
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+        ui.add_space(2.0);
         ui.heading(full_name(&orig));
+        let years = format_years(&orig);
+        if !years.is_empty() {
+            ui.label(RichText::new(years).color(muted));
+        }
         if !placed {
+            ui.add_space(4.0);
             ui.colored_label(
                 Color32::from_rgb(220, 160, 40),
                 "Этот человек пока не связан с деревом «я» и не виден на схеме. \
                  Добавьте связь ниже.",
             );
         }
-        ui.add_space(6.0);
+        ui.add_space(10.0);
 
-        egui::Grid::new("edit-main").num_columns(2).spacing([10.0, 6.0]).show(ui, |ui| {
-            let w = (ui.available_width() - 4.0).max(120.0);
-            ui.label(tr("Имя"));
-            ui.add(egui::TextEdit::singleline(&mut p.first_name).desired_width(w));
-            ui.end_row();
-            let female = p.gender == Gender::Female;
-            ui.label(if female { tr("Фамилия (сейчас)") } else { tr("Фамилия") });
-            ui.add(egui::TextEdit::singleline(&mut p.last_name).desired_width(w));
-            ui.end_row();
-            if female {
-                ui.label(tr("Фамилия при рождении"));
-                ui.add(
-                    egui::TextEdit::singleline(&mut p.maiden_name)
-                        .hint_text(tr("если сменила после свадьбы"))
-                        .desired_width(w),
-                );
+        // --- Основное ---
+        section(ui, Some(tr("Основное")), |ui| {
+            let w = (ui.available_width() - LABEL_W - GRID_GAP).max(100.0);
+            egui::Grid::new("edit-main").num_columns(2).spacing([GRID_GAP, 8.0]).min_col_width(LABEL_W).show(ui, |ui| {
+                field_label(ui, tr("Имя"));
+                ui.add(egui::TextEdit::singleline(&mut p.first_name).desired_width(w));
                 ui.end_row();
-            }
-            ui.label(tr("Отчество"));
-            ui.add(egui::TextEdit::singleline(&mut p.patronymic).desired_width(w));
-            ui.end_row();
-            ui.label(tr("Национальность"));
-            nationality_row(ui, &mut p.nationalities);
-            ui.end_row();
-            ui.label(tr("Пол"));
-            let gender_text = match p.gender {
-                Gender::Male => tr("Мужской"),
-                Gender::Female => tr("Женский"),
-                Gender::Unknown => tr("Не указан"),
-            };
-            egui::ComboBox::from_id_salt("gender").selected_text(gender_text).show_ui(ui, |ui| {
-                ui.selectable_value(&mut p.gender, Gender::Unknown, tr("Не указан"));
-                ui.selectable_value(&mut p.gender, Gender::Male, tr("Мужской"));
-                ui.selectable_value(&mut p.gender, Gender::Female, tr("Женский"));
+                let female = p.gender == Gender::Female;
+                field_label(ui, if female { tr("Фамилия (сейчас)") } else { tr("Фамилия") });
+                ui.add(egui::TextEdit::singleline(&mut p.last_name).desired_width(w));
+                ui.end_row();
+                if female {
+                    field_label(ui, tr("Фамилия при рождении"));
+                    ui.add(
+                        egui::TextEdit::singleline(&mut p.maiden_name)
+                            .hint_text(tr("если сменила после свадьбы"))
+                            .desired_width(w),
+                    );
+                    ui.end_row();
+                }
+                field_label(ui, tr("Отчество"));
+                ui.add(egui::TextEdit::singleline(&mut p.patronymic).desired_width(w));
+                ui.end_row();
+                field_label(ui, tr("Пол"));
+                let gender_text = match p.gender {
+                    Gender::Male => tr("Мужской"),
+                    Gender::Female => tr("Женский"),
+                    Gender::Unknown => tr("Не указан"),
+                };
+                egui::ComboBox::from_id_salt("gender").width(w).selected_text(gender_text).show_ui(ui, |ui| {
+                    ui.selectable_value(&mut p.gender, Gender::Unknown, tr("Не указан"));
+                    ui.selectable_value(&mut p.gender, Gender::Male, tr("Мужской"));
+                    ui.selectable_value(&mut p.gender, Gender::Female, tr("Женский"));
+                });
+                ui.end_row();
+                field_label(ui, tr("Национальность"));
+                nationality_row(ui, &mut p.nationalities, w);
+                ui.end_row();
             });
-            ui.end_row();
-            ui.label(tr("Родился(ась)"));
-            date_row(ui, id, "birth", &mut p.birth);
-            ui.end_row();
-            ui.label(tr("Место рождения"));
-            ui.add(egui::TextEdit::singleline(&mut p.birth_place).desired_width(w));
-            ui.end_row();
-            ui.label(tr("Умер(ла)"));
-            date_row(ui, id, "death", &mut p.death);
-            ui.end_row();
-            ui.label(tr("Место смерти"));
-            ui.add(egui::TextEdit::singleline(&mut p.death_place).desired_width(w));
-            ui.end_row();
-            ui.label(tr("Специальность"));
-            ui.add(egui::TextEdit::singleline(&mut p.profession).desired_width(w));
-            ui.end_row();
         });
 
-        ui.add_space(6.0);
-        ui.label(tr("Заметки"));
-        ui.add(
-            egui::TextEdit::multiline(&mut p.notes)
-                .desired_rows(5)
-                .desired_width(f32::INFINITY),
-        );
+        // --- Даты и места ---
+        section(ui, Some(tr("Даты и места")), |ui| {
+            let w = (ui.available_width() - LABEL_W - GRID_GAP).max(100.0);
+            egui::Grid::new("edit-dates").num_columns(2).spacing([GRID_GAP, 8.0]).min_col_width(LABEL_W).show(ui, |ui| {
+                field_label(ui, tr("Родился(ась)"));
+                date_row(ui, id, "birth", &mut p.birth, w);
+                ui.end_row();
+                field_label(ui, tr("Место рождения"));
+                ui.add(egui::TextEdit::singleline(&mut p.birth_place).desired_width(w));
+                ui.end_row();
+                field_label(ui, tr("Умер(ла)"));
+                date_row(ui, id, "death", &mut p.death, w);
+                ui.end_row();
+                field_label(ui, tr("Место смерти"));
+                ui.add(egui::TextEdit::singleline(&mut p.death_place).desired_width(w));
+                ui.end_row();
+                field_label(ui, tr("Специальность"));
+                ui.add(egui::TextEdit::singleline(&mut p.profession).desired_width(w));
+                ui.end_row();
+            });
+        });
+
+        // --- Заметки ---
+        section(ui, Some(tr("Заметки")), |ui| {
+            ui.add(
+                egui::TextEdit::multiline(&mut p.notes)
+                    .desired_rows(5)
+                    .desired_width(f32::INFINITY),
+            );
+        });
 
         // --- Фото ---
-        ui.separator();
-        ui.label(RichText::new(tr("Главное фото (на карточке)")).strong());
-        ui.horizontal(|ui| {
-            match p.main_photo.clone() {
-                Some(h) => thumb_image(ui, st, store, &h, THUMB_MAIN),
-                None => {
-                    ui.label(tr("нет"));
-                }
-            }
-            ui.vertical(|ui| {
-                if ui.button(tr("Выбрать…")).clicked() {
-                    if let Some(h) = import_dialog(store, false, &mut errors).into_iter().next() {
-                        p.main_photo = Some(h);
-                    }
-                }
-                if p.main_photo.is_some() && ui.button(tr("Убрать")).clicked() {
-                    p.main_photo = None;
-                }
-            });
-        });
-
-        ui.add_space(6.0);
-        ui.horizontal(|ui| {
-            ui.label(RichText::new(trf("Фото в заметках: {n}", &[("n", p.photos.len().to_string())])).strong());
-            if ui.button(tr("Добавить…")).clicked() {
-                for h in import_dialog(store, true, &mut errors) {
-                    if !p.photos.iter().any(|ph| ph.hash == h) {
-                        p.photos.push(Photo { hash: h, caption: String::new() });
-                    }
-                }
-            }
-        });
-        let mut remove_photo: Option<usize> = None;
-        let mut make_main: Option<usize> = None;
-        for (i, ph) in p.photos.iter_mut().enumerate() {
+        section(ui, Some(tr("Главное фото (на карточке)")), |ui| {
             ui.horizontal(|ui| {
-                thumb_image(ui, st, store, &ph.hash, THUMB_SMALL);
+                match p.main_photo.clone() {
+                    Some(h) => thumb_image(ui, st, store, &h, THUMB_MAIN),
+                    None => {
+                        let (rect, _) = ui.allocate_exact_size(THUMB_MAIN, Sense::hover());
+                        let vis = ui.visuals();
+                        ui.painter().rect(
+                            rect,
+                            6.0,
+                            vis.faint_bg_color,
+                            Stroke::new(1.0_f32, vis.widgets.noninteractive.bg_stroke.color),
+                        );
+                        centered_text(ui, rect, tr("нет"));
+                    }
+                }
                 ui.vertical(|ui| {
-                    ui.add(
-                        egui::TextEdit::singleline(&mut ph.caption)
-                            .hint_text(tr("Подпись…"))
-                            .desired_width(ui.available_width().max(100.0)),
-                    );
-                    ui.horizontal(|ui| {
-                        if ui.small_button(tr("Сделать главным")).clicked() {
-                            make_main = Some(i);
+                    if ui.button(tr("Выбрать…")).clicked() {
+                        if let Some(h) = import_dialog(store, false, &mut errors).into_iter().next() {
+                            p.main_photo = Some(h);
                         }
-                        if ui.small_button(tr("✕ Убрать")).clicked() {
-                            remove_photo = Some(i);
+                    }
+                    if p.main_photo.is_some() && icon_text_button(ui, Icon::Cross, tr("Убрать"), None).clicked() {
+                        p.main_photo = None;
+                    }
+                });
+            });
+
+            ui.add_space(8.0);
+            ui.separator();
+            ui.add_space(4.0);
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(trf("Фото в заметках: {n}", &[("n", p.photos.len().to_string())])).strong());
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if icon_text_button(ui, Icon::Plus, tr("Добавить…"), None).clicked() {
+                        for h in import_dialog(store, true, &mut errors) {
+                            if !p.photos.iter().any(|ph| ph.hash == h) {
+                                p.photos.push(Photo { hash: h, caption: String::new() });
+                            }
                         }
+                    }
+                });
+            });
+            let mut remove_photo: Option<usize> = None;
+            let mut make_main: Option<usize> = None;
+            for (i, ph) in p.photos.iter_mut().enumerate() {
+                ui.add_space(4.0);
+                ui.horizontal(|ui| {
+                    thumb_image(ui, st, store, &ph.hash, THUMB_SMALL);
+                    ui.vertical(|ui| {
+                        ui.add(
+                            egui::TextEdit::singleline(&mut ph.caption)
+                                .hint_text(tr("Подпись…"))
+                                .desired_width(ui.available_width().max(100.0)),
+                        );
+                        ui.horizontal(|ui| {
+                            if ui.small_button(tr("Сделать главным")).clicked() {
+                                make_main = Some(i);
+                            }
+                            if icon_button(ui, Icon::Cross, tr("Убрать"), true).clicked() {
+                                remove_photo = Some(i);
+                            }
+                        });
                     });
                 });
-            });
-        }
-        if let Some(i) = make_main {
-            let hash = p.photos[i].hash.clone();
-            if let Some(old) = p.main_photo.replace(hash) {
-                if !p.photos.iter().any(|ph| ph.hash == old) {
-                    p.photos.push(Photo { hash: old, caption: String::new() });
+            }
+            if let Some(i) = make_main {
+                let hash = p.photos[i].hash.clone();
+                if let Some(old) = p.main_photo.replace(hash) {
+                    if !p.photos.iter().any(|ph| ph.hash == old) {
+                        p.photos.push(Photo { hash: old, caption: String::new() });
+                    }
                 }
             }
-        }
-        if let Some(i) = remove_photo {
-            p.photos.remove(i);
-        }
-
-        // --- Связи ---
-        ui.separator();
-        ui.label(RichText::new(tr("Связи")).strong());
-        let groups = [
-            (tr("Родители"), Rel::Parent, tree.parents_of(id)),
-            (tr("Партнёры"), Rel::Partner, partners.clone()),
-            (tr("Дети"), Rel::Child, tree.children_of(id)),
-        ];
-        for (title, rel, ids) in groups {
-            ui.label(RichText::new(title).weak());
-            if ids.is_empty() {
-                ui.label("—");
-            }
-            for rid in ids {
-                let Some(r) = tree.persons.get(&rid) else { continue };
-                ui.horizontal(|ui| {
-                    if ui.link(full_name(r)).clicked() {
-                        actions.push(Action::Select(rid));
-                    }
-                    let years = format_years(r);
-                    if !years.is_empty() {
-                        ui.label(RichText::new(years).weak());
-                    }
-                    if ui.small_button("✕").on_hover_text(tr("Убрать связь")).clicked() {
-                        actions.push(Action::Remove(rel, rid));
-                    }
-                });
-            }
-        }
-
-        ui.add_space(6.0);
-        ui.label(tr("Добавить нового человека:"));
-        ui.horizontal_wrapped(|ui| {
-            if ui.button(tr("＋ Родитель")).clicked() {
-                actions.push(Action::New(Rel::Parent));
-            }
-            if ui.button(tr("＋ Партнёр")).clicked() {
-                actions.push(Action::New(Rel::Partner));
-            }
-            if ui.button(tr("＋ Ребёнок")).clicked() {
-                actions.push(Action::New(Rel::Child));
-            }
-            if ui.button(tr("＋ Брат/сестра")).clicked() {
-                actions.push(Action::New(Rel::Sibling));
+            if let Some(i) = remove_photo {
+                p.photos.remove(i);
             }
         });
 
-        ui.add_space(6.0);
-        ui.label(tr("Связать с существующим человеком:"));
-        ui.add(
-            egui::TextEdit::singleline(&mut st.rel_search)
-                .hint_text(tr("Начните вводить имя…"))
-                .desired_width(f32::INFINITY),
-        );
-        let q = st.rel_search.trim().to_lowercase();
-        if !q.is_empty() {
-            let found: Vec<&Person> = tree
-                .persons
-                .values()
-                .filter(|o| o.id != id && full_name(o).to_lowercase().contains(&q))
-                .take(MAX_REL_RESULTS)
-                .collect();
-            if found.is_empty() {
-                ui.label(RichText::new(tr("Никого не найдено")).weak());
+        // --- Связи ---
+        section(ui, Some(tr("Связи")), |ui| {
+            let groups = [
+                (tr("Родители"), Rel::Parent, tree.parents_of(id)),
+                (tr("Партнёры"), Rel::Partner, partners.clone()),
+                (tr("Дети"), Rel::Child, tree.children_of(id)),
+            ];
+            for (n, (title, rel, ids)) in groups.into_iter().enumerate() {
+                if n > 0 {
+                    ui.add_space(6.0);
+                }
+                ui.label(RichText::new(title).color(muted));
+                if ids.is_empty() {
+                    ui.label(RichText::new("—").color(muted));
+                }
+                for rid in ids {
+                    let Some(r) = tree.persons.get(&rid) else { continue };
+                    ui.horizontal(|ui| {
+                        if ui.link(full_name(r)).clicked() {
+                            actions.push(Action::Select(rid));
+                        }
+                        let years = format_years(r);
+                        if !years.is_empty() {
+                            ui.label(RichText::new(years).color(muted));
+                        }
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if icon_button(ui, Icon::Cross, tr("Убрать связь"), true).clicked() {
+                                actions.push(Action::Remove(rel, rid));
+                            }
+                        });
+                    });
+                }
             }
-            for o in found {
-                ui.horizontal_wrapped(|ui| {
-                    let years = format_years(o);
-                    let name = if years.is_empty() {
-                        full_name(o)
-                    } else {
-                        format!("{} ({years})", full_name(o))
-                    };
-                    ui.label(name);
-                    if ui.small_button(tr("родитель")).clicked() {
-                        actions.push(Action::Link(Rel::Parent, o.id));
-                    }
-                    if ui.small_button(tr("партнёр")).clicked() {
-                        actions.push(Action::Link(Rel::Partner, o.id));
-                    }
-                    if ui.small_button(tr("ребёнок")).clicked() {
-                        actions.push(Action::Link(Rel::Child, o.id));
-                    }
-                });
+
+            ui.add_space(10.0);
+            ui.separator();
+            ui.add_space(6.0);
+            ui.label(RichText::new(tr("Добавить нового человека:")).color(muted));
+            let gap = 8.0;
+            let bw = ((ui.available_width() - gap) / 2.0).floor();
+            egui::Grid::new("edit-add-rel").num_columns(2).spacing([gap, 6.0]).show(ui, |ui| {
+                if icon_text_button(ui, Icon::Plus, tr("Родитель"), Some(bw)).clicked() {
+                    actions.push(Action::New(Rel::Parent));
+                }
+                if icon_text_button(ui, Icon::Plus, tr("Партнёр"), Some(bw)).clicked() {
+                    actions.push(Action::New(Rel::Partner));
+                }
+                ui.end_row();
+                if icon_text_button(ui, Icon::Plus, tr("Ребёнок"), Some(bw)).clicked() {
+                    actions.push(Action::New(Rel::Child));
+                }
+                if icon_text_button(ui, Icon::Plus, tr("Брат/сестра"), Some(bw)).clicked() {
+                    actions.push(Action::New(Rel::Sibling));
+                }
+                ui.end_row();
+            });
+
+            ui.add_space(10.0);
+            ui.label(RichText::new(tr("Связать с существующим человеком:")).color(muted));
+            ui.add(
+                egui::TextEdit::singleline(&mut st.rel_search)
+                    .hint_text(tr("Начните вводить имя…"))
+                    .desired_width(f32::INFINITY),
+            );
+            let q = st.rel_search.trim().to_lowercase();
+            if !q.is_empty() {
+                let found: Vec<&Person> = tree
+                    .persons
+                    .values()
+                    .filter(|o| o.id != id && full_name(o).to_lowercase().contains(&q))
+                    .take(MAX_REL_RESULTS)
+                    .collect();
+                if found.is_empty() {
+                    ui.label(RichText::new(tr("Никого не найдено")).color(muted));
+                }
+                for o in found {
+                    ui.add_space(2.0);
+                    ui.horizontal_wrapped(|ui| {
+                        let years = format_years(o);
+                        let name = if years.is_empty() {
+                            full_name(o)
+                        } else {
+                            format!("{} ({years})", full_name(o))
+                        };
+                        ui.label(name);
+                        if ui.small_button(tr("родитель")).clicked() {
+                            actions.push(Action::Link(Rel::Parent, o.id));
+                        }
+                        if ui.small_button(tr("партнёр")).clicked() {
+                            actions.push(Action::Link(Rel::Partner, o.id));
+                        }
+                        if ui.small_button(tr("ребёнок")).clicked() {
+                            actions.push(Action::Link(Rel::Child, o.id));
+                        }
+                    });
+                }
             }
-        }
+        });
 
         // --- Корень и удаление ---
-        ui.separator();
-        if is_root {
-            ui.label(tr("✔ Это «я» — схема строится от предков этого человека."));
-        } else if ui.button(tr("Это «я» (сделать корнем дерева)")).clicked() {
-            actions.push(Action::SetRoot);
-        }
-        ui.add_space(8.0);
-        if st.confirm_delete == Some(id) {
-            ui.colored_label(Color32::from_rgb(220, 70, 70), tr("Удалить человека вместе со всеми его связями?"));
-            ui.horizontal(|ui| {
-                if ui.button(tr("Да, удалить")).clicked() {
-                    actions.push(Action::Delete);
-                }
-                if ui.button(tr("Отмена")).clicked() {
-                    st.confirm_delete = None;
-                }
-            });
-        } else if ui.button(tr("Удалить человека…")).clicked() {
-            st.confirm_delete = Some(id);
-        }
-        ui.add_space(20.0);
+        section(ui, None, |ui| {
+            if is_root {
+                ui.horizontal(|ui| {
+                    let color = ui.visuals().text_color();
+                    inline_icon(ui, Icon::Check, color);
+                    ui.label(tr("Это «я» — схема строится от предков этого человека."));
+                });
+            } else if ui
+                .add_sized([ui.available_width(), 28.0], egui::Button::new(tr("Это «я» (сделать корнем дерева)")))
+                .clicked()
+            {
+                actions.push(Action::SetRoot);
+            }
+            ui.add_space(8.0);
+            let danger = crate::theme::p().danger;
+            if st.confirm_delete == Some(id) {
+                ui.colored_label(danger, tr("Удалить человека вместе со всеми его связями?"));
+                ui.horizontal(|ui| {
+                    if ui.add(egui::Button::new(RichText::new(tr("Да, удалить")).color(danger))).clicked() {
+                        actions.push(Action::Delete);
+                    }
+                    if ui.button(tr("Отмена")).clicked() {
+                        st.confirm_delete = None;
+                    }
+                });
+            } else if ui
+                .add_sized(
+                    [ui.available_width(), 28.0],
+                    egui::Button::new(RichText::new(tr("Удалить человека…")).color(danger)),
+                )
+                .clicked()
+            {
+                st.confirm_delete = Some(id);
+            }
+        });
+        ui.add_space(12.0);
     });
 
     // Правки полей.

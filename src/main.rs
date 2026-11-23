@@ -24,6 +24,7 @@ mod platform;
 mod search;
 mod theme;
 mod view;
+mod widgets;
 
 use eframe::egui;
 use std::path::PathBuf;
