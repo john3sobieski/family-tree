@@ -30,11 +30,6 @@ jobs:
           }
           & $iscc "/DAppVersion=$version" installer\famtree.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Upload Cargo.lock
-        uses: actions/upload-artifact@v4
-        with:
-          name: cargo-lock
-          path: Cargo.lock
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
