@@ -49,7 +49,7 @@ Yükleyiciyi hiçbir araç kurmadan GitHub Actions'tan alabilirsiniz (bir GitHub
 
 ## Hızlı başlangıç
 
-1. `famtree.exe` dosyasını başlatın. Örnek bir ağaca bakmak için **Dosya → Demo** (*File → Demo*), kendi ağacınızı başlatmak için **Dosya → Yeni** (*File → New*) seçeneğini kullanın.
+1. `famtree.exe` dosyasını başlatın. Kendi ağacınızı başlatmak için **Dosya → Yeni** (*File → New*), mevcut bir ağacı açmak için **Dosya → Aç** (*File → Open*) seçeneğini kullanın.
 2. **Düzenleme** moduna geçin ve ilk kişiyi ekleyin (*＋ New person*). Boş bir ağaçta bu kişi otomatik olarak "ben" olur.
 3. Bir kişi seçin ve ağacı büyütmek için **＋ Ebeveyn**, **＋ Partner**, **＋ Çocuk** veya **＋ Kardeş** (*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*) düğmelerini kullanın. Ad, tarih, fotoğraf ve notları sağ tarafta doldurun.
 4. **Farklı kaydet…** seçeneğini seçin ve bir ad verin. Bundan sonra değişiklikler otomatik kaydedilir.

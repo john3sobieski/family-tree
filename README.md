@@ -46,7 +46,7 @@ You can also get the installer from GitHub Actions without installing any tools 
 
 ## Quick start
 
-1. Start `famtree.exe`. Use **File → Demo** to look at a sample tree, or **File → New** to start your own.
+1. Start `famtree.exe`. Use **File → New** to start your own tree, or **File → Open** to open an existing one.
 2. Switch to **Edit** mode and add the first person (**＋ New person**). In an empty tree they automatically become "me".
 3. Select a person and use **＋ Parent**, **＋ Partner**, **＋ Child** or **＋ Sibling** to grow the tree. Fill in names, dates, photos and notes on the right.
 4. Choose **Save as…** and pick a name. From then on, changes are saved automatically.

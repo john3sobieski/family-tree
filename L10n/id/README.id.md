@@ -49,7 +49,7 @@ Anda juga bisa mendapatkan installer dari GitHub Actions tanpa memasang alat apa
 
 ## Mulai cepat
 
-1. Jalankan `famtree.exe`. Gunakan **Berkas → Demo** (*File → Demo*) untuk melihat contoh pohon, atau **Berkas → Baru** (*File → New*) untuk memulai pohon Anda sendiri.
+1. Jalankan `famtree.exe`. Gunakan **Berkas → Baru** (*File → New*) untuk memulai pohon Anda sendiri, atau **Berkas → Buka** (*File → Open*) untuk membuka yang sudah ada.
 2. Beralih ke mode **Edit** dan tambahkan orang pertama (*＋ New person*). Di pohon kosong, orang tersebut otomatis menjadi "saya".
 3. Pilih seseorang dan gunakan **＋ Orang tua**, **＋ Pasangan**, **＋ Anak**, atau **＋ Saudara** (*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*) untuk mengembangkan pohon. Isi nama, tanggal, foto, dan catatan di sebelah kanan.
 4. Pilih **Simpan sebagai…** dan beri nama. Sejak saat itu, perubahan disimpan otomatis.

@@ -164,7 +164,7 @@ impl ViewState {
             painter.text(
                 rect.center(),
                 Align2::CENTER_CENTER,
-                tr("Дерево пусто. Откройте файл или нажмите «Демо»."),
+                tr("Дерево пусто. Откройте файл или добавьте первого человека в режиме «Редакция»."),
                 FontId::proportional(18.0),
                 visuals.weak_text_color(),
             );

@@ -49,7 +49,7 @@ Você também pode obter o instalador no GitHub Actions sem instalar nenhuma fer
 
 ## Primeiros passos
 
-1. Abra o `famtree.exe`. Use **Arquivo → Demonstração** (*File → Demo*) para ver uma árvore de exemplo, ou **Arquivo → Novo** (*File → New*) para começar a sua.
+1. Abra o `famtree.exe`. Use **Arquivo → Novo** (*File → New*) para começar a sua árvore, ou **Arquivo → Abrir** (*File → Open*) para abrir uma existente.
 2. Mude para o modo **Edição** e adicione a primeira pessoa (*＋ New person*). Em uma árvore vazia, ela vira automaticamente o "eu".
 3. Selecione uma pessoa e use **＋ Pai/mãe**, **＋ Parceiro(a)**, **＋ Filho(a)** ou **＋ Irmão/irmã** (*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*) para fazer a árvore crescer. Preencha nomes, datas, fotos e anotações à direita.
 4. Escolha **Salvar como…** e dê um nome. A partir daí, as alterações são salvas automaticamente.

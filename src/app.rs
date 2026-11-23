@@ -4,7 +4,6 @@ use crate::assoc;
 use crate::chrome;
 use crate::theme;
 use crate::container::{self, MediaStore};
-use crate::demo;
 use crate::edit::{self, EditState, ListAction};
 use crate::export::ExportUi;
 use crate::i18n::{self, tr, trf, Lang};
@@ -36,8 +35,6 @@ pub enum Guarded {
     Close,
     New,
     Open,
-    Demo,
-    BigDemo,
 }
 
 pub struct FamTreeApp {
@@ -174,8 +171,6 @@ impl FamTreeApp {
                     self.open_file(p);
                 }
             }
-            Guarded::Demo => self.set_tree(demo::sample_tree(), MediaStore::new(), None),
-            Guarded::BigDemo => self.set_tree(demo::big_tree(1000), MediaStore::new(), None),
         }
     }
 
@@ -373,15 +368,6 @@ impl eframe::App for FamTreeApp {
                     }
                     if ui.button(tr("Экспорт…")).clicked() {
                         self.export.open();
-                        ui.close_menu();
-                    }
-                    ui.separator();
-                    if ui.button(tr("Демо")).clicked() {
-                        self.request(ctx, Guarded::Demo);
-                        ui.close_menu();
-                    }
-                    if ui.button(tr("Демо ×1000")).clicked() {
-                        self.request(ctx, Guarded::BigDemo);
                         ui.close_menu();
                     }
                     ui.separator();

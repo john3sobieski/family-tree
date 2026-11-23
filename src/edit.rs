@@ -390,9 +390,13 @@ pub fn editor(
                     ui.selectable_value(&mut p.gender, Gender::Female, tr("Женский"));
                 });
                 ui.end_row();
+            });
+            // Outside the grid: a grid centers a cell vertically, and this block is taller than a line.
+            ui.add_space(2.0);
+            ui.horizontal_top(|ui| {
+                ui.spacing_mut().item_spacing.x = GRID_GAP;
                 field_label(ui, tr("Национальность"));
                 nationality_row(ui, &mut p.nationalities, w);
-                ui.end_row();
             });
         });
 

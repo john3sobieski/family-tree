@@ -7,7 +7,8 @@ mod chrome;
 #[allow(dead_code)]
 mod container;
 mod countries;
-mod demo;
+#[cfg(test)]
+mod demo; // test data only
 mod edit;
 mod export;
 mod flags;

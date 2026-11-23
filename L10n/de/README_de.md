@@ -48,7 +48,7 @@ Den Installer bekommst du auch von GitHub Actions, ohne Werkzeuge zu installiere
 
 ## Schnellstart
 
-1. Starte `famtree.exe`. Mit **Datei → Demo** siehst du einen Beispielbaum, mit **Datei → Neu** beginnst du deinen eigenen.
+1. Starte `famtree.exe`. Mit **Datei → Neu** beginnst du deinen eigenen Baum, mit **Datei → Öffnen** öffnest du einen vorhandenen.
 2. Wechsle in den Modus **Bearbeiten** und füge die erste Person hinzu (**＋ Neue Person**). In einem leeren Baum wird sie automatisch zu „ich“.
 3. Wähle eine Person aus und nutze **＋ Elternteil**, **＋ Partner**, **＋ Kind** oder **＋ Geschwister**, um den Baum wachsen zu lassen. Namen, Daten, Fotos und Notizen trägst du rechts ein.
 4. Wähle **Speichern unter…** und vergib einen Namen. Ab dann werden Änderungen automatisch gespeichert.

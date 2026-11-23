@@ -71,7 +71,7 @@ impl PersonWindow {
         let mut open = true;
         let mut event = WindowEvent::None;
         let title = full_name(person);
-        egui::Window::new(title)
+        let shown = egui::Window::new(title)
             .id(egui::Id::new("person-window"))
             .open(&mut open)
             .collapsible(false)
@@ -97,6 +97,18 @@ impl PersonWindow {
             });
         if !open {
             return WindowEvent::Close;
+        }
+        // A press outside the window closes it (not on popups/other windows above the canvas).
+        if let Some(inner) = &shown {
+            let rect = inner.response.rect.expand(8.0);
+            let pressed = ctx.input(|i| i.pointer.any_pressed());
+            let pos = ctx.input(|i| i.pointer.interact_pos());
+            if let (true, Some(pos)) = (pressed, pos) {
+                let on_canvas = ctx.layer_id_at(pos).map_or(true, |l| l.order == egui::Order::Background);
+                if !rect.contains(pos) && on_canvas {
+                    return WindowEvent::Close;
+                }
+            }
         }
         event
     }

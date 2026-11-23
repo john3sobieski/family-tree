@@ -48,7 +48,7 @@ También puedes obtener el instalador de GitHub Actions sin instalar ninguna her
 
 ## Inicio rápido
 
-1. Abre `famtree.exe`. Usa **Archivo → Demo** para ver un árbol de ejemplo, o **Archivo → Nuevo** para empezar el tuyo.
+1. Abre `famtree.exe`. Usa **Archivo → Nuevo** para empezar tu árbol, o **Archivo → Abrir** para abrir uno existente.
 2. Cambia al modo **Edición** y añade a la primera persona (**＋ Nueva persona**). En un árbol vacío, esa persona pasa a ser automáticamente «yo».
 3. Selecciona a una persona y usa **＋ Padre/madre**, **＋ Pareja**, **＋ Hijo/a** o **＋ Hermano/a** para hacer crecer el árbol. Rellena nombres, fechas, fotos y notas a la derecha.
 4. Elige **Guardar como…** y ponle un nombre. A partir de ahí, los cambios se guardan automáticamente.
