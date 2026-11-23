@@ -1,3 +1,5 @@
 /target
 /dist
 /android/target
+/android/build
+/android/dist

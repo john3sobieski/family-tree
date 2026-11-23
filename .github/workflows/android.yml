@@ -48,8 +48,33 @@ jobs:
           # ANDROID_SDK_ROOT is deprecated; ANDROID_HOME is already set on the runner.
           unset ANDROID_SDK_ROOT
           cargo apk build --release
+      - name: Add Java layer (classes.dex) and sign
+        working-directory: android
+        run: |
+          set -euo pipefail
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          JAR="$ANDROID_HOME/platforms/android-34/android.jar"
+          rm -rf build dist
+          mkdir -p build/classes build/dex dist
+          javac --release 11 -classpath "$JAR" -d build/classes $(find java -name '*.java')
+          "$BT/d8" --lib "$JAR" --min-api 29 --output build/dex $(find build/classes -name '*.class')
+          # cargo-apk built an APK without code: copy it without the old signature and add classes.dex.
+          python3 - <<'PYEOF'
+          import glob, zipfile
+          src = glob.glob("target/release/apk/*.apk")[0]
+          with zipfile.ZipFile(src) as zin, zipfile.ZipFile("build/unsigned.apk", "w") as zout:
+              for zi in zin.infolist():
+                  if zi.filename.startswith("META-INF/"):
+                      continue
+                  zout.writestr(zi, zin.read(zi.filename), compress_type=zi.compress_type)
+              zout.write("build/dex/classes.dex", "classes.dex", compress_type=zipfile.ZIP_DEFLATED)
+          PYEOF
+          "$BT/zipalign" -f -p 4 build/unsigned.apk build/aligned.apk
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/ci.keystore" --ks-pass pass:android --key-pass pass:android --out dist/FamTree.apk build/aligned.apk
+          "$BT/apksigner" verify --verbose dist/FamTree.apk
+          unzip -l dist/FamTree.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: famtree-android
-          path: android/target/release/apk/*.apk
+          path: android/dist/FamTree.apk

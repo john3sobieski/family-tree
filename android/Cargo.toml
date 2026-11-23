@@ -1,6 +1,6 @@
 [package]
 name = "famtree_android"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 description = "Read-only Android viewer for FamTree family trees"
 license = "PolyForm-Noncommercial-1.0.0"
@@ -43,8 +43,13 @@ target_sdk_version = 34
 
 [package.metadata.android.application]
 label = "FamTree"
+# classes.dex (from android/java) is added to the APK by the CI workflow.
+has_code = true
 
 [package.metadata.android.application.activity]
+# Our thin Java layer over NativeActivity (file picker, files opened while the app runs).
+name = "io.github.john3sobieski.famtree.FamActivity"
+launch_mode = "singleTask"
 orientation = "unspecified"
 config_changes = "orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode"
 

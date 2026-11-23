@@ -1,7 +1,9 @@
-//! Getting a `.famtree` into the app's private folder: from the launching intent (JNI) or the last opened one.
+//! Getting a `.famtree` into the app's private folder (JNI + files): from the launching intent,
+//! from the file picker / a file opened while running (URI string), or the last opened one.
 use jni::objects::{JObject, JString, JValue};
-use jni::{JNIEnv, JavaVM};
+use jni::{JNIEnv, JavaVM, NativeMethod};
 use std::error::Error;
+use std::ffi::c_void;
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::os::fd::FromRawFd;
@@ -15,15 +17,20 @@ const INCOMING_FILE: &str = "incoming.famtree";
 pub struct Opened {
     pub path: PathBuf,
     pub name: String,
-    /// `true` — a fresh copy from an intent; call `commit` once it loads fine.
+    /// `true` — a fresh copy from the system; call `commit` once it loads fine.
     pub incoming: bool,
 }
 
-/// The file to show: one handed over by the system ("Open with"), else the last opened one.
-pub fn find_file(app: &AndroidApp) -> Result<Option<Opened>, String> {
+/// The file to show: `picked` (URI from the picker / a new intent), else the launching intent's file,
+/// else the last opened one.
+pub fn find_file(app: &AndroidApp, picked: Option<&str>) -> Result<Option<Opened>, String> {
     let dir = app.internal_data_path().ok_or("no private data folder")?;
     let incoming = dir.join(INCOMING_FILE);
-    if let Some(name) = copy_intent_file(app, &incoming)? {
+    let name = match picked {
+        Some(uri) => Some(copy_picked(app, uri, &incoming)?),
+        None => copy_intent_file(app, &incoming)?,
+    };
+    if let Some(name) = name {
         return Ok(Some(Opened { path: incoming, name, incoming: true }));
     }
     let last = dir.join(LAST_FILE);
@@ -53,11 +60,35 @@ pub fn discard(f: &Opened) {
     }
 }
 
-fn copy_intent_file(app: &AndroidApp, dest: &Path) -> Result<Option<String>, String> {
+/// Opens the system file picker (Java `FamActivity.pickFile`).
+pub fn pick_file(app: &AndroidApp) -> Result<(), String> {
+    with_env(app, |env, activity| {
+        env.call_method(activity, "pickFile", "()V", &[])?;
+        Ok(())
+    })
+}
+
+/// Tells Java which Rust function implements `FamActivity.nativeUri(String)`.
+pub fn register_natives(app: &AndroidApp, f: *mut c_void) -> Result<(), String> {
+    with_env(app, |env, activity| {
+        let class = env.get_object_class(activity)?;
+        env.register_native_methods(
+            &class,
+            &[NativeMethod { name: "nativeUri".into(), sig: "(Ljava/lang/String;)V".into(), fn_ptr: f }],
+        )?;
+        Ok(())
+    })
+}
+
+/// Runs `f` with an attached JNI environment and the activity object. Clears a pending Java exception on error.
+fn with_env<T>(
+    app: &AndroidApp,
+    f: impl FnOnce(&mut JNIEnv, &JObject) -> Result<T, Box<dyn Error>>,
+) -> Result<T, String> {
     let vm = unsafe { JavaVM::from_raw(app.vm_as_ptr().cast()) }.map_err(|e| e.to_string())?;
     let mut env = vm.attach_current_thread().map_err(|e| e.to_string())?;
     let activity = unsafe { JObject::from_raw(app.activity_as_ptr().cast()) };
-    let r = copy_inner(&mut env, &activity, dest);
+    let r = f(&mut *env, &activity);
     if r.is_err() {
         // A pending Java exception would break every later JNI call.
         let _ = env.exception_clear();
@@ -65,19 +96,41 @@ fn copy_intent_file(app: &AndroidApp, dest: &Path) -> Result<Option<String>, Str
     r.map_err(|e| e.to_string())
 }
 
-fn copy_inner(env: &mut JNIEnv, activity: &JObject, dest: &Path) -> Result<Option<String>, Box<dyn Error>> {
-    let intent = env.call_method(activity, "getIntent", "()Landroid/content/Intent;", &[])?.l()?;
-    if intent.is_null() {
-        return Ok(None);
-    }
-    let uri = env.call_method(&intent, "getData", "()Landroid/net/Uri;", &[])?.l()?;
-    if uri.is_null() {
-        return Ok(None);
-    }
+fn copy_picked(app: &AndroidApp, uri: &str, dest: &Path) -> Result<String, String> {
+    with_env(app, |env, activity| {
+        let text = env.new_string(uri)?;
+        let uri = env
+            .call_static_method(
+                "android/net/Uri",
+                "parse",
+                "(Ljava/lang/String;)Landroid/net/Uri;",
+                &[JValue::Object(&text)],
+            )?
+            .l()?;
+        copy_uri(env, activity, &uri, dest)
+    })
+}
+
+fn copy_intent_file(app: &AndroidApp, dest: &Path) -> Result<Option<String>, String> {
+    with_env(app, |env, activity| {
+        let intent = env.call_method(activity, "getIntent", "()Landroid/content/Intent;", &[])?.l()?;
+        if intent.is_null() {
+            return Ok(None);
+        }
+        let uri = env.call_method(&intent, "getData", "()Landroid/net/Uri;", &[])?.l()?;
+        if uri.is_null() {
+            return Ok(None);
+        }
+        Ok(Some(copy_uri(env, activity, &uri, dest)?))
+    })
+}
+
+/// Copies the content behind `uri` to `dest` (via a temporary file). Returns the file's display name.
+fn copy_uri(env: &mut JNIEnv, activity: &JObject, uri: &JObject, dest: &Path) -> Result<String, Box<dyn Error>> {
     let resolver = env
         .call_method(activity, "getContentResolver", "()Landroid/content/ContentResolver;", &[])?
         .l()?;
-    let name = display_name(env, &resolver, &uri).unwrap_or_else(|| "FamTree".to_string());
+    let name = display_name(env, &resolver, uri).unwrap_or_else(|| "FamTree".to_string());
 
     let mode = env.new_string("r")?;
     let pfd = env
@@ -85,7 +138,7 @@ fn copy_inner(env: &mut JNIEnv, activity: &JObject, dest: &Path) -> Result<Optio
             &resolver,
             "openFileDescriptor",
             "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;",
-            &[JValue::Object(&uri), JValue::Object(&mode)],
+            &[JValue::Object(uri), JValue::Object(&mode)],
         )?
         .l()?;
     if pfd.is_null() {
@@ -102,13 +155,12 @@ fn copy_inner(env: &mut JNIEnv, activity: &JObject, dest: &Path) -> Result<Optio
         out.flush()?;
     }
     fs::rename(&tmp, dest)?;
-    Ok(Some(name))
+    Ok(name)
 }
 
 /// File name shown to the user (`OpenableColumns.DISPLAY_NAME`); `None` if the provider does not tell.
 fn display_name(env: &mut JNIEnv, resolver: &JObject, uri: &JObject) -> Option<String> {
-    let r = display_name_inner(env, resolver, uri);
-    match r {
+    match display_name_inner(env, resolver, uri) {
         Ok(v) => v,
         Err(_) => {
             let _ = env.exception_clear();

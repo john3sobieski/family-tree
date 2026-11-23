@@ -1,4 +1,4 @@
-// FamTree Android viewer. Step A3: open a .famtree handed over by the system and show basic info.
+// FamTree Android viewer. Step A3: open a .famtree (file manager, picker button) and show basic info.
 // Shared code from the desktop crate (same files, no copies).
 #[allow(dead_code)]
 #[path = "../../src/i18n.rs"]
@@ -12,16 +12,43 @@ mod container;
 #[cfg(target_os = "android")]
 mod source;
 
-use i18n::{tr, trf};
-
 #[cfg(target_os = "android")]
 mod app {
-    use super::*;
     use crate::container::{self, MediaStore};
+    use crate::i18n::{tr, trf};
     use crate::model::Tree;
+    use crate::source;
     use eframe::egui;
+    use jni::objects::{JObject, JString};
+    use jni::JNIEnv;
     use std::sync::mpsc::{channel, Receiver};
+    use std::sync::{Mutex, OnceLock};
     use winit::platform::android::activity::AndroidApp;
+
+    /// URI string sent by Java (picker result or a file opened while the app runs).
+    static PICKED: Mutex<Option<String>> = Mutex::new(None);
+    /// Lets the Java callback wake the UI.
+    static CTX: OnceLock<egui::Context> = OnceLock::new();
+
+    /// Registered as `FamActivity.nativeUri(String)`; runs on the Java UI thread, so it only stores the string.
+    extern "system" fn native_uri(mut env: JNIEnv, _this: JObject, uri: JString) {
+        if let Ok(s) = env.get_string(&uri) {
+            let s: String = s.into();
+            if let Ok(mut g) = PICKED.lock() {
+                *g = Some(s);
+            }
+            if let Some(ctx) = CTX.get() {
+                ctx.request_repaint();
+            }
+        }
+    }
+
+    pub fn register(android: &AndroidApp) {
+        let f = native_uri as extern "system" fn(JNIEnv, JObject, JString) as *mut std::ffi::c_void;
+        if let Err(e) = source::register_natives(android, f) {
+            log::error!("register_natives failed: {e}");
+        }
+    }
 
     struct Loaded {
         tree: Tree,
@@ -39,18 +66,30 @@ mod app {
     type LoadResult = Result<Option<Loaded>, String>;
 
     pub struct App {
+        android: AndroidApp,
+        ctx: egui::Context,
         state: State,
-        rx: Receiver<LoadResult>,
+        rx: Option<Receiver<LoadResult>>,
     }
 
     impl App {
         pub fn new(android: AndroidApp, ctx: egui::Context) -> Self {
+            let _ = CTX.set(ctx.clone());
+            let mut app = App { android, ctx, state: State::Loading, rx: None };
+            app.start(None);
+            app
+        }
+
+        /// Loads in a background thread: the picked URI, else the launching intent / last opened file.
+        fn start(&mut self, picked: Option<String>) {
             let (tx, rx) = channel();
+            let (android, ctx) = (self.android.clone(), self.ctx.clone());
             std::thread::spawn(move || {
-                let _ = tx.send(load(&android));
+                let _ = tx.send(load(&android, picked.as_deref()));
                 ctx.request_repaint();
             });
-            App { state: State::Loading, rx }
+            self.rx = Some(rx);
+            self.state = State::Loading;
         }
     }
 
@@ -58,8 +97,8 @@ mod app {
         trf("Ошибка файла: {err}", &[("err", e)])
     }
 
-    fn load(android: &AndroidApp) -> LoadResult {
-        let Some(found) = source::find_file(android).map_err(file_error)? else {
+    fn load(android: &AndroidApp, picked: Option<&str>) -> LoadResult {
+        let Some(found) = source::find_file(android, picked).map_err(file_error)? else {
             return Ok(None);
         };
         // Check the file first; only a good one becomes the "last opened".
@@ -74,18 +113,37 @@ mod app {
 
     impl eframe::App for App {
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-            if let Ok(r) = self.rx.try_recv() {
+            let got = self.rx.as_ref().and_then(|rx| rx.try_recv().ok());
+            if let Some(r) = got {
+                self.rx = None;
                 self.state = match r {
                     Ok(Some(l)) => State::Ready(l),
                     Ok(None) => State::Empty,
                     Err(e) => State::Failed(e),
                 };
             }
+            // One load at a time: both threads would write the same temporary file.
+            if self.rx.is_none() {
+                let picked = PICKED.lock().ok().and_then(|mut g| g.take());
+                if picked.is_some() {
+                    self.start(picked);
+                }
+            }
+
             egui::CentralPanel::default().show(ctx, |ui| {
                 // Temporary top margin (status bar); proper insets come in step A7.
                 ui.add_space(48.0);
                 ui.heading("FamTree");
                 ui.add_space(12.0);
+                if !matches!(self.state, State::Loading) {
+                    let open = egui::Button::new(tr("Открыть")).min_size(egui::vec2(160.0, 48.0));
+                    if ui.add(open).clicked() {
+                        if let Err(e) = source::pick_file(&self.android) {
+                            self.state = State::Failed(file_error(e));
+                        }
+                    }
+                    ui.add_space(12.0);
+                }
                 match &self.state {
                     State::Loading => {
                         ui.horizontal(|ui| {
@@ -110,7 +168,7 @@ mod app {
     }
 }
 
-// Entry point called by the Android runtime (NativeActivity).
+// Entry point called by the Android runtime (our FamActivity extends NativeActivity).
 #[cfg(target_os = "android")]
 #[no_mangle]
 fn android_main(android: winit::platform::android::activity::AndroidApp) {
@@ -120,6 +178,7 @@ fn android_main(android: winit::platform::android::activity::AndroidApp) {
         android_logger::Config::default().with_max_level(log::LevelFilter::Info),
     );
     i18n::init();
+    app::register(&android);
     let for_loop = android.clone();
     let options = eframe::NativeOptions {
         event_loop_builder: Some(Box::new(move |builder| {
