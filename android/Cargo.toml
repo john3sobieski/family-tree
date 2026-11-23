@@ -1,6 +1,6 @@
 [package]
 name = "famtree_android"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 description = "Read-only Android viewer for FamTree family trees"
 license = "PolyForm-Noncommercial-1.0.0"
@@ -15,9 +15,14 @@ crate-type = ["cdylib"]
 [dependencies]
 eframe = { version = "0.29", default-features = false, features = ["default_fonts", "glow", "android-native-activity"] }
 log = "0.4"
+# Same versions as the desktop crate: model.rs and container.rs are shared.
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.14"
+jni = "0.21"
 winit = { version = "0.30", features = ["android-native-activity"] }
 
 [profile.release]
@@ -42,3 +47,44 @@ label = "FamTree"
 [package.metadata.android.application.activity]
 orientation = "unspecified"
 config_changes = "orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|uiMode"
+
+# Offer the app in "Open with" for .famtree files. Android often hides the real file name behind
+# a content:// URI, so a second filter accepts generic binary/zip files too.
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.MAIN"]
+categories = ["android.intent.category.LAUNCHER"]
+
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.VIEW"]
+categories = ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"]
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+scheme = "content"
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+scheme = "file"
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+host = "*"
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+mime_type = "*/*"
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+path_pattern = ".*\\.famtree"
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+path_pattern = ".*\\..*\\.famtree"
+
+[[package.metadata.android.application.activity.intent_filter]]
+actions = ["android.intent.action.VIEW"]
+categories = ["android.intent.category.DEFAULT"]
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+scheme = "content"
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+mime_type = "application/octet-stream"
+
+[[package.metadata.android.application.activity.intent_filter.data]]
+mime_type = "application/zip"

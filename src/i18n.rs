@@ -356,6 +356,11 @@ const TABLE: &[(&str, [&str; 6])] = &[
     ("PDF: векторный, масштабируется без потери качества. Страница {w} × {h} pt.", ["PDF: vector, zooms without losing quality. Page {w} × {h} pt.", "PDF：矢量格式，缩放不失真。页面 {w} × {h} pt。", "PDF: vectorial, se amplía sin perder calidad. Página {w} × {h} pt.", "PDF : vectoriel, zoom sans perte de qualité. Page {w} × {h} pt.", "PDF: Vektor, zoomt ohne Qualitätsverlust. Seite {w} × {h} pt.", "PDF: wektorowy, powiększa się bez utraty jakości. Strona {w} × {h} pt."]),
     ("Основное", ["Main", "基本信息", "Datos básicos", "Informations", "Allgemeines", "Podstawowe"]),
     ("Даты и места", ["Dates and places", "日期与地点", "Fechas y lugares", "Dates et lieux", "Daten und Orte", "Daty i miejsca"]),
+    ("Откройте файл .famtree из файлового менеджера (Открыть с помощью → FamTree).", ["Open a .famtree file from your file manager (Open with → FamTree).", "请在文件管理器中打开 .famtree 文件（打开方式 → FamTree）。", "Abre un archivo .famtree desde tu gestor de archivos (Abrir con → FamTree).", "Ouvrez un fichier .famtree depuis votre gestionnaire de fichiers (Ouvrir avec → FamTree).", "Öffne eine .famtree-Datei im Dateimanager (Öffnen mit → FamTree).", "Otwórz plik .famtree z menedżera plików (Otwórz za pomocą → FamTree)."]),
+    ("Загрузка…", ["Loading…", "加载中…", "Cargando…", "Chargement…", "Wird geladen…", "Wczytywanie…"]),
+    ("Не удалось открыть файл", ["Could not open the file", "无法打开文件", "No se pudo abrir el archivo", "Impossible d’ouvrir le fichier", "Datei konnte nicht geöffnet werden", "Nie udało się otworzyć pliku"]),
+    ("Файл: {name}", ["File: {name}", "文件：{name}", "Archivo: {name}", "Fichier : {name}", "Datei: {name}", "Plik: {name}"]),
+    ("Людей в дереве: {n}", ["People in the tree: {n}", "树中人数：{n}", "Personas en el árbol: {n}", "Personnes dans l’arbre : {n}", "Personen im Baum: {n}", "Osób w drzewie: {n}"]),
 ];
 
 #[cfg(test)]
