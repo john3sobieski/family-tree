@@ -521,7 +521,7 @@ impl eframe::App for FamTreeApp {
         }
 
         self.view.highlight = self.selected;
-        egui::CentralPanel::default().frame(egui::Frame::none()).show(ctx, |ui| match self.mode {
+        egui::CentralPanel::default().frame(egui::Frame::none().fill(crate::theme::p().bg)).show(ctx, |ui| match self.mode {
             Mode::View | Mode::Edit => {
                 let clicked =
                     self.view.show(ui, &self.tree, &self.layout, &self.layout_cfg, &self.store);
