@@ -227,7 +227,7 @@ pub(crate) fn load_texture(
 }
 
 /// Все фото человека: главное (если его нет среди остальных) + остальные.
-fn photo_list(p: &Person) -> Vec<(String, String)> {
+pub(crate) fn photo_list(p: &Person) -> Vec<(String, String)> {
     let mut v: Vec<(String, String)> = Vec::new();
     if let Some(m) = &p.main_photo {
         if !p.photos.iter().any(|ph| &ph.hash == m) {
@@ -326,7 +326,7 @@ fn info_panel(ui: &mut egui::Ui, tree: &Tree, p: &Person) -> Option<WindowEvent>
     event
 }
 
-fn nationalities_text(p: &Person) -> Option<String> {
+pub(crate) fn nationalities_text(p: &Person) -> Option<String> {
     let names: Vec<&str> = p
         .nationalities
         .iter()
@@ -340,7 +340,7 @@ fn nationalities_text(p: &Person) -> Option<String> {
     }
 }
 
-fn non_empty(s: &str) -> Option<String> {
+pub(crate) fn non_empty(s: &str) -> Option<String> {
     let t = s.trim();
     if t.is_empty() {
         None

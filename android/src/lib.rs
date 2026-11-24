@@ -1,4 +1,4 @@
-// FamTree Android viewer. Step A4: open a .famtree and draw the tree (same layout and cards as on desktop).
+// FamTree Android viewer. Step A5: tree (same layout and cards as on desktop) + full-screen person page.
 // Shared code from the desktop crate (same files, no copies).
 #[allow(dead_code)]
 #[path = "../../src/i18n.rs"]
@@ -27,6 +27,10 @@ mod theme;
 #[allow(dead_code)]
 #[path = "../../src/view.rs"]
 mod view;
+#[allow(dead_code)]
+#[path = "../../src/person_window.rs"]
+mod person_window;
+mod person_screen;
 #[cfg(target_os = "android")]
 mod source;
 
@@ -36,6 +40,7 @@ mod app {
     use crate::i18n::{tr, trf};
     use crate::layout::{self, Layout, LayoutConfig};
     use crate::model::{PersonId, Tree};
+    use crate::person_screen::{Event, PersonScreen};
     use crate::source;
     use crate::view::ViewState;
     use eframe::egui;
@@ -95,6 +100,11 @@ mod app {
         rx: Option<Receiver<LoadResult>>,
         view: ViewState,
         selected: Option<PersonId>,
+        /// Person page currently open (None — the tree is shown).
+        person: Option<PersonId>,
+        /// Persons visited before the current one (relatives are opened one from another).
+        history: Vec<PersonId>,
+        person_screen: PersonScreen,
     }
 
     impl App {
@@ -108,6 +118,9 @@ mod app {
                 rx: None,
                 view: ViewState::default(),
                 selected: None,
+                person: None,
+                history: Vec::new(),
+                person_screen: PersonScreen::default(),
             };
             app.start(None);
             app
@@ -156,6 +169,9 @@ mod app {
                         Ok(Some(l)) => {
                             self.view.reset();
                             self.selected = None;
+                            self.person = None;
+                            self.history.clear();
+                            self.person_screen.reset();
                             State::Ready(l)
                         }
                         Ok(None) => State::Empty,
@@ -178,31 +194,35 @@ mod app {
             }
 
             let mut open_clicked = false;
+            let mut tapped: Option<PersonId> = None;
+            let mut page_event = Event::None;
             if let State::Ready(l) = &self.state {
-                let mut fit_clicked = false;
-                let who = self
-                    .selected
-                    .and_then(|id| l.tree.persons.get(&id))
-                    .map(|p| format!("{} {}", p.first_name.trim(), p.surname_display()).trim().to_string())
-                    .unwrap_or_default();
-                egui::TopBottomPanel::top("bar").frame(crate::theme::bar_frame(10.0, 6.0)).show(ctx, |ui| {
-                    // Temporary top margin (status bar); proper insets come in step A7.
-                    ui.add_space(42.0);
-                    ui.horizontal(|ui| {
-                        let big = |t: &str| egui::Button::new(t.to_string()).min_size(egui::vec2(0.0, 44.0));
-                        open_clicked = ui.add(big(tr("Открыть"))).clicked();
-                        fit_clicked = ui.add(big(tr("По размеру"))).clicked();
-                        ui.label(who);
+                if let Some(pid) = self.person {
+                    page_event = self.person_screen.show(ctx, &l.tree, &l.store, pid);
+                } else {
+                    let mut fit_clicked = false;
+                    let who = self
+                        .selected
+                        .and_then(|id| l.tree.persons.get(&id))
+                        .map(|p| format!("{} {}", p.first_name.trim(), p.surname_display()).trim().to_string())
+                        .unwrap_or_default();
+                    egui::TopBottomPanel::top("bar").frame(crate::theme::bar_frame(10.0, 6.0)).show(ctx, |ui| {
+                        // Temporary top margin (status bar); proper insets come in step A7.
+                        ui.add_space(42.0);
+                        ui.horizontal(|ui| {
+                            let big = |t: &str| egui::Button::new(t.to_string()).min_size(egui::vec2(0.0, 44.0));
+                            open_clicked = ui.add(big(tr("Открыть"))).clicked();
+                            fit_clicked = ui.add(big(tr("По размеру"))).clicked();
+                            ui.label(who);
+                        });
                     });
-                });
-                egui::CentralPanel::default().frame(egui::Frame::none()).show(ctx, |ui| {
-                    self.view.highlight = self.selected;
-                    if let Some(id) = self.view.show(ui, &l.tree, &l.layout, &l.cfg, &l.store) {
-                        self.selected = Some(id);
+                    egui::CentralPanel::default().frame(egui::Frame::none()).show(ctx, |ui| {
+                        self.view.highlight = self.selected;
+                        tapped = self.view.show(ui, &l.tree, &l.layout, &l.cfg, &l.store);
+                    });
+                    if fit_clicked {
+                        self.view.fitted = false;
                     }
-                });
-                if fit_clicked {
-                    self.view.fitted = false;
                 }
             } else {
                 egui::CentralPanel::default().show(ctx, |ui| {
@@ -232,6 +252,29 @@ mod app {
                         State::Ready(_) => {}
                     }
                 });
+            }
+            // Navigation: tap on a card opens the page; "Back" returns to the previous person, then to the tree.
+            if let Some(id) = tapped {
+                self.selected = Some(id);
+                self.person = Some(id);
+                self.history.clear();
+            }
+            match page_event {
+                Event::Back => match self.history.pop() {
+                    Some(prev) => {
+                        self.person = Some(prev);
+                        self.selected = Some(prev);
+                    }
+                    None => self.person = None,
+                },
+                Event::Goto(rid) => {
+                    if let Some(cur) = self.person {
+                        self.history.push(cur);
+                    }
+                    self.person = Some(rid);
+                    self.selected = Some(rid);
+                }
+                Event::None => {}
             }
             if open_clicked {
                 if let Err(e) = source::pick_file(&self.android) {

@@ -341,6 +341,7 @@ const TABLE: &[(&str, [&str; 6])] = &[
     ("Чёрный", ["Black", "黑色", "Negro", "Noir", "Schwarz", "Czarne"]),
     ("Экспортировать…", ["Export…", "导出…", "Exportar…", "Exporter…", "Exportieren…", "Eksportuj…"]),
     ("Закрыть", ["Close", "关闭", "Cerrar", "Fermer", "Schließen", "Zamknij"]),
+    ("Назад", ["Back", "返回", "Atrás", "Retour", "Zurück", "Wstecz"]),
     ("Изображение PNG", ["PNG image", "PNG 图片", "Imagen PNG", "Image PNG", "PNG-Bild", "Obraz PNG"]),
     ("Документ PDF", ["PDF document", "PDF 文档", "Documento PDF", "Document PDF", "PDF-Dokument", "Dokument PDF"]),
     ("Экспорт… {percent}%", ["Exporting… {percent}%", "正在导出… {percent}%", "Exportando… {percent}%", "Export en cours… {percent} %", "Export läuft… {percent} %", "Eksport… {percent}%"]),
