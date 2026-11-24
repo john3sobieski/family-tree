@@ -69,12 +69,15 @@ pub fn pick_file(app: &AndroidApp) -> Result<(), String> {
 }
 
 /// Tells Java which Rust function implements `FamActivity.nativeUri(String)`.
-pub fn register_natives(app: &AndroidApp, f: *mut c_void) -> Result<(), String> {
+pub fn register_natives(app: &AndroidApp, uri_fn: *mut c_void, back_fn: *mut c_void) -> Result<(), String> {
     with_env(app, |env, activity| {
         let class = env.get_object_class(activity)?;
         env.register_native_methods(
             &class,
-            &[NativeMethod { name: "nativeUri".into(), sig: "(Ljava/lang/String;)V".into(), fn_ptr: f }],
+            &[
+                NativeMethod { name: "nativeUri".into(), sig: "(Ljava/lang/String;)V".into(), fn_ptr: uri_fn },
+                NativeMethod { name: "nativeBack".into(), sig: "()Z".into(), fn_ptr: back_fn },
+            ],
         )?;
         Ok(())
     })

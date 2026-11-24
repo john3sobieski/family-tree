@@ -5,6 +5,7 @@ on:
     branches: ["**"]
     paths:
       - "android/**"
+      - ".github/scripts/**"
       # Shared desktop files (layout, view, flags, theme, ...) are compiled into the app too.
       - "src/**"
       - ".github/workflows/android.yml"
@@ -41,6 +42,19 @@ jobs:
           keytool -genkeypair -keystore "$RUNNER_TEMP/ci.keystore" -alias famtree \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass android -keypass android -dname "CN=FamTree CI"
+      - name: Patch winit (system Back must reach the activity)
+        working-directory: android
+        run: |
+          set -euo pipefail
+          # winit 0.30 reports every key, Back included, as handled, so Activity.onBackPressed is never called.
+          # Copy the exact winit that cargo resolves, make Back "unhandled", and point cargo at the copy.
+          cargo fetch --target aarch64-linux-android
+          SRC=$(cargo metadata --format-version 1 --filter-platform aarch64-linux-android | python3 -c "import sys, json; m = json.load(sys.stdin); print([p['manifest_path'] for p in m['packages'] if p['name'] == 'winit' and p['version'].startswith('0.30.')][0])")
+          rm -rf "$RUNNER_TEMP/winit-patched"
+          cp -r "$(dirname "$SRC")" "$RUNNER_TEMP/winit-patched"
+          python3 ../.github/scripts/patch_winit.py "$RUNNER_TEMP/winit-patched/src/platform_impl/android/mod.rs"
+          printf '\n[patch.crates-io]\nwinit = { path = "%s" }\n' "$RUNNER_TEMP/winit-patched" >> Cargo.toml
+          tail -4 Cargo.toml
       - name: Build APK
         working-directory: android
         env:

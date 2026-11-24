@@ -14,6 +14,26 @@ public class FamActivity extends NativeActivity {
     /** Implemented in Rust: receives the content URI (as a string) of the file to open. */
     private native void nativeUri(String uri);
 
+    /** Implemented in Rust: true — the app handled "Back" itself (closed the person page). */
+    private native boolean nativeBack();
+
+    /**
+     * System "Back" (button or gesture). The CI-patched winit reports Back as unhandled, so it reaches here.
+     * Rust closes the person page; otherwise the app goes to the background (like a normal launcher app).
+     */
+    @Override
+    public void onBackPressed() {
+        boolean handled = false;
+        try {
+            handled = nativeBack();
+        } catch (UnsatisfiedLinkError e) {
+            // Rust has not registered the method (yet).
+        }
+        if (!handled) {
+            moveTaskToBack(true);
+        }
+    }
+
     /** Called from Rust: opens the system file picker. */
     public void pickFile() {
         runOnUiThread(new Runnable() {

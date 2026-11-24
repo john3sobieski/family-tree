@@ -47,6 +47,7 @@ mod app {
     use jni::objects::{JObject, JString};
     use jni::JNIEnv;
     use std::sync::mpsc::{channel, Receiver, TryRecvError};
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Mutex, OnceLock};
     use winit::platform::android::activity::AndroidApp;
 
@@ -68,9 +69,27 @@ mod app {
         }
     }
 
+    /// True while the person page is open (the system "Back" then closes it instead of leaving the app).
+    static PERSON_OPEN: AtomicBool = AtomicBool::new(false);
+    /// Set by `native_back`, consumed by the next UI frame.
+    static BACK_REQ: AtomicBool = AtomicBool::new(false);
+
+    /// Registered as `FamActivity.nativeBack()`: true — Rust handles "Back" itself, false — Java moves the app to the background.
+    extern "system" fn native_back(_env: JNIEnv, _this: JObject) -> jni::sys::jboolean {
+        if !PERSON_OPEN.load(Ordering::SeqCst) {
+            return 0;
+        }
+        BACK_REQ.store(true, Ordering::SeqCst);
+        if let Some(ctx) = CTX.get() {
+            ctx.request_repaint();
+        }
+        1
+    }
+
     pub fn register(android: &AndroidApp) {
-        let f = native_uri as extern "system" fn(JNIEnv, JObject, JString) as *mut std::ffi::c_void;
-        if let Err(e) = source::register_natives(android, f) {
+        let uri = native_uri as extern "system" fn(JNIEnv, JObject, JString) as *mut std::ffi::c_void;
+        let back = native_back as extern "system" fn(JNIEnv, JObject) -> jni::sys::jboolean as *mut std::ffi::c_void;
+        if let Err(e) = source::register_natives(android, uri, back) {
             log::error!("register_natives failed: {e}");
         }
     }
@@ -78,7 +97,6 @@ mod app {
     struct Loaded {
         tree: Tree,
         store: MediaStore,
-        name: String,
         /// Computed in the loading thread with the desktop defaults, so the picture matches the PC.
         layout: Layout,
         cfg: LayoutConfig,
@@ -156,7 +174,7 @@ mod app {
         let (tree, store) = container::load(&path).map_err(|e| e.to_string())?;
         let cfg = LayoutConfig::default();
         let layout = layout::compute(&tree, &cfg);
-        Ok(Some(Loaded { tree, store, name: found.name, layout, cfg }))
+        Ok(Some(Loaded { tree, store, layout, cfg }))
     }
 
     impl eframe::App for App {
@@ -196,6 +214,7 @@ mod app {
             let mut open_clicked = false;
             let mut tapped: Option<PersonId> = None;
             let mut page_event = Event::None;
+            let back_key = BACK_REQ.swap(false, Ordering::SeqCst);
             if let State::Ready(l) = &self.state {
                 if let Some(pid) = self.person {
                     page_event = self.person_screen.show(ctx, &l.tree, &l.store, pid);
@@ -253,6 +272,9 @@ mod app {
                     }
                 });
             }
+            if back_key && self.person.is_some() {
+                page_event = Event::Back;
+            }
             // Navigation: tap on a card opens the page; "Back" returns to the previous person, then to the tree.
             if let Some(id) = tapped {
                 self.selected = Some(id);
@@ -276,6 +298,7 @@ mod app {
                 }
                 Event::None => {}
             }
+            PERSON_OPEN.store(self.person.is_some(), Ordering::SeqCst);
             if open_clicked {
                 if let Err(e) = source::pick_file(&self.android) {
                     self.state = State::Failed(file_error(e));
