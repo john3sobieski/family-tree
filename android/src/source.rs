@@ -68,8 +68,31 @@ pub fn pick_file(app: &AndroidApp) -> Result<(), String> {
     })
 }
 
-/// Tells Java which Rust function implements `FamActivity.nativeUri(String)`.
-pub fn register_natives(app: &AndroidApp, uri_fn: *mut c_void, back_fn: *mut c_void) -> Result<(), String> {
+/// Shows the soft keyboard (Java `FamActivity.showKeyboard`); `text` becomes the content of its hidden input.
+pub fn show_keyboard(app: &AndroidApp, text: &str) -> Result<(), String> {
+    with_env(app, |env, activity| {
+        let s = env.new_string(text)?;
+        env.call_method(activity, "showKeyboard", "(Ljava/lang/String;)V", &[JValue::Object(&s)])?;
+        Ok(())
+    })
+}
+
+/// Hides the soft keyboard (Java `FamActivity.hideKeyboard`).
+pub fn hide_keyboard(app: &AndroidApp) -> Result<(), String> {
+    with_env(app, |env, activity| {
+        env.call_method(activity, "hideKeyboard", "()V", &[])?;
+        Ok(())
+    })
+}
+
+/// Tells Java which Rust functions implement the `native*` methods of `FamActivity`.
+pub fn register_natives(
+    app: &AndroidApp,
+    uri_fn: *mut c_void,
+    back_fn: *mut c_void,
+    text_fn: *mut c_void,
+    submit_fn: *mut c_void,
+) -> Result<(), String> {
     with_env(app, |env, activity| {
         let class = env.get_object_class(activity)?;
         env.register_native_methods(
@@ -77,6 +100,8 @@ pub fn register_natives(app: &AndroidApp, uri_fn: *mut c_void, back_fn: *mut c_v
             &[
                 NativeMethod { name: "nativeUri".into(), sig: "(Ljava/lang/String;)V".into(), fn_ptr: uri_fn },
                 NativeMethod { name: "nativeBack".into(), sig: "()Z".into(), fn_ptr: back_fn },
+                NativeMethod { name: "nativeText".into(), sig: "(Ljava/lang/String;)V".into(), fn_ptr: text_fn },
+                NativeMethod { name: "nativeSubmit".into(), sig: "()V".into(), fn_ptr: submit_fn },
             ],
         )?;
         Ok(())

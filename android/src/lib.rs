@@ -1,4 +1,4 @@
-// FamTree Android viewer. Step A5: tree (same layout and cards as on desktop) + full-screen person page.
+// FamTree Android viewer. Step A6: tree (same layout and cards as on desktop) + person page + search.
 // Shared code from the desktop crate (same files, no copies).
 #[allow(dead_code)]
 #[path = "../../src/i18n.rs"]
@@ -30,7 +30,11 @@ mod view;
 #[allow(dead_code)]
 #[path = "../../src/person_window.rs"]
 mod person_window;
+#[allow(dead_code)]
+#[path = "../../src/search.rs"]
+mod search;
 mod person_screen;
+mod search_screen;
 #[cfg(target_os = "android")]
 mod source;
 
@@ -41,6 +45,7 @@ mod app {
     use crate::layout::{self, Layout, LayoutConfig};
     use crate::model::{PersonId, Tree};
     use crate::person_screen::{Event, PersonScreen};
+    use crate::search_screen::Event as SearchEvent;
     use crate::source;
     use crate::view::ViewState;
     use eframe::egui;
@@ -69,14 +74,40 @@ mod app {
         }
     }
 
-    /// True while the person page is open (the system "Back" then closes it instead of leaving the app).
-    static PERSON_OPEN: AtomicBool = AtomicBool::new(false);
+    /// Text typed on the soft keyboard (hidden Java EditText -> Rust).
+    static SEARCH_TEXT: Mutex<Option<String>> = Mutex::new(None);
+    /// The keyboard's "Search" key was pressed.
+    static SEARCH_SUBMIT: AtomicBool = AtomicBool::new(false);
+
+    /// Registered as `FamActivity.nativeText(String)`; runs on the Java UI thread, so it only stores the string.
+    extern "system" fn native_text(mut env: JNIEnv, _this: JObject, text: JString) {
+        if let Ok(s) = env.get_string(&text) {
+            let s: String = s.into();
+            if let Ok(mut g) = SEARCH_TEXT.lock() {
+                *g = Some(s);
+            }
+            if let Some(ctx) = CTX.get() {
+                ctx.request_repaint();
+            }
+        }
+    }
+
+    /// Registered as `FamActivity.nativeSubmit()`: the keyboard's "Search" key.
+    extern "system" fn native_submit(_env: JNIEnv, _this: JObject) {
+        SEARCH_SUBMIT.store(true, Ordering::SeqCst);
+        if let Some(ctx) = CTX.get() {
+            ctx.request_repaint();
+        }
+    }
+
+    /// True while the person page or the search is open (the system "Back" then closes it instead of leaving the app).
+    static PAGE_OPEN: AtomicBool = AtomicBool::new(false);
     /// Set by `native_back`, consumed by the next UI frame.
     static BACK_REQ: AtomicBool = AtomicBool::new(false);
 
     /// Registered as `FamActivity.nativeBack()`: true — Rust handles "Back" itself, false — Java moves the app to the background.
     extern "system" fn native_back(_env: JNIEnv, _this: JObject) -> jni::sys::jboolean {
-        if !PERSON_OPEN.load(Ordering::SeqCst) {
+        if !PAGE_OPEN.load(Ordering::SeqCst) {
             return 0;
         }
         BACK_REQ.store(true, Ordering::SeqCst);
@@ -89,7 +120,9 @@ mod app {
     pub fn register(android: &AndroidApp) {
         let uri = native_uri as extern "system" fn(JNIEnv, JObject, JString) as *mut std::ffi::c_void;
         let back = native_back as extern "system" fn(JNIEnv, JObject) -> jni::sys::jboolean as *mut std::ffi::c_void;
-        if let Err(e) = source::register_natives(android, uri, back) {
+        let text = native_text as extern "system" fn(JNIEnv, JObject, JString) as *mut std::ffi::c_void;
+        let submit = native_submit as extern "system" fn(JNIEnv, JObject) as *mut std::ffi::c_void;
+        if let Err(e) = source::register_natives(android, uri, back, text, submit) {
             log::error!("register_natives failed: {e}");
         }
     }
@@ -111,6 +144,9 @@ mod app {
 
     type LoadResult = Result<Option<Loaded>, String>;
 
+    /// How many suggestions the search page shows.
+    const SEARCH_LIMIT: usize = 30;
+
     pub struct App {
         android: AndroidApp,
         ctx: egui::Context,
@@ -123,6 +159,12 @@ mod app {
         /// Persons visited before the current one (relatives are opened one from another).
         history: Vec<PersonId>,
         person_screen: PersonScreen,
+        /// Search page open (it replaces the tree and the person page).
+        searching: bool,
+        search_text: String,
+        search_hits: Vec<PersonId>,
+        /// The text changed: recompute `search_hits` on the next frame.
+        search_dirty: bool,
     }
 
     impl App {
@@ -139,6 +181,10 @@ mod app {
                 person: None,
                 history: Vec::new(),
                 person_screen: PersonScreen::default(),
+                searching: false,
+                search_text: String::new(),
+                search_hits: Vec::new(),
+                search_dirty: false,
             };
             app.start(None);
             app
@@ -154,6 +200,30 @@ mod app {
             });
             self.rx = Some(rx);
             self.state = State::Loading;
+        }
+
+        fn open_search(&mut self) {
+            self.searching = true;
+            self.search_text.clear();
+            self.search_hits.clear();
+            self.search_dirty = false;
+            if let Err(e) = source::show_keyboard(&self.android, "") {
+                log::error!("show_keyboard failed: {e}");
+            }
+        }
+
+        fn close_search(&mut self) {
+            if self.searching {
+                self.searching = false;
+                let _ = source::hide_keyboard(&self.android);
+            }
+        }
+
+        /// Closes the search, selects the person and flies the camera to them (with the pulsing highlight).
+        fn pick_found(&mut self, id: PersonId) {
+            self.close_search();
+            self.selected = Some(id);
+            self.view.fly_to(id, true);
         }
     }
 
@@ -185,6 +255,7 @@ mod app {
                     self.rx = None;
                     self.state = match r {
                         Ok(Some(l)) => {
+                            self.close_search();
                             self.view.reset();
                             self.selected = None;
                             self.person = None;
@@ -211,12 +282,30 @@ mod app {
                 }
             }
 
+            // Typed text and the "Search" key from the soft keyboard (stale text after the search closed is dropped).
+            let typed = SEARCH_TEXT.lock().ok().and_then(|mut g| g.take());
+            if let Some(t) = typed {
+                if self.searching && t != self.search_text {
+                    self.search_text = t;
+                    self.search_dirty = true;
+                }
+            }
+            let submit = SEARCH_SUBMIT.swap(false, Ordering::SeqCst);
+
             let mut open_clicked = false;
+            let mut search_clicked = false;
             let mut tapped: Option<PersonId> = None;
             let mut page_event = Event::None;
+            let mut search_event = SearchEvent::None;
             let back_key = BACK_REQ.swap(false, Ordering::SeqCst);
             if let State::Ready(l) = &self.state {
-                if let Some(pid) = self.person {
+                if self.searching {
+                    if self.search_dirty {
+                        self.search_hits = crate::search::find(&l.tree, &l.layout, &self.search_text, SEARCH_LIMIT);
+                        self.search_dirty = false;
+                    }
+                    search_event = crate::search_screen::show(ctx, &l.tree, &self.search_text, &self.search_hits);
+                } else if let Some(pid) = self.person {
                     page_event = self.person_screen.show(ctx, &l.tree, &l.store, pid);
                 } else {
                     let mut fit_clicked = false;
@@ -230,6 +319,7 @@ mod app {
                         ui.add_space(42.0);
                         ui.horizontal(|ui| {
                             let big = |t: &str| egui::Button::new(t.to_string()).min_size(egui::vec2(0.0, 44.0));
+                            search_clicked = ui.add(big("🔍")).clicked();
                             open_clicked = ui.add(big(tr("Открыть"))).clicked();
                             fit_clicked = ui.add(big(tr("По размеру"))).clicked();
                             ui.label(who);
@@ -272,8 +362,36 @@ mod app {
                     }
                 });
             }
-            if back_key && self.person.is_some() {
+            if back_key && self.searching {
+                search_event = SearchEvent::Back;
+            } else if back_key && self.person.is_some() {
                 page_event = Event::Back;
+            }
+            match search_event {
+                SearchEvent::Back => self.close_search(),
+                SearchEvent::Clear => {
+                    self.search_text.clear();
+                    self.search_hits.clear();
+                    self.search_dirty = false;
+                    // Also empties the Java EditText and keeps the keyboard up.
+                    let _ = source::show_keyboard(&self.android, "");
+                }
+                SearchEvent::Focus => {
+                    let _ = source::show_keyboard(&self.android, &self.search_text);
+                }
+                SearchEvent::Pick(id) => self.pick_found(id),
+                SearchEvent::None => {}
+            }
+            if submit && self.searching {
+                match self.search_hits.first().copied() {
+                    Some(id) => self.pick_found(id),
+                    None => {
+                        let _ = source::hide_keyboard(&self.android);
+                    }
+                }
+            }
+            if search_clicked {
+                self.open_search();
             }
             // Navigation: tap on a card opens the page; "Back" returns to the previous person, then to the tree.
             if let Some(id) = tapped {
@@ -298,7 +416,7 @@ mod app {
                 }
                 Event::None => {}
             }
-            PERSON_OPEN.store(self.person.is_some(), Ordering::SeqCst);
+            PAGE_OPEN.store(self.person.is_some() || self.searching, Ordering::SeqCst);
             if open_clicked {
                 if let Err(e) = source::pick_file(&self.android) {
                     self.state = State::Failed(file_error(e));

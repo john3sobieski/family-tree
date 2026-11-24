@@ -1,8 +1,18 @@
 package io.github.john3sobieski.famtree;
 
 import android.app.NativeActivity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 /**
  * Thin Java layer over NativeActivity: the system file picker and files opened while the app runs.
@@ -11,11 +21,22 @@ import android.net.Uri;
 public class FamActivity extends NativeActivity {
     private static final int PICK_REQUEST = 4711;
 
+    /** Invisible 1x1 input: NativeActivity cannot receive soft-keyboard text itself, so typing goes through this view. */
+    private EditText input;
+    /** True while Rust sets the text (do not echo it back). */
+    private boolean muted;
+
     /** Implemented in Rust: receives the content URI (as a string) of the file to open. */
     private native void nativeUri(String uri);
 
-    /** Implemented in Rust: true — the app handled "Back" itself (closed the person page). */
+    /** Implemented in Rust: true — the app handled "Back" itself (closed the person page or the search). */
     private native boolean nativeBack();
+
+    /** Implemented in Rust: the current text of the search input. */
+    private native void nativeText(String text);
+
+    /** Implemented in Rust: the keyboard's "Search" key was pressed. */
+    private native void nativeSubmit();
 
     /**
      * System "Back" (button or gesture). The CI-patched winit reports Back as unhandled, so it reaches here.
@@ -32,6 +53,85 @@ public class FamActivity extends NativeActivity {
         if (!handled) {
             moveTaskToBack(true);
         }
+    }
+
+    /** Called from Rust: shows the soft keyboard; `text` replaces the content of the hidden input. */
+    public void showKeyboard(final String text) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ensureInput();
+                muted = true;
+                input.setText(text);
+                input.setSelection(input.getText().length());
+                muted = false;
+                input.requestFocus();
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(input, 0);
+                }
+            }
+        });
+    }
+
+    /** Called from Rust: hides the soft keyboard. */
+    public void hideKeyboard() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (input == null) {
+                    return;
+                }
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.hideSoftInputFromWindow(input.getWindowToken(), 0);
+                }
+                input.clearFocus();
+            }
+        });
+    }
+
+    private void ensureInput() {
+        if (input != null) {
+            return;
+        }
+        input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setImeOptions(EditorInfo.IME_ACTION_SEARCH | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        input.setBackground(null);
+        input.setAlpha(0f);
+        input.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable e) {
+                if (muted) {
+                    return;
+                }
+                try {
+                    nativeText(e.toString());
+                } catch (UnsatisfiedLinkError err) {
+                    // Rust has not registered the method (yet).
+                }
+            }
+        });
+        input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                try {
+                    nativeSubmit();
+                } catch (UnsatisfiedLinkError err) {
+                    // Rust has not registered the method (yet).
+                }
+                return true;
+            }
+        });
+        addContentView(input, new FrameLayout.LayoutParams(1, 1));
     }
 
     /** Called from Rust: opens the system file picker. */
