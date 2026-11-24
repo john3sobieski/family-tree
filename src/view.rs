@@ -15,7 +15,10 @@ const MIN_ZOOM: f32 = 0.03;
 const MAX_ZOOM: f32 = 3.0;
 /// Ниже этого масштаба — только прямоугольники (без фото и текста).
 const DETAIL_ZOOM: f32 = 0.3;
-/// Лимит текстур в памяти (миниатюра ~200 КБ).
+/// Лимит текстур в памяти (миниатюра ~200 КБ). На телефоне памяти меньше.
+#[cfg(target_os = "android")]
+const MAX_TEXTURES: usize = 150;
+#[cfg(not(target_os = "android"))]
 const MAX_TEXTURES: usize = 300;
 /// Сколько миниатюр загружать за кадр, чтобы не вешать интерфейс.
 const LOADS_PER_FRAME: usize = 6;
@@ -121,29 +124,17 @@ impl ViewState {
         self.zoom = new_zoom;
     }
 
-    fn texture_for(
-        &mut self,
-        ctx: &egui::Context,
-        store: &MediaStore,
-        hash: &str,
-        budget: &mut usize,
-        pending: &mut bool,
-    ) -> Option<TextureId> {
+    /// Готовая текстура миниатюры. Если её ещё нет — hash попадает в `wanted`
+    /// (не больше `LOADS_PER_FRAME` за кадр) и загружается одним пакетом после цикла.
+    fn texture_for(&self, hash: &str, wanted: &mut Vec<String>, pending: &mut bool) -> Option<TextureId> {
         if let Some(entry) = self.textures.get(hash) {
             return entry.as_ref().map(|t| t.id());
         }
-        if *budget == 0 {
-            *pending = true;
-            return None;
+        *pending = true;
+        if wanted.len() < LOADS_PER_FRAME && !wanted.iter().any(|h| h == hash) {
+            wanted.push(hash.to_string());
         }
-        *budget -= 1;
-        let tex = load_thumb(ctx, store, hash);
-        if self.textures.len() >= MAX_TEXTURES {
-            self.textures.clear();
-        }
-        let id = tex.as_ref().map(|t| t.id());
-        self.textures.insert(hash.to_string(), tex);
-        id
+        None
     }
 
     /// Рисует дерево. Возвращает человека, по карточке которого кликнули.
@@ -202,18 +193,27 @@ impl ViewState {
         }
 
         // Ввод: перетаскивание — сдвиг, колесо/щипок — масштаб вокруг курсора.
-        if response.dragged() {
-            self.pan += response.drag_delta();
+        // Два пальца на экране: сдвиг по средней точке + щипок вокруг точки начала жеста.
+        if let Some(mt) = ui.input(|i| i.multi_touch()) {
+            self.pan += mt.translation_delta;
+            if (mt.zoom_delta - 1.0).abs() > 1e-4 {
+                self.zoom_at(rect, mt.start_pos, mt.zoom_delta);
+            }
             self.anim = None;
-        }
-        if response.hovered() {
-            let (scroll, zoom_delta, ptr) =
-                ui.input(|i| (i.smooth_scroll_delta.y, i.zoom_delta(), i.pointer.hover_pos()));
-            let factor = zoom_delta * (scroll * 0.002).exp();
-            if (factor - 1.0).abs() > 1e-4 {
-                if let Some(p) = ptr {
-                    self.zoom_at(rect, p, factor);
-                    self.anim = None;
+        } else {
+            if response.dragged() {
+                self.pan += response.drag_delta();
+                self.anim = None;
+            }
+            if response.hovered() {
+                let (scroll, zoom_delta, ptr) =
+                    ui.input(|i| (i.smooth_scroll_delta.y, i.zoom_delta(), i.pointer.hover_pos()));
+                let factor = zoom_delta * (scroll * 0.002).exp();
+                if (factor - 1.0).abs() > 1e-4 {
+                    if let Some(p) = ptr {
+                        self.zoom_at(rect, p, factor);
+                        self.anim = None;
+                    }
                 }
             }
         }
@@ -295,10 +295,17 @@ impl ViewState {
 
         // Карточки (только видимые).
         let hover_pos = response.hover_pos();
+        // Тап: на сенсорном экране после отпускания hover_pos пуст, поэтому точку клика берём отдельно.
+        let click_pos = if response.clicked() { response.interact_pointer_pos() } else { None };
         let mut hovered_id: Option<PersonId> = None;
-        let mut budget = LOADS_PER_FRAME;
+        let mut tapped_id: Option<PersonId> = None;
+        let mut wanted: Vec<String> = Vec::new();
         let mut pending = false;
         let ctx = ui.ctx().clone();
+        // Освобождаем кэш до рисования: текстуры, уже попавшие в кадр, не должны исчезнуть.
+        if self.textures.len() + LOADS_PER_FRAME > MAX_TEXTURES {
+            self.textures.clear();
+        }
         let card_bg = visuals.widgets.noninteractive.bg_fill;
         let card_stroke = visuals.widgets.noninteractive.bg_stroke;
         let accent = crate::theme::p().accent;
@@ -323,6 +330,9 @@ impl ViewState {
             let is_hover = hover_pos.map_or(false, |p| card.contains(p));
             if is_hover {
                 hovered_id = Some(n.id);
+            }
+            if click_pos.map_or(false, |p| card.contains(p)) {
+                tapped_id = Some(n.id);
             }
             let stroke = if is_hover || self.highlight == Some(n.id) { Stroke::new(2.5_f32, accent) } else { card_stroke };
 
@@ -358,7 +368,7 @@ impl ViewState {
             let tex = person
                 .main_photo
                 .as_deref()
-                .and_then(|h| self.texture_for(&ctx, store, h, &mut budget, &mut pending));
+                .and_then(|h| self.texture_for(h, &mut wanted, &mut pending));
             match tex {
                 Some(id) => {
                     // Фото скруглено тем же радиусом, что и карточка.
@@ -418,16 +428,21 @@ impl ViewState {
                 _ => self.flash = None,
             }
         }
+        // Миниатюры кадра грузятся одним пакетом: архив открывается один раз, а не на каждое фото.
+        if !wanted.is_empty() {
+            let mut got = store.get_many(MediaKind::Thumb, &wanted);
+            for h in wanted {
+                let tex = got.remove(&h).and_then(|b| thumb_texture(&ctx, &h, &b));
+                self.textures.insert(h, tex);
+            }
+        }
         if pending {
             ctx.request_repaint();
         }
         if hovered_id.is_some() && !response.dragged() {
             ctx.set_cursor_icon(egui::CursorIcon::PointingHand);
         }
-        if response.clicked() {
-            return hovered_id;
-        }
-        None
+        tapped_id
     }
 }
 
@@ -492,9 +507,8 @@ pub(crate) fn draw_placeholder_rounded(
     clip.circle_filled(Pos2::new(cx, r.top() + r.height() * 0.98), r.width() * 0.38, fg);
 }
 
-fn load_thumb(ctx: &egui::Context, store: &MediaStore, hash: &str) -> Option<TextureHandle> {
-    let bytes = store.get(MediaKind::Thumb, hash).ok()?;
-    let img = image::load_from_memory(&bytes).ok()?.to_rgba8();
+fn thumb_texture(ctx: &egui::Context, hash: &str, bytes: &[u8]) -> Option<TextureHandle> {
+    let img = image::load_from_memory(bytes).ok()?.to_rgba8();
     let size = [img.width() as usize, img.height() as usize];
     let color = egui::ColorImage::from_rgba_unmultiplied(size, img.as_raw());
     Some(ctx.load_texture(format!("thumb-{hash}"), color, egui::TextureOptions::LINEAR))

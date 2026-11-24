@@ -1,4 +1,4 @@
-// FamTree Android viewer. Step A3: open a .famtree (file manager, picker button) and show basic info.
+// FamTree Android viewer. Step A4: open a .famtree and draw the tree (same layout and cards as on desktop).
 // Shared code from the desktop crate (same files, no copies).
 #[allow(dead_code)]
 #[path = "../../src/i18n.rs"]
@@ -9,6 +9,24 @@ mod model;
 #[allow(dead_code)]
 #[path = "../../src/container.rs"]
 mod container;
+#[allow(dead_code)]
+#[path = "../../src/countries.rs"]
+mod countries;
+#[allow(dead_code)]
+#[path = "../../src/flags.rs"]
+mod flags;
+#[allow(dead_code)]
+#[path = "../../src/layout.rs"]
+mod layout;
+#[allow(dead_code)]
+#[path = "../../src/platform.rs"]
+mod platform;
+#[allow(dead_code)]
+#[path = "../../src/theme.rs"]
+mod theme;
+#[allow(dead_code)]
+#[path = "../../src/view.rs"]
+mod view;
 #[cfg(target_os = "android")]
 mod source;
 
@@ -16,12 +34,14 @@ mod source;
 mod app {
     use crate::container::{self, MediaStore};
     use crate::i18n::{tr, trf};
-    use crate::model::Tree;
+    use crate::layout::{self, Layout, LayoutConfig};
+    use crate::model::{PersonId, Tree};
     use crate::source;
+    use crate::view::ViewState;
     use eframe::egui;
     use jni::objects::{JObject, JString};
     use jni::JNIEnv;
-    use std::sync::mpsc::{channel, Receiver};
+    use std::sync::mpsc::{channel, Receiver, TryRecvError};
     use std::sync::{Mutex, OnceLock};
     use winit::platform::android::activity::AndroidApp;
 
@@ -52,8 +72,11 @@ mod app {
 
     struct Loaded {
         tree: Tree,
-        _store: MediaStore,
+        store: MediaStore,
         name: String,
+        /// Computed in the loading thread with the desktop defaults, so the picture matches the PC.
+        layout: Layout,
+        cfg: LayoutConfig,
     }
 
     enum State {
@@ -70,12 +93,22 @@ mod app {
         ctx: egui::Context,
         state: State,
         rx: Option<Receiver<LoadResult>>,
+        view: ViewState,
+        selected: Option<PersonId>,
     }
 
     impl App {
         pub fn new(android: AndroidApp, ctx: egui::Context) -> Self {
             let _ = CTX.set(ctx.clone());
-            let mut app = App { android, ctx, state: State::Loading, rx: None };
+            crate::theme::apply(&ctx);
+            let mut app = App {
+                android,
+                ctx,
+                state: State::Loading,
+                rx: None,
+                view: ViewState::default(),
+                selected: None,
+            };
             app.start(None);
             app
         }
@@ -108,19 +141,33 @@ mod app {
         }
         let path = source::commit(android, &found).map_err(file_error)?;
         let (tree, store) = container::load(&path).map_err(|e| e.to_string())?;
-        Ok(Some(Loaded { tree, _store: store, name: found.name }))
+        let cfg = LayoutConfig::default();
+        let layout = layout::compute(&tree, &cfg);
+        Ok(Some(Loaded { tree, store, name: found.name, layout, cfg }))
     }
 
     impl eframe::App for App {
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-            let got = self.rx.as_ref().and_then(|rx| rx.try_recv().ok());
-            if let Some(r) = got {
-                self.rx = None;
-                self.state = match r {
-                    Ok(Some(l)) => State::Ready(l),
-                    Ok(None) => State::Empty,
-                    Err(e) => State::Failed(e),
-                };
+            let got = self.rx.as_ref().map(|rx| rx.try_recv());
+            match got {
+                Some(Ok(r)) => {
+                    self.rx = None;
+                    self.state = match r {
+                        Ok(Some(l)) => {
+                            self.view.reset();
+                            self.selected = None;
+                            State::Ready(l)
+                        }
+                        Ok(None) => State::Empty,
+                        Err(e) => State::Failed(e),
+                    };
+                }
+                // The loading thread died (panic): do not stay on the spinner forever.
+                Some(Err(TryRecvError::Disconnected)) => {
+                    self.rx = None;
+                    self.state = State::Failed(tr("Не удалось открыть файл").to_string());
+                }
+                _ => {}
             }
             // One load at a time: both threads would write the same temporary file.
             if self.rx.is_none() {
@@ -130,40 +177,67 @@ mod app {
                 }
             }
 
-            egui::CentralPanel::default().show(ctx, |ui| {
-                // Temporary top margin (status bar); proper insets come in step A7.
-                ui.add_space(48.0);
-                ui.heading("FamTree");
-                ui.add_space(12.0);
-                if !matches!(self.state, State::Loading) {
-                    let open = egui::Button::new(tr("Открыть")).min_size(egui::vec2(160.0, 48.0));
-                    if ui.add(open).clicked() {
-                        if let Err(e) = source::pick_file(&self.android) {
-                            self.state = State::Failed(file_error(e));
-                        }
+            let mut open_clicked = false;
+            if let State::Ready(l) = &self.state {
+                let mut fit_clicked = false;
+                let who = self
+                    .selected
+                    .and_then(|id| l.tree.persons.get(&id))
+                    .map(|p| format!("{} {}", p.first_name.trim(), p.surname_display()).trim().to_string())
+                    .unwrap_or_default();
+                egui::TopBottomPanel::top("bar").frame(crate::theme::bar_frame(10.0, 6.0)).show(ctx, |ui| {
+                    // Temporary top margin (status bar); proper insets come in step A7.
+                    ui.add_space(42.0);
+                    ui.horizontal(|ui| {
+                        let big = |t: &str| egui::Button::new(t.to_string()).min_size(egui::vec2(0.0, 44.0));
+                        open_clicked = ui.add(big(tr("Открыть"))).clicked();
+                        fit_clicked = ui.add(big(tr("По размеру"))).clicked();
+                        ui.label(who);
+                    });
+                });
+                egui::CentralPanel::default().frame(egui::Frame::none()).show(ctx, |ui| {
+                    self.view.highlight = self.selected;
+                    if let Some(id) = self.view.show(ui, &l.tree, &l.layout, &l.cfg, &l.store) {
+                        self.selected = Some(id);
                     }
+                });
+                if fit_clicked {
+                    self.view.fitted = false;
+                }
+            } else {
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    // Temporary top margin (status bar); proper insets come in step A7.
+                    ui.add_space(48.0);
+                    ui.heading("FamTree");
                     ui.add_space(12.0);
+                    if !matches!(self.state, State::Loading) {
+                        let open = egui::Button::new(tr("Открыть")).min_size(egui::vec2(160.0, 48.0));
+                        open_clicked = ui.add(open).clicked();
+                        ui.add_space(12.0);
+                    }
+                    match &self.state {
+                        State::Loading => {
+                            ui.horizontal(|ui| {
+                                ui.spinner();
+                                ui.label(tr("Загрузка…"));
+                            });
+                        }
+                        State::Empty => {
+                            ui.label(tr("Откройте файл .famtree из файлового менеджера (Открыть с помощью → FamTree)."));
+                        }
+                        State::Failed(e) => {
+                            ui.colored_label(egui::Color32::LIGHT_RED, tr("Не удалось открыть файл"));
+                            ui.label(e);
+                        }
+                        State::Ready(_) => {}
+                    }
+                });
+            }
+            if open_clicked {
+                if let Err(e) = source::pick_file(&self.android) {
+                    self.state = State::Failed(file_error(e));
                 }
-                match &self.state {
-                    State::Loading => {
-                        ui.horizontal(|ui| {
-                            ui.spinner();
-                            ui.label(tr("Загрузка…"));
-                        });
-                    }
-                    State::Empty => {
-                        ui.label(tr("Откройте файл .famtree из файлового менеджера (Открыть с помощью → FamTree)."));
-                    }
-                    State::Failed(e) => {
-                        ui.colored_label(egui::Color32::LIGHT_RED, tr("Не удалось открыть файл"));
-                        ui.label(e);
-                    }
-                    State::Ready(l) => {
-                        ui.label(trf("Файл: {name}", &[("name", l.name.clone())]));
-                        ui.label(trf("Людей в дереве: {n}", &[("n", l.tree.persons.len().to_string())]));
-                    }
-                }
-            });
+            }
         }
     }
 }
@@ -178,6 +252,7 @@ fn android_main(android: winit::platform::android::activity::AndroidApp) {
         android_logger::Config::default().with_max_level(log::LevelFilter::Info),
     );
     i18n::init();
+    theme::init();
     app::register(&android);
     let for_loop = android.clone();
     let options = eframe::NativeOptions {

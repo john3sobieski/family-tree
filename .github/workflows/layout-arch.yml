@@ -1,0 +1,53 @@
+name: Layout on x86_64 vs arm64
+
+# The Android app must draw the same tree as the PC. This runs the same layout code on both
+# CPU architectures and compares the fingerprints of the results.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "src/layout.rs"
+      - "src/model.rs"
+      - "src/demo.rs"
+      - ".github/workflows/layout-arch.yml"
+  workflow_dispatch:
+
+jobs:
+  fingerprints:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.arch }}
+      - name: Print layout fingerprints
+        run: |
+          set -o pipefail
+          cargo test --release print_layout_fingerprints -- --nocapture --test-threads=1 | grep '^FP ' | sort > fp-${{ matrix.arch }}.txt
+          cat fp-${{ matrix.arch }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fp-${{ matrix.arch }}
+          path: fp-${{ matrix.arch }}.txt
+
+  compare:
+    needs: fingerprints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fp-*
+          merge-multiple: true
+      - name: Compare
+        run: |
+          test -s fp-x86_64.txt && test -s fp-arm64.txt
+          diff -u fp-x86_64.txt fp-arm64.txt && echo "Layouts are identical on x86_64 and arm64"

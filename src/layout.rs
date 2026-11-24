@@ -2222,6 +2222,23 @@ mod tests {
         }
     }
 
+    /// Печатает отпечатки раскладки (`FP <дерево> <конфиг> <hex>`). CI запускает его на x86_64 и arm64
+    /// (`.github/workflows/layout-arch.yml`) и сравнивает вывод: схема на телефоне должна совпасть с ПК.
+    #[test]
+    fn print_layout_fingerprints() {
+        let trees: Vec<(&str, Tree)> = vec![
+            ("sample", crate::demo::sample_tree()),
+            ("big60", crate::demo::big_tree(60)),
+            ("big400", crate::demo::big_tree(400)),
+            ("families", big_families_tree()),
+        ];
+        for (name, t) in &trees {
+            for (cfg_name, cfg) in [("plain", plain()), ("default", LayoutConfig::default())] {
+                println!("FP {name} {cfg_name} {:016x}", fingerprint(&compute(t, &cfg)));
+            }
+        }
+    }
+
     /// В раскладке нет NaN/∞ (иначе на телефоне схема «уедет» иначе, чем на ПК).
     #[test]
     fn layout_numbers_are_finite() {

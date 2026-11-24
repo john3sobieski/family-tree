@@ -5,6 +5,8 @@ on:
     branches: ["**"]
     paths:
       - "android/**"
+      # Shared desktop files (layout, view, flags, theme, ...) are compiled into the app too.
+      - "src/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
