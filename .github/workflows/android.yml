@@ -72,6 +72,10 @@ jobs:
           JAR="$ANDROID_HOME/platforms/android-34/android.jar"
           rm -rf build dist
           mkdir -p build/classes build/dex dist
+          # Version of the Android crate (android/Cargo.toml), not of the desktop one.
+          VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('Cargo.toml', 'rb'))['package']['version'])")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "APK version: $VERSION"
           javac --release 11 -classpath "$JAR" -d build/classes $(find java -name '*.java')
           "$BT/d8" --lib "$JAR" --min-api 29 --output build/dex $(find build/classes -name '*.class')
           # cargo-apk built an APK without code: copy it without the old signature and add classes.dex.
@@ -86,11 +90,13 @@ jobs:
               zout.write("build/dex/classes.dex", "classes.dex", compress_type=zipfile.ZIP_DEFLATED)
           PYEOF
           "$BT/zipalign" -f -p 4 build/unsigned.apk build/aligned.apk
-          "$BT/apksigner" sign --ks "$RUNNER_TEMP/ci.keystore" --ks-pass pass:android --key-pass pass:android --out dist/FamTree.apk build/aligned.apk
-          "$BT/apksigner" verify --verbose dist/FamTree.apk
-          unzip -l dist/FamTree.apk
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/ci.keystore" --ks-pass pass:android --key-pass pass:android --out "dist/FamTree-$VERSION.apk" build/aligned.apk
+          "$BT/apksigner" verify --verbose "dist/FamTree-$VERSION.apk"
+          # Shows package, versionName and the icon the APK really contains.
+          "$BT/aapt2" dump badging "dist/FamTree-$VERSION.apk" | grep -E "^(package|application-label|application-icon)" || true
+          unzip -l "dist/FamTree-$VERSION.apk"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: famtree-android
-          path: android/dist/FamTree.apk
+          name: famtree-android-${{ env.VERSION }}
+          path: android/dist/FamTree-${{ env.VERSION }}.apk

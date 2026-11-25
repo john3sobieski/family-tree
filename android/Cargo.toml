@@ -1,6 +1,6 @@
 [package]
 name = "famtree_android"
-version = "1.3.3"
+version = "1.4.0"
 edition = "2021"
 description = "Read-only Android viewer for FamTree family trees"
 license = "PolyForm-Noncommercial-1.0.0"
@@ -38,6 +38,8 @@ strip = true
 package = "io.github.john3sobieski.famtree"
 apk_name = "FamTree"
 build_targets = ["aarch64-linux-android"]
+# Launcher icon (adaptive, same green tree as the desktop icon): android/res.
+resources = "res"
 
 [package.metadata.android.sdk]
 min_sdk_version = 29
@@ -45,6 +47,7 @@ target_sdk_version = 34
 
 [package.metadata.android.application]
 label = "FamTree"
+icon = "@mipmap/ic_launcher"
 # classes.dex (from android/java) is added to the APK by the CI workflow.
 has_code = true
 
