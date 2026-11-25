@@ -66,6 +66,12 @@ jobs:
           cargo apk build --release
       - name: Add Java layer (classes.dex) and sign
         working-directory: android
+        env:
+          # Permanent release key (repository secrets, see PROGRESS_Andr.md). Without them: temporary key.
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
@@ -90,8 +96,23 @@ jobs:
               zout.write("build/dex/classes.dex", "classes.dex", compress_type=zipfile.ZIP_DEFLATED)
           PYEOF
           "$BT/zipalign" -f -p 4 build/unsigned.apk build/aligned.apk
-          "$BT/apksigner" sign --ks "$RUNNER_TEMP/ci.keystore" --ks-pass pass:android --key-pass pass:android --out "dist/FamTree-$VERSION.apk" build/aligned.apk
-          "$BT/apksigner" verify --verbose "dist/FamTree-$VERSION.apk"
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            KS="$RUNNER_TEMP/release.keystore"
+            ALIAS="$KS_ALIAS"
+            export SIGN_STORE_PASS="$KS_PASS"
+            export SIGN_KEY_PASS="${KEY_PASS:-$KS_PASS}"
+            echo "Signing with the permanent release key"
+          else
+            KS="$RUNNER_TEMP/ci.keystore"
+            ALIAS=famtree
+            export SIGN_STORE_PASS=android
+            export SIGN_KEY_PASS=android
+            echo "::warning::No release key in secrets: the APK is signed with a temporary key and cannot update an installed release"
+          fi
+          "$BT/apksigner" sign --ks "$KS" --ks-key-alias "$ALIAS" --ks-pass env:SIGN_STORE_PASS --key-pass env:SIGN_KEY_PASS --out "dist/FamTree-$VERSION.apk" build/aligned.apk
+          rm -f "$RUNNER_TEMP/release.keystore"
+          "$BT/apksigner" verify --verbose --print-certs "dist/FamTree-$VERSION.apk" | grep -E "Verifies|Number of signers|SHA-256"
           # Shows package, versionName and the icon the APK really contains.
           "$BT/aapt2" dump badging "dist/FamTree-$VERSION.apk" | grep -E "^(package|application-label|application-icon)" || true
           unzip -l "dist/FamTree-$VERSION.apk"
