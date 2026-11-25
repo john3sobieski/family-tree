@@ -106,8 +106,24 @@ public class FamActivity extends NativeActivity {
             @Override
             public void run() {
                 pushEnv(true);
+                // The window may not be attached yet, and not every layout pass fires a callback: retry a few times.
+                final View decor = getWindow().getDecorView();
+                for (int delay : new int[] {150, 600, 1500}) {
+                    decor.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            pushEnv(false);
+                        }
+                    }, delay);
+                }
             }
         });
+    }
+
+    /** Height of a system bar from the framework resources (0 if unknown). */
+    private int barSize(String name) {
+        int id = Resources.getSystem().getIdentifier(name, "dimen", "android");
+        return id > 0 ? Resources.getSystem().getDimensionPixelSize(id) : 0;
     }
 
     /** UI thread. Sends dark mode and the insets that really overlap our content (system bars minus what the window already avoids). */
@@ -115,28 +131,38 @@ public class FamActivity extends NativeActivity {
         int l = 0, t = 0, r = 0, b = 0;
         View decor = getWindow().getDecorView();
         View content = decor.findViewById(android.R.id.content);
-        WindowInsets wi = decor.getRootWindowInsets();
-        if (wi != null && content != null && decor.getWidth() > 0) {
-            int il, it, ir, ib;
-            if (Build.VERSION.SDK_INT >= 30) {
-                Insets s = wi.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                il = s.left;
-                it = s.top;
-                ir = s.right;
-                ib = s.bottom;
-            } else {
-                // Stable insets leave out the keyboard; the system ones leave out hidden bars.
-                il = Math.min(wi.getStableInsetLeft(), wi.getSystemWindowInsetLeft());
-                it = Math.min(wi.getStableInsetTop(), wi.getSystemWindowInsetTop());
-                ir = Math.min(wi.getStableInsetRight(), wi.getSystemWindowInsetRight());
-                ib = Math.min(wi.getStableInsetBottom(), wi.getSystemWindowInsetBottom());
-                DisplayCutout c = wi.getDisplayCutout();
-                if (c != null) {
-                    il = Math.max(il, c.getSafeInsetLeft());
-                    it = Math.max(it, c.getSafeInsetTop());
-                    ir = Math.max(ir, c.getSafeInsetRight());
-                    ib = Math.max(ib, c.getSafeInsetBottom());
+        if (content != null && decor.getWidth() > 0) {
+            int il = 0, it = 0, ir = 0, ib = 0;
+            WindowInsets wi = decor.getRootWindowInsets();
+            if (wi != null) {
+                if (Build.VERSION.SDK_INT >= 30) {
+                    // Ignoring visibility: a window flag may hide the bar's insets while it is still drawn over us.
+                    Insets s = wi.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                    il = s.left;
+                    it = s.top;
+                    ir = s.right;
+                    ib = s.bottom;
+                } else {
+                    // Stable insets do not depend on visibility and leave out the keyboard.
+                    il = wi.getStableInsetLeft();
+                    it = wi.getStableInsetTop();
+                    ir = wi.getStableInsetRight();
+                    ib = wi.getStableInsetBottom();
+                    DisplayCutout c = wi.getDisplayCutout();
+                    if (c != null) {
+                        il = Math.max(il, c.getSafeInsetLeft());
+                        it = Math.max(it, c.getSafeInsetTop());
+                        ir = Math.max(ir, c.getSafeInsetRight());
+                        ib = Math.max(ib, c.getSafeInsetBottom());
+                    }
                 }
+            }
+            // No insets yet (window not attached) or the system gave zeros: use the bar sizes from resources.
+            if (it == 0) {
+                it = barSize("status_bar_height");
+            }
+            if (ib == 0 && il == 0 && ir == 0) {
+                ib = barSize("navigation_bar_height");
             }
             // If the system already places our view away from an edge, there is nothing to add there.
             int[] loc = new int[2];

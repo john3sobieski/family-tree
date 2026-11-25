@@ -200,6 +200,8 @@ mod app {
         /// Persons visited before the current one (relatives are opened one from another).
         history: Vec<PersonId>,
         person_screen: PersonScreen,
+        /// Last system dark mode we followed (a manual switch lasts until the system changes).
+        sys_dark: bool,
         /// Search page open (it replaces the tree and the person page).
         searching: bool,
         search_text: String,
@@ -229,6 +231,7 @@ mod app {
                 person: None,
                 history: Vec::new(),
                 person_screen: PersonScreen::default(),
+                sys_dark: dark,
                 searching: false,
                 search_text: String::new(),
                 search_hits: Vec::new(),
@@ -303,9 +306,10 @@ mod app {
     impl eframe::App for App {
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
             // Follow the system dark mode, then reserve the status bar / cutout / navigation bar areas.
-            let dark = crate::sysenv::is_dark();
-            if dark != crate::theme::is_dark() {
-                crate::theme::set_dark(ctx, dark);
+            let sys = crate::sysenv::is_dark();
+            if sys != self.sys_dark {
+                self.sys_dark = sys;
+                crate::theme::set_dark(ctx, sys);
             }
             crate::sysenv::show_insets(ctx);
 
@@ -356,6 +360,7 @@ mod app {
             let submit = SEARCH_SUBMIT.swap(false, Ordering::SeqCst);
 
             let mut open_clicked = false;
+            let mut theme_clicked = false;
             let mut search_clicked = false;
             let mut tapped: Option<PersonId> = None;
             let mut page_event = Event::None;
@@ -383,6 +388,7 @@ mod app {
                             search_clicked = ui.add(big("🔍")).clicked();
                             open_clicked = ui.add(big(tr("Открыть"))).clicked();
                             fit_clicked = ui.add(big(tr("По размеру"))).clicked();
+                            theme_clicked = crate::sysenv::theme_button(ui);
                             ui.label(who);
                         });
                     });
@@ -412,7 +418,8 @@ mod app {
                             });
                         }
                         State::Empty => {
-                            ui.label(tr("Откройте файл .famtree из файлового менеджера (Открыть с помощью → FamTree)."));
+                            // The bundled fonts have no arrow glyph (it shows as a box).
+                            ui.label(tr("Откройте файл .famtree из файлового менеджера (Открыть с помощью → FamTree).").replace('→', ">"));
                         }
                         State::Failed(e) => {
                             ui.colored_label(egui::Color32::LIGHT_RED, tr("Не удалось открыть файл"));
@@ -452,6 +459,9 @@ mod app {
             }
             if search_clicked {
                 self.open_search();
+            }
+            if theme_clicked {
+                crate::theme::set_dark(ctx, !crate::theme::is_dark());
             }
             // Navigation: tap on a card opens the page; "Back" returns to the previous person, then to the tree.
             if let Some(id) = tapped {

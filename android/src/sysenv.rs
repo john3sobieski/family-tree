@@ -70,3 +70,27 @@ pub fn show_insets(ctx: &egui::Context) {
             .show(ctx, |_| {});
     }
 }
+
+/// Sun (in the dark theme) or moon (in the light theme) as a 44 px touch button. True when tapped.
+pub fn theme_button(ui: &mut egui::Ui) -> bool {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(44.0, 44.0), egui::Sense::click());
+    let v = ui.visuals();
+    let fill = if resp.is_pointer_button_down_on() { v.widgets.active.bg_fill } else { v.widgets.inactive.bg_fill };
+    let painter = ui.painter();
+    painter.rect(rect, 6.0, fill, v.widgets.inactive.bg_stroke);
+    let col = v.widgets.inactive.fg_stroke.color;
+    let stroke = egui::Stroke::new(1.8_f32, col);
+    let m = rect.center();
+    if crate::theme::is_dark() {
+        painter.circle_stroke(m, 5.5, stroke);
+        for i in 0..8 {
+            let a = i as f32 * std::f32::consts::FRAC_PI_4;
+            let d = egui::vec2(a.cos(), a.sin());
+            painter.line_segment([m + d * 9.0, m + d * 12.5], stroke);
+        }
+    } else {
+        painter.circle_filled(m, 9.0, col);
+        painter.circle_filled(m + egui::vec2(4.0, -3.5), 7.5, fill);
+    }
+    resp.clicked()
+}
