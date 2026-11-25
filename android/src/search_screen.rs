@@ -5,8 +5,6 @@ use crate::model::{PersonId, Tree};
 use crate::person_window::{format_years, full_name};
 use eframe::egui::{self, Align, Align2, FontId, Layout, RichText, Sense, Vec2};
 
-/// Temporary top margin (status bar); proper insets come in step A7.
-const TOP_INSET: f32 = 42.0;
 const BAR_H: f32 = 44.0;
 const ROW_H: f32 = 56.0;
 
@@ -25,7 +23,6 @@ pub enum Event {
 pub fn show(ctx: &egui::Context, tree: &Tree, text: &str, hits: &[PersonId]) -> Event {
     let mut event = Event::None;
     egui::TopBottomPanel::top("search-bar").frame(crate::theme::bar_frame(10.0, 6.0)).show(ctx, |ui| {
-        ui.add_space(TOP_INSET);
         ui.horizontal(|ui| {
             if ui.add(egui::Button::new(tr("Назад")).min_size(Vec2::new(0.0, BAR_H))).clicked() {
                 event = Event::Back;

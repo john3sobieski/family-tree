@@ -1,4 +1,5 @@
-// FamTree Android viewer. Step A6: tree (same layout and cards as on desktop) + person page + search.
+// FamTree Android viewer. Step A7: tree (same layout and cards as on desktop) + person page + search,
+// system language and dark mode, CJK font, safe-area insets.
 // Shared code from the desktop crate (same files, no copies).
 #[allow(dead_code)]
 #[path = "../../src/i18n.rs"]
@@ -33,8 +34,10 @@ mod person_window;
 #[allow(dead_code)]
 #[path = "../../src/search.rs"]
 mod search;
+mod fonts;
 mod person_screen;
 mod search_screen;
+mod sysenv;
 #[cfg(target_os = "android")]
 mod source;
 
@@ -117,14 +120,50 @@ mod app {
         1
     }
 
+    /// Registered as `FamActivity.nativeEnv(boolean, int, int, int, int)`: system dark mode and insets (px).
+    extern "system" fn native_env(
+        _env: JNIEnv,
+        _this: JObject,
+        dark: jni::sys::jboolean,
+        left: jni::sys::jint,
+        top: jni::sys::jint,
+        right: jni::sys::jint,
+        bottom: jni::sys::jint,
+    ) {
+        crate::sysenv::set(dark != 0, left, top, right, bottom);
+        if let Some(ctx) = CTX.get() {
+            ctx.request_repaint();
+        }
+    }
+
     pub fn register(android: &AndroidApp) {
         let uri = native_uri as extern "system" fn(JNIEnv, JObject, JString) as *mut std::ffi::c_void;
         let back = native_back as extern "system" fn(JNIEnv, JObject) -> jni::sys::jboolean as *mut std::ffi::c_void;
         let text = native_text as extern "system" fn(JNIEnv, JObject, JString) as *mut std::ffi::c_void;
         let submit = native_submit as extern "system" fn(JNIEnv, JObject) as *mut std::ffi::c_void;
-        if let Err(e) = source::register_natives(android, uri, back, text, submit) {
+        let env = native_env
+            as extern "system" fn(
+                JNIEnv,
+                JObject,
+                jni::sys::jboolean,
+                jni::sys::jint,
+                jni::sys::jint,
+                jni::sys::jint,
+                jni::sys::jint,
+            ) as *mut std::ffi::c_void;
+        if let Err(e) = source::register_natives(android, uri, back, text, submit, env) {
             log::error!("register_natives failed: {e}");
         }
+        // The insets are only known once the window exists: Java sends them (and the dark mode) right away.
+        if let Err(e) = source::request_env(android) {
+            log::error!("request_env failed: {e}");
+        }
+    }
+
+    /// Language of the interface: the first system language we have a translation for, else English.
+    pub fn system_lang(android: &AndroidApp) -> crate::i18n::Lang {
+        let list = source::system_languages(android).unwrap_or_default();
+        list.split(',').find_map(crate::i18n::Lang::from_code).unwrap_or(crate::i18n::Lang::En)
     }
 
     struct Loaded {
@@ -133,6 +172,8 @@ mod app {
         /// Computed in the loading thread with the desktop defaults, so the picture matches the PC.
         layout: Layout,
         cfg: LayoutConfig,
+        /// The tree has Chinese/Japanese/Korean text: the CJK font is needed whatever the UI language is.
+        cjk: bool,
     }
 
     enum State {
@@ -170,7 +211,14 @@ mod app {
     impl App {
         pub fn new(android: AndroidApp, ctx: egui::Context) -> Self {
             let _ = CTX.set(ctx.clone());
+            // System theme (dark if Java cannot tell); `update` follows later changes.
+            let dark = source::is_night(&android).unwrap_or(true);
+            crate::sysenv::init_dark(dark);
+            crate::theme::set_dark(&ctx, dark);
             crate::theme::apply(&ctx);
+            if crate::i18n::current() == crate::i18n::Lang::Zh {
+                crate::fonts::ensure(&ctx);
+            }
             let mut app = App {
                 android,
                 ctx,
@@ -244,17 +292,32 @@ mod app {
         let (tree, store) = container::load(&path).map_err(|e| e.to_string())?;
         let cfg = LayoutConfig::default();
         let layout = layout::compute(&tree, &cfg);
-        Ok(Some(Loaded { tree, store, layout, cfg }))
+        let cjk = crate::fonts::tree_has_cjk(&tree);
+        if cjk {
+            // Read the big font file here, not on the UI thread.
+            crate::fonts::prefetch();
+        }
+        Ok(Some(Loaded { tree, store, layout, cfg, cjk }))
     }
 
     impl eframe::App for App {
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+            // Follow the system dark mode, then reserve the status bar / cutout / navigation bar areas.
+            let dark = crate::sysenv::is_dark();
+            if dark != crate::theme::is_dark() {
+                crate::theme::set_dark(ctx, dark);
+            }
+            crate::sysenv::show_insets(ctx);
+
             let got = self.rx.as_ref().map(|rx| rx.try_recv());
             match got {
                 Some(Ok(r)) => {
                     self.rx = None;
                     self.state = match r {
                         Ok(Some(l)) => {
+                            if l.cjk {
+                                crate::fonts::ensure(ctx);
+                            }
                             self.close_search();
                             self.view.reset();
                             self.selected = None;
@@ -315,8 +378,6 @@ mod app {
                         .map(|p| format!("{} {}", p.first_name.trim(), p.surname_display()).trim().to_string())
                         .unwrap_or_default();
                     egui::TopBottomPanel::top("bar").frame(crate::theme::bar_frame(10.0, 6.0)).show(ctx, |ui| {
-                        // Temporary top margin (status bar); proper insets come in step A7.
-                        ui.add_space(42.0);
                         ui.horizontal(|ui| {
                             let big = |t: &str| egui::Button::new(t.to_string()).min_size(egui::vec2(0.0, 44.0));
                             search_clicked = ui.add(big("🔍")).clicked();
@@ -335,8 +396,7 @@ mod app {
                 }
             } else {
                 egui::CentralPanel::default().show(ctx, |ui| {
-                    // Temporary top margin (status bar); proper insets come in step A7.
-                    ui.add_space(48.0);
+                    ui.add_space(8.0);
                     ui.heading("FamTree");
                     ui.add_space(12.0);
                     if !matches!(self.state, State::Loading) {
@@ -437,6 +497,8 @@ fn android_main(android: winit::platform::android::activity::AndroidApp) {
     );
     i18n::init();
     theme::init();
+    // There is no saved language on Android: follow the system one.
+    i18n::set(app::system_lang(&android));
     app::register(&android);
     let for_loop = android.clone();
     let options = eframe::NativeOptions {

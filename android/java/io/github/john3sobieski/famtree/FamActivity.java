@@ -3,11 +3,21 @@ package io.github.john3sobieski.famtree;
 import android.app.NativeActivity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.graphics.Insets;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.LocaleList;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.view.DisplayCutout;
 import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -37,6 +47,120 @@ public class FamActivity extends NativeActivity {
 
     /** Implemented in Rust: the keyboard's "Search" key was pressed. */
     private native void nativeSubmit();
+
+    /** Implemented in Rust: system dark mode and the window insets (px) that overlap our content. */
+    private native void nativeEnv(boolean dark, int left, int top, int right, int bottom);
+
+    /** Last values sent to Rust (do not repeat the same call). */
+    private String lastEnv = "";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Layout changes (rotation, keyboard, bars) change how much of the system UI overlaps us.
+        getWindow().getDecorView().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                pushEnv(false);
+            }
+        });
+    }
+
+    /** Dark/light switch of the system (the manifest lists uiMode, so the activity is not recreated). */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        pushEnv(false);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            pushEnv(false);
+        }
+    }
+
+    /** Called from Rust: system UI languages in priority order, e.g. "ru,en". */
+    public String languages() {
+        LocaleList list = Resources.getSystem().getConfiguration().getLocales();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            if (i > 0) {
+                sb.append(',');
+            }
+            sb.append(list.get(i).getLanguage());
+        }
+        return sb.toString();
+    }
+
+    /** Called from Rust: true if the system is in dark mode. */
+    public boolean isNight() {
+        int mode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return mode == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    /** Called from Rust once its callbacks are registered: send the current dark mode and insets. */
+    public void requestEnv() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                pushEnv(true);
+            }
+        });
+    }
+
+    /** UI thread. Sends dark mode and the insets that really overlap our content (system bars minus what the window already avoids). */
+    private void pushEnv(boolean force) {
+        int l = 0, t = 0, r = 0, b = 0;
+        View decor = getWindow().getDecorView();
+        View content = decor.findViewById(android.R.id.content);
+        WindowInsets wi = decor.getRootWindowInsets();
+        if (wi != null && content != null && decor.getWidth() > 0) {
+            int il, it, ir, ib;
+            if (Build.VERSION.SDK_INT >= 30) {
+                Insets s = wi.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                il = s.left;
+                it = s.top;
+                ir = s.right;
+                ib = s.bottom;
+            } else {
+                // Stable insets leave out the keyboard; the system ones leave out hidden bars.
+                il = Math.min(wi.getStableInsetLeft(), wi.getSystemWindowInsetLeft());
+                it = Math.min(wi.getStableInsetTop(), wi.getSystemWindowInsetTop());
+                ir = Math.min(wi.getStableInsetRight(), wi.getSystemWindowInsetRight());
+                ib = Math.min(wi.getStableInsetBottom(), wi.getSystemWindowInsetBottom());
+                DisplayCutout c = wi.getDisplayCutout();
+                if (c != null) {
+                    il = Math.max(il, c.getSafeInsetLeft());
+                    it = Math.max(it, c.getSafeInsetTop());
+                    ir = Math.max(ir, c.getSafeInsetRight());
+                    ib = Math.max(ib, c.getSafeInsetBottom());
+                }
+            }
+            // If the system already places our view away from an edge, there is nothing to add there.
+            int[] loc = new int[2];
+            content.getLocationInWindow(loc);
+            int gapR = decor.getWidth() - (loc[0] + content.getWidth());
+            int gapB = decor.getHeight() - (loc[1] + content.getHeight());
+            l = Math.max(0, il - loc[0]);
+            t = Math.max(0, it - loc[1]);
+            r = Math.max(0, ir - gapR);
+            b = Math.max(0, ib - gapB);
+        }
+        boolean dark = isNight();
+        String key = dark + ":" + l + ":" + t + ":" + r + ":" + b;
+        if (!force && key.equals(lastEnv)) {
+            return;
+        }
+        lastEnv = key;
+        try {
+            nativeEnv(dark, l, t, r, b);
+        } catch (UnsatisfiedLinkError e) {
+            // Rust has not registered the method yet: try again on the next layout.
+            lastEnv = "";
+        }
+    }
 
     /**
      * System "Back" (button or gesture). The CI-patched winit reports Back as unhandled, so it reaches here.

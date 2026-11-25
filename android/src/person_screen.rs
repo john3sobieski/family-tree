@@ -11,8 +11,6 @@ use crate::view::draw_placeholder;
 use eframe::egui::{self, Align2, FontId, RichText, Sense, TextureHandle, Vec2};
 use std::collections::HashMap;
 
-/// Temporary top margin (status bar); proper insets come in step A7.
-const TOP_INSET: f32 = 42.0;
 /// Gallery thumbnail size (same 3:4 as the card photo).
 const GAL_W: f32 = 72.0;
 const GAL_H: f32 = 96.0;
@@ -64,7 +62,6 @@ impl PersonScreen {
 
         let mut event = Event::None;
         egui::TopBottomPanel::top("person-bar").frame(crate::theme::bar_frame(10.0, 6.0)).show(ctx, |ui| {
-            ui.add_space(TOP_INSET);
             let back = egui::Button::new(tr("Назад")).min_size(Vec2::new(0.0, 44.0));
             if ui.add(back).clicked() {
                 event = Event::Back;

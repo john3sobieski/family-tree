@@ -85,6 +85,29 @@ pub fn hide_keyboard(app: &AndroidApp) -> Result<(), String> {
     })
 }
 
+/// System UI languages in priority order, comma separated (Java `FamActivity.languages`), e.g. "ru,en".
+pub fn system_languages(app: &AndroidApp) -> Result<String, String> {
+    with_env(app, |env, activity| {
+        let s = env.call_method(activity, "languages", "()Ljava/lang/String;", &[])?.l()?;
+        let js = JString::from(s);
+        let text: String = env.get_string(&js)?.into();
+        Ok(text)
+    })
+}
+
+/// True if the system is in dark mode (Java `FamActivity.isNight`).
+pub fn is_night(app: &AndroidApp) -> Result<bool, String> {
+    with_env(app, |env, activity| Ok(env.call_method(activity, "isNight", "()Z", &[])?.z()?))
+}
+
+/// Asks Java to send the current dark mode and insets through `nativeEnv` (Java `FamActivity.requestEnv`).
+pub fn request_env(app: &AndroidApp) -> Result<(), String> {
+    with_env(app, |env, activity| {
+        env.call_method(activity, "requestEnv", "()V", &[])?;
+        Ok(())
+    })
+}
+
 /// Tells Java which Rust functions implement the `native*` methods of `FamActivity`.
 pub fn register_natives(
     app: &AndroidApp,
@@ -92,6 +115,7 @@ pub fn register_natives(
     back_fn: *mut c_void,
     text_fn: *mut c_void,
     submit_fn: *mut c_void,
+    env_fn: *mut c_void,
 ) -> Result<(), String> {
     with_env(app, |env, activity| {
         let class = env.get_object_class(activity)?;
@@ -102,6 +126,7 @@ pub fn register_natives(
                 NativeMethod { name: "nativeBack".into(), sig: "()Z".into(), fn_ptr: back_fn },
                 NativeMethod { name: "nativeText".into(), sig: "(Ljava/lang/String;)V".into(), fn_ptr: text_fn },
                 NativeMethod { name: "nativeSubmit".into(), sig: "()V".into(), fn_ptr: submit_fn },
+                NativeMethod { name: "nativeEnv".into(), sig: "(ZIIII)V".into(), fn_ptr: env_fn },
             ],
         )?;
         Ok(())
