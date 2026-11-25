@@ -1,12 +1,12 @@
-[English](README.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [Português (BR)](README.pt-BR.md) | [日本語](README.ja.md) | [Русский](README.ru.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | **Bahasa Indonesia**
+[English](../../README.md) | [简体中文](../zh-cn/README_zh-CN.md) | [Español](../es/README_es.md) | [Português (BR)](../pt-BR/README_pt-BR.md) | [日本語](../ja/README_ja.md) | [Русский](../ru/README_ru.md) | [Français](../fr/README_fr.md) | [Deutsch](../de/README_de.md) | [한국어](../ko/README_ko.md) | [Türkçe](../tr/README.tr.md) | **Bahasa Indonesia**
 
 # FamTree
 
 Dibuat dan dikelola oleh **[john3sobieski](https://github.com/john3sobieski)**. Repositori: <https://github.com/john3sobieski/family-tree>
 
-Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon keluarga Anda. Semuanya tersimpan dalam satu berkas `.famtree`: orang, hubungan, dan semua foto.
+Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon keluarga Anda, ditambah aplikasi Android untuk melihatnya di ponsel. Semuanya tersimpan dalam satu berkas `.famtree`: orang, hubungan, dan semua foto.
 
-> **Status:** tahap pengembangan awal. Unduh installer di [Releases](https://github.com/john3sobieski/family-tree/releases) (lihat [Instalasi](#instalasi)).
+> **Status:** siap digunakan. Proyek ini dianggap selesai: ke depan hanya ada perbaikan kecil. Unduh installer Windows atau APK Android di [Releases](https://github.com/john3sobieski/family-tree/releases) (lihat [Instalasi](#instalasi)).
 
 ## Fitur
 
@@ -27,8 +27,11 @@ Aplikasi desktop untuk Windows guna membuat, mengedit, dan menjelajahi pohon kel
 - **Ekspor.** **File → Export…** menyimpan seluruh pohon sebagai PNG atau PDF vektor, dengan margin di tepinya. Untuk PNG Anda memilih latar (transparan, putih, atau hitam) dan warna gelap atau terang; ukuran dipilih otomatis agar semuanya tetap tajam (hingga ×2). PDF bisa diperbesar tanpa kehilangan kualitas. Pohon yang sangat besar lebih baik diekspor ke PDF.
 - **Klik ganda untuk membuka.** Di menu **Berkas** (*File*), Anda bisa mengaitkan berkas `.famtree` dengan aplikasi.
 - **Tema gelap dan terang.** Ganti dengan tombol matahari/bulan di sisi kanan bilah status; pilihan Anda diingat.
+- **Aplikasi Android (hanya lihat).** Buka berkas `.famtree` yang sama di ponsel atau tablet. Petanya tampil persis seperti di PC (tata letak, kartu, bendera, dan garis yang sama) dan mendukung geser serta zoom dengan dua jari, pencarian dengan kamera yang terbang ke orangnya, halaman orang layar penuh berisi foto dan tautan ke kerabat, *Fit to view*, serta tema terang/gelap. Berkas tidak pernah diubah: pengeditan, mode daftar, dan ekspor tetap di PC. Antarmuka mengikuti bahasa ponsel (tujuh bahasa yang sama, selain itu Inggris). Lihat [Instalasi → Android](#android).
 
 ## Instalasi
+
+### Windows
 
 Aplikasi berjalan di Windows 10 dan Windows 11. Installer dan exe-nya sama untuk keduanya.
 
@@ -43,9 +46,24 @@ Catatan:
 - Untuk menghapus, gunakan *Pengaturan → Aplikasi*. Berkas `.famtree` Anda tidak pernah dihapus.
 - Jika Anda memakai exe portabel dan memindahkannya, tekan lagi tombol asosiasi `.famtree` di menu **Berkas**.
 
+### Android
+
+Aplikasi Android hanya menampilkan pohon dan tidak pernah mengubah berkas Anda. Aplikasi ini membutuhkan Android 10 atau lebih baru pada perangkat ARM 64-bit (hampir semua ponsel dan tablet saat ini).
+
+1. Unduh **`FamTree-<versi>.apk`** dari halaman [Releases](https://github.com/john3sobieski/family-tree/releases) langsung ke perangkat Anda.
+2. Buka berkasnya. Android akan meminta Anda sekali untuk mengizinkan pemasangan aplikasi dari sumber ini (peramban atau pengelola berkas Anda); setujui.
+3. Pindahkan berkas `.famtree` Anda ke perangkat (penyimpanan cloud, aplikasi pesan, kabel USB). Lalu buka berkas itu di pengelola berkas dengan FamTree (*Open with*), atau jalankan FamTree dan ketuk *Open* untuk memilih berkasnya. Berkas yang terakhir dibuka diingat. Jika Anda membuka `.famtree` lain saat aplikasi berjalan, berkas itu dimuat tanpa perlu memulai ulang.
+
+Catatan:
+
+- Aplikasi hanya didistribusikan sebagai APK, bukan lewat Google Play. Play Protect mungkin memperingatkan tentang aplikasi dari pengembang yang tidak dikenal; pilih tetap pasang.
+- Agar bisa dibuka kembali, aplikasi menyimpan salinan pribadi dari berkas yang terakhir dibuka; berkas aslinya tidak pernah disentuh.
+
 ### Membangun sendiri
 
 Anda juga bisa mendapatkan installer dari GitHub Actions tanpa memasang alat apa pun (perlu akun GitHub): fork [repositori](https://github.com/john3sobieski/family-tree), buka **Actions → Build → Run workflow**, lalu unduh artefak **`famtree-setup`** dari run yang selesai (disimpan 90 hari secara bawaan).
+
+APK Android diperoleh dengan cara yang sama: **Actions → Android → Run workflow**, lalu unduh artefak **`famtree-android-<versi>`**.
 
 ## Mulai cepat
 
@@ -54,6 +72,8 @@ Anda juga bisa mendapatkan installer dari GitHub Actions tanpa memasang alat apa
 3. Pilih seseorang dan gunakan **＋ Orang tua**, **＋ Pasangan**, **＋ Anak**, atau **＋ Saudara** (*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*) untuk mengembangkan pohon. Isi nama, tanggal, foto, dan catatan di sebelah kanan.
 4. Pilih **Simpan sebagai…** dan beri nama. Sejak saat itu, perubahan disimpan otomatis.
 5. Beralih ke **Lihat** untuk menjelajahi peta: seret untuk menggeser, gulir untuk zoom, **Sesuaikan** (*Fit to view*) untuk melihat semuanya, dan klik kartu untuk melihat detail.
+
+**Di Android:** buka berkas `.famtree` (lihat [Instalasi → Android](#android)), geser untuk menggeser peta dan cubit dengan dua jari untuk zoom. *Fit to view* menampilkan semuanya sekaligus, kaca pembesar membuka pencarian orang, dan mengetuk kartu membuka halaman orang tersebut (ketuk kerabat untuk melompat ke orangnya). Tombol atau gestur Kembali milik sistem menutup halaman atau pencarian selangkah demi selangkah; di peta, tombol itu memindahkan aplikasi ke latar belakang. Tombol matahari/bulan mengganti tema (secara default aplikasi mengikuti tema sistem).
 
 ## Berkas `.famtree`
 
@@ -79,12 +99,12 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Thumbnail pada kartu adalah potongan di bagian tengah, dan area potongan belum bisa dipilih.
 - Pada keluarga yang sangat besar, tata letak masih bisa menempatkan orang di posisi yang aneh atau membuat garis antarcabang saling bersilangan (lihat peta jalan).
 - Kewarganegaraan tidak ditampilkan di mode Daftar.
+- Android: hanya lihat (tanpa pengeditan, mode daftar, dan ekspor), perangkat ARM 64-bit dengan Android 10 atau lebih baru, hanya APK (tidak ada di Google Play).
+- Android: foto belum bisa diperbesar dengan gestur cubit, dan tidak ada menu bahasa: aplikasi mengikuti bahasa sistem.
 
 ## Peta jalan
 
-Perbaikan yang direncanakan, tanpa urutan tertentu:
-
-- [ ] **Perbaikan bug tata letak**: sesekali orang berakhir di posisi yang salah pada peta.
+Proyek ini sudah selesai: aplikasi Windows dan penampil Android telah lengkap. Ke depan hanya direncanakan perbaikan kecil, terutama untuk gangguan tata letak yang jarang terjadi (orang tertempatkan di posisi aneh pada keluarga yang sangat besar).
 
 ## Membangun dari kode sumber
 
@@ -97,9 +117,11 @@ cargo build --release
 
 Hasilnya adalah `target/release/famtree.exe`. Proyek ini menggunakan [egui/eframe](https://github.com/emilk/egui) untuk antarmukanya.
 
+Aplikasi Android (`android/`) hanya dibangun oleh workflow GitHub Actions `.github/workflows/android.yml` (cargo-apk, Android SDK/NDK, lapisan Java kecil, dan penandatanganan). Aplikasi ini mengompilasi kode desktop dari `src/` (`model`, `container`, `layout`, `view`, `flags`, dan lainnya), sehingga peta identik di kedua platform. Untuk menandatangani APK dengan kunci Anda sendiri, tambahkan secret repositori `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, dan jika berbeda `ANDROID_KEY_PASSWORD`; tanpa itu, workflow memakai kunci sementara.
+
 ## Laporan bug
 
-Menemukan masalah, terutama soal cara orang ditempatkan di peta? Silakan [buka issue](https://github.com/john3sobieski/family-tree/issues) dan, jika bisa, lampirkan berkas `.famtree` kecil yang mereproduksi masalahnya (tanpa data pribadi asli jika pohonnya bersifat privat).
+Menemukan masalah, terutama soal cara orang ditempatkan di peta? Silakan [buka issue](https://github.com/john3sobieski/family-tree/issues) dan, jika bisa, lampirkan berkas `.famtree` kecil yang mereproduksi masalahnya (tanpa data pribadi asli jika pohonnya bersifat privat). Untuk aplikasi Android, sertakan juga versi Android dan model perangkat Anda.
 
 ## Lisensi
 

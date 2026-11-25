@@ -1,12 +1,12 @@
-[English](README.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [Português (BR)](README.pt-BR.md) | [日本語](README.ja.md) | [Русский](README.ru.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | **한국어** | [Türkçe](README.tr.md) | [Bahasa Indonesia](README.id.md)
+[English](../../README.md) | [简体中文](../zh-cn/README_zh-CN.md) | [Español](../es/README_es.md) | [Português (BR)](../pt-BR/README_pt-BR.md) | [日本語](../ja/README_ja.md) | [Русский](../ru/README_ru.md) | [Français](../fr/README_fr.md) | [Deutsch](../de/README_de.md) | **한국어** | [Türkçe](../tr/README.tr.md) | [Bahasa Indonesia](../id/README.id.md)
 
 # FamTree
 
 제작 및 유지보수: **[john3sobieski](https://github.com/john3sobieski)**. 저장소: <https://github.com/john3sobieski/family-tree>
 
-가계도를 만들고, 편집하고, 둘러볼 수 있는 Windows 데스크톱 앱입니다. 사람, 관계, 모든 사진이 하나의 `.famtree` 파일에 담깁니다.
+가계도를 만들고, 편집하고, 둘러볼 수 있는 Windows용 데스크톱 앱과, 스마트폰에서 가계도를 볼 수 있는 Android 앱입니다. 사람, 관계, 모든 사진이 하나의 `.famtree` 파일에 담깁니다.
 
-> **상태:** 초기 개발 단계입니다. 설치 프로그램은 [Releases](https://github.com/john3sobieski/family-tree/releases)에서 받을 수 있습니다([설치](#설치) 참고).
+> **상태:** 바로 사용할 수 있습니다. 프로젝트는 완성된 것으로 보며, 앞으로는 사소한 수정만 있을 예정입니다. Windows 설치 프로그램과 Android APK는 [Releases](https://github.com/john3sobieski/family-tree/releases)에서 받을 수 있습니다([설치](#설치) 참고).
 
 ## 기능
 
@@ -27,8 +27,11 @@
 - **내보내기.** **File → Export…** 로 전체 트리를 가장자리 여백과 함께 PNG 또는 벡터 PDF로 저장합니다. PNG는 배경(투명, 흰색, 검은색)과 어두운/밝은 색상을 고를 수 있고, 크기는 선명함이 유지되도록 자동으로 정해집니다(최대 ×2). PDF는 화질 손실 없이 확대할 수 있습니다. 아주 큰 트리는 PDF로 내보내는 것이 좋습니다.
 - **더블클릭으로 열기.** **파일**(*File*) 메뉴에서 `.famtree` 파일을 앱에 연결할 수 있습니다.
 - **다크 및 라이트 테마.** 상태 표시줄 오른쪽 끝의 해/달 버튼으로 전환하며, 선택은 기억됩니다.
+- **Android 앱(보기 전용).** 같은 `.famtree` 파일을 스마트폰이나 태블릿에서 열 수 있습니다. 지도는 PC와 완전히 똑같이 보이며(같은 배치, 카드, 국기, 선) 드래그와 핀치 줌, 사람에게 카메라가 날아가는 검색, 사진과 친척 링크가 있는 전체 화면 인물 페이지, *Fit to view*, 라이트/다크 테마를 지원합니다. 파일은 절대 수정되지 않습니다. 편집, 목록 모드, 내보내기는 PC에서 합니다. 인터페이스는 기기 언어를 따릅니다(같은 7개 언어, 그 외에는 영어). [설치 → Android](#android)를 참고하세요.
 
 ## 설치
+
+### Windows
 
 앱은 Windows 10과 Windows 11에서 동작합니다. 두 버전 모두 같은 설치 프로그램과 같은 exe를 사용합니다.
 
@@ -43,9 +46,24 @@
 - 제거는 *설정 → 앱*에서 합니다. `.famtree` 파일은 삭제되지 않습니다.
 - 포터블 exe를 사용하다가 옮겼다면 **파일** 메뉴의 `.famtree` 연결 버튼을 다시 누르세요.
 
+### Android
+
+Android 앱은 가계도를 보여주기만 하며 파일을 절대 변경하지 않습니다. Android 10 이상의 64비트 ARM 기기가 필요합니다(요즘 스마트폰과 태블릿은 거의 모두 해당됩니다).
+
+1. [Releases](https://github.com/john3sobieski/family-tree/releases) 페이지에서 **`FamTree-<버전>.apk`** 를 기기로 바로 내려받습니다.
+2. 파일을 엽니다. Android가 이 출처(브라우저나 파일 관리자)에서 앱 설치를 허용할지 한 번 묻는데, 허용합니다.
+3. `.famtree` 파일을 기기에 옮깁니다(클라우드 저장소, 메신저, USB 케이블 등). 그런 다음 파일 관리자에서 해당 파일을 FamTree로 열거나(*Open with*), FamTree를 실행하고 *Open*을 눌러 파일을 선택합니다. 마지막으로 연 파일은 기억됩니다. 앱이 실행 중일 때 다른 `.famtree` 파일을 열어도 다시 시작하지 않고 불러옵니다.
+
+참고:
+
+- 앱은 APK로만 배포되며 Google Play에는 없습니다. Play Protect가 알 수 없는 개발자의 앱이라고 경고할 수 있는데, 그래도 설치를 선택하세요.
+- 다시 열 수 있도록 앱은 마지막으로 연 파일의 비공개 복사본을 보관합니다. 원본은 절대 수정되지 않습니다.
+
 ### 직접 빌드하기
 
 도구를 설치하지 않고도 GitHub Actions에서 설치 프로그램을 받을 수 있습니다(GitHub 계정 필요). [저장소](https://github.com/john3sobieski/family-tree)를 Fork하고 **Actions → Build → Run workflow**를 실행한 뒤, 완료된 실행에서 **`famtree-setup`** 아티팩트를 다운로드합니다(기본 90일간 보관).
+
+Android APK도 같은 방법으로 받을 수 있습니다. **Actions → Android → Run workflow**를 실행한 뒤 **`famtree-android-<버전>`** 아티팩트를 내려받으세요.
 
 ## 빠른 시작
 
@@ -54,6 +72,8 @@
 3. 사람을 선택하고 **＋ 부모**, **＋ 파트너**, **＋ 자녀**, **＋ 형제자매**(*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*)를 사용해 가계도를 넓혀 갑니다. 이름, 날짜, 사진, 메모는 오른쪽에서 입력합니다.
 4. **다른 이름으로 저장…**을 선택하고 이름을 정합니다. 그 이후로는 변경 사항이 자동으로 저장됩니다.
 5. **보기**로 전환해 지도를 둘러보세요. 드래그로 이동, 스크롤로 확대/축소, **전체 보기**(*Fit to view*)로 모두 보기, 카드를 클릭하면 자세한 정보를 볼 수 있습니다.
+
+**Android에서:** `.famtree` 파일을 열고([설치 → Android](#android) 참고), 드래그로 이동하고 두 손가락으로 핀치해 확대/축소합니다. *Fit to view*는 전체를 한눈에 보여주고, 돋보기는 사람 검색을 열며, 카드를 탭하면 인물 페이지가 열립니다(친척을 탭하면 그 사람으로 이동). 시스템의 뒤로 가기 버튼이나 제스처는 페이지나 검색을 한 단계씩 닫고, 지도에서는 앱을 백그라운드로 보냅니다. 해/달 버튼으로 테마를 바꿉니다(기본값은 시스템 테마를 따릅니다).
 
 ## `.famtree` 파일
 
@@ -79,12 +99,12 @@ thumb/<hash>.jpg     small thumbnails for cards
 - 카드의 썸네일은 가운데를 기준으로 자른 것이며, 자르는 영역은 아직 선택할 수 없습니다.
 - 규모가 매우 큰 가족에서는 레이아웃이 사람을 엉뚱한 위치에 배치하거나 가지 사이의 선이 교차할 수 있습니다(로드맵 참고).
 - 국적은 목록 모드에 표시되지 않습니다.
+- Android: 보기 전용(편집, 목록 모드, 내보내기 없음), Android 10 이상의 64비트 ARM 기기, APK로만 제공(Google Play 없음).
+- Android: 사진은 아직 핀치로 확대할 수 없고 언어 메뉴도 없습니다. 앱은 시스템 언어를 따릅니다.
 
 ## 로드맵
 
-계획 중인 개선 사항입니다(순서 무관).
-
-- [ ] **레이아웃 버그 수정**: 가끔 사람이 지도에서 잘못된 위치에 놓입니다.
+프로젝트는 완성되었습니다. Windows 앱과 Android 뷰어 모두 완료되었습니다. 앞으로는 사소한 수정만 계획하고 있으며, 주로 드물게 나타나는 배치 오류(매우 큰 가족에서 사람이 엉뚱한 위치에 놓이는 문제)가 대상입니다.
 
 ## 소스에서 빌드하기
 
@@ -97,9 +117,11 @@ cargo build --release
 
 결과물은 `target/release/famtree.exe`입니다. 이 프로젝트는 인터페이스에 [egui/eframe](https://github.com/emilk/egui)을 사용합니다.
 
+Android 앱(`android/`)은 GitHub Actions 워크플로 `.github/workflows/android.yml`로만 빌드됩니다(cargo-apk, Android SDK/NDK, 작은 Java 레이어, 서명). `src/`의 데스크톱 코드(`model`, `container`, `layout`, `view`, `flags` 등)를 그대로 컴파일하므로 두 플랫폼에서 지도가 동일합니다. APK를 자신의 키로 서명하려면 저장소 시크릿 `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, 그리고 (다른 경우) `ANDROID_KEY_PASSWORD`를 추가하세요. 없으면 워크플로가 임시 키를 사용합니다.
+
 ## 버그 신고
 
-문제를 발견하셨나요? 특히 지도에서 사람이 배치되는 방식에 관한 문제라면 [이슈를 열어](https://github.com/john3sobieski/family-tree/issues) 주세요. 가능하다면 문제를 재현하는 작은 `.famtree` 파일을 첨부해 주세요(가계도가 비공개라면 실제 개인정보는 제외해 주세요).
+문제를 발견하셨나요? 특히 지도에서 사람이 배치되는 방식에 관한 문제라면 [이슈를 열어](https://github.com/john3sobieski/family-tree/issues) 주세요. 가능하다면 문제를 재현하는 작은 `.famtree` 파일을 첨부해 주세요(가계도가 비공개라면 실제 개인정보는 제외해 주세요). Android 앱 문제라면 Android 버전과 기기 모델도 함께 알려 주세요.
 
 ## 라이선스
 

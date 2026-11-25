@@ -1,12 +1,12 @@
-[English](README.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [Português (BR)](README.pt-BR.md) | [日本語](README.ja.md) | [Русский](README.ru.md) | [Français](README.fr.md) | **Deutsch** | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Bahasa Indonesia](README.id.md)
+[English](../../README.md) | [简体中文](../zh-cn/README_zh-CN.md) | [Español](../es/README_es.md) | [Português (BR)](../pt-BR/README_pt-BR.md) | [日本語](../ja/README_ja.md) | [Русский](../ru/README_ru.md) | [Français](../fr/README_fr.md) | **Deutsch** | [한국어](../ko/README_ko.md) | [Türkçe](../tr/README.tr.md) | [Bahasa Indonesia](../id/README.id.md)
 
 # FamTree
 
 Erstellt und gepflegt von **[john3sobieski](https://github.com/john3sobieski)**. Repository: <https://github.com/john3sobieski/family-tree>
 
-Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bearbeiten und durchstöbern kannst. Alles steckt in einer einzigen `.famtree`-Datei: Personen, Beziehungen und alle Fotos.
+Eine Desktop-App für Windows zum Erstellen, Bearbeiten und Durchsuchen deines Stammbaums sowie eine Android-App, um ihn auf dem Smartphone anzusehen. Alles liegt in einer einzigen `.famtree`-Datei: Personen, Beziehungen und alle Fotos.
 
-> **Status:** frühe Entwicklung. Lade den Installer unter [Releases](https://github.com/john3sobieski/family-tree/releases) herunter (siehe [Installation](#installation)).
+> **Status:** einsatzbereit. Das Projekt gilt als abgeschlossen; künftig sind nur noch kleine Korrekturen zu erwarten. Lade den Windows-Installer oder die Android-APK unter [Releases](https://github.com/john3sobieski/family-tree/releases) herunter (siehe [Installation](#installation)).
 
 ## Funktionen
 
@@ -27,8 +27,11 @@ Eine Desktop-Anwendung für Windows, mit der du deinen Stammbaum erstellen, bear
 - **Export.** **Datei → Exportieren…** speichert den ganzen Baum als PNG oder als Vektor-PDF, mit Rand an den Seiten. Bei PNG wählen Sie den Hintergrund (transparent, weiß oder schwarz) sowie dunkle oder helle Farben; die Größe wird automatisch so gewählt, dass alles scharf bleibt (bis ×2). Das PDF lässt sich ohne Qualitätsverlust zoomen. Sehr große Bäume exportiert man besser als PDF.
 - **Doppelklick zum Öffnen.** Im Menü **Datei** kannst du `.famtree`-Dateien mit der App verknüpfen.
 - **Dunkles und helles Design.** Umschalten mit der Sonne/Mond-Schaltfläche rechts in der Statusleiste; die Auswahl wird gespeichert.
+- **Android-App (nur Ansicht).** Öffne dieselbe `.famtree`-Datei auf Smartphone oder Tablet. Die Karte sieht genau so aus wie am PC (gleiches Layout, gleiche Karten, Flaggen und Linien) und bietet Verschieben und Pinch-Zoom, Suche mit Kameraflug zur Person, eine Personenseite im Vollbild mit Fotos und Links zu Verwandten, **Einpassen** sowie ein helles/dunkles Design. Die Datei wird nie verändert: Bearbeiten, Listenmodus und Export bleiben dem PC vorbehalten. Die Oberfläche folgt der Sprache des Geräts (dieselben sieben Sprachen, sonst Englisch). Siehe [Installation → Android](#android).
 
 ## Installation
+
+### Windows
 
 Die App läuft unter Windows 10 und Windows 11. Es ist derselbe Installer und dieselbe exe für beide.
 
@@ -42,9 +45,24 @@ Hinweise:
 - Zum Aktualisieren startest du ein neueres Setup über die alte Version. Deine Stammbäume und Einstellungen bleiben erhalten.
 - Zum Deinstallieren nutze *Einstellungen → Apps*. Deine `.famtree`-Dateien werden nie gelöscht.
 
+### Android
+
+Die Android-App zeigt Bäume nur an und verändert deine Datei nie. Sie braucht Android 10 oder neuer auf einem 64-Bit-ARM-Gerät (praktisch alle aktuellen Smartphones und Tablets).
+
+1. Lade **`FamTree-<Version>.apk`** von der Seite [Releases](https://github.com/john3sobieski/family-tree/releases) direkt auf dein Gerät herunter.
+2. Öffne die Datei. Android fragt einmalig, ob Apps aus dieser Quelle (Browser oder Dateimanager) installiert werden dürfen; bestätige das.
+3. Bringe deine `.famtree`-Datei aufs Gerät (Cloud-Speicher, Messenger, USB-Kabel). Öffne sie dann im Dateimanager mit **Öffnen mit → FamTree**, oder starte FamTree und tippe auf **Öffnen**, um die Datei auszuwählen. Die zuletzt geöffnete Datei wird gemerkt. Öffnest du eine andere `.famtree`, während die App läuft, wird sie ohne Neustart übernommen.
+
+Hinweise:
+
+- Die App gibt es nur als APK, nicht über Google Play. Play Protect warnt eventuell vor einer App eines unbekannten Entwicklers; wähle trotzdem Installieren.
+- Damit sie sich erneut öffnen lässt, behält die App eine private Kopie der zuletzt geöffneten Datei; das Original wird nie verändert.
+
 ### Selbst bauen
 
 Den Installer bekommst du auch von GitHub Actions, ohne Werkzeuge zu installieren (ein GitHub-Konto ist nötig): Erstelle einen Fork des [Repositorys](https://github.com/john3sobieski/family-tree), öffne **Actions → Build → Run workflow** und lade das Artefakt **`famtree-setup`** aus dem fertigen Lauf herunter (standardmäßig 90 Tage gespeichert).
+
+Die Android-APK entsteht auf dieselbe Weise: **Actions → Android → Run workflow**, danach das Artefakt **`famtree-android-<Version>`** herunterladen.
 
 ## Schnellstart
 
@@ -53,6 +71,8 @@ Den Installer bekommst du auch von GitHub Actions, ohne Werkzeuge zu installiere
 3. Wähle eine Person aus und nutze **＋ Elternteil**, **＋ Partner**, **＋ Kind** oder **＋ Geschwister**, um den Baum wachsen zu lassen. Namen, Daten, Fotos und Notizen trägst du rechts ein.
 4. Wähle **Speichern unter…** und vergib einen Namen. Ab dann werden Änderungen automatisch gespeichert.
 5. Wechsle zu **Ansicht**, um die Karte zu erkunden: Ziehen zum Verschieben, Scrollen zum Zoomen, **Einpassen**, um alles zu sehen, und ein Klick auf eine Karte für Details.
+
+**Unter Android:** Öffne eine `.famtree`-Datei (siehe [Installation → Android](#android)), ziehe zum Verschieben und zoome mit zwei Fingern. **Einpassen** zeigt alles auf einmal, die Lupe öffnet die Personensuche, und ein Tipp auf eine Karte öffnet die Personenseite (ein Tipp auf einen Verwandten springt zu ihm). Die System-Zurück-Taste bzw. -Geste schließt Seite oder Suche Schritt für Schritt; auf der Karte schickt sie die App in den Hintergrund. Die Sonne/Mond-Schaltfläche wechselt das Design (standardmäßig folgt die App dem System).
 
 ## Die `.famtree`-Datei
 
@@ -78,12 +98,12 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Das Vorschaubild auf einer Karte ist ein zentrierter Ausschnitt, und den Ausschnitt kann man noch nicht selbst wählen.
 - In sehr großen Familien kann das Layout Personen immer noch an merkwürdigen Stellen platzieren oder Linien zwischen Zweigen kreuzen (siehe Roadmap).
 - Staatsangehörigkeiten werden im Listenmodus nicht angezeigt.
+- Android: nur Ansicht (kein Bearbeiten, kein Listenmodus, kein Export), 64-Bit-ARM-Geräte mit Android 10 oder neuer, nur als APK (nicht bei Google Play).
+- Android: Fotos lassen sich noch nicht per Pinch-Geste vergrößern, und es gibt kein Sprachmenü: Die App folgt der Systemsprache.
 
 ## Roadmap
 
-Geplante Verbesserungen, in beliebiger Reihenfolge:
-
-- [ ] **Behebung von Layout-Fehlern**: Gelegentlich landen Personen an der falschen Stelle auf der Karte.
+Das Projekt ist abgeschlossen: Die Windows-App und der Android-Viewer sind fertig. Künftig sind nur noch kleine Korrekturen geplant, vor allem für seltene Layout-Fehler (Personen an ungünstigen Stellen in sehr großen Familien).
 
 ## Aus dem Quellcode bauen
 
@@ -96,9 +116,11 @@ cargo build --release
 
 Das Ergebnis ist `target/release/famtree.exe`. Das Projekt verwendet [egui/eframe](https://github.com/emilk/egui) für die Oberfläche.
 
+Die Android-App (`android/`) wird ausschließlich vom GitHub-Actions-Workflow `.github/workflows/android.yml` gebaut (cargo-apk, Android SDK/NDK, eine kleine Java-Schicht und Signierung). Sie kompiliert den Desktop-Code aus `src/` (`model`, `container`, `layout`, `view`, `flags` und weitere), deshalb ist die Karte auf beiden Plattformen identisch. Um die APK mit einem eigenen Schlüssel zu signieren, lege die Repository-Secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` und, falls abweichend, `ANDROID_KEY_PASSWORD` an; ohne sie verwendet der Workflow einen temporären Schlüssel.
+
 ## Fehlerberichte
 
-Du hast ein Problem gefunden, vor allem bei der Platzierung der Personen auf der Karte? Bitte [eröffne ein Issue](https://github.com/john3sobieski/family-tree/issues) und hänge, wenn möglich, eine kleine `.famtree`-Datei an, die das Problem reproduziert (ohne echte personenbezogene Daten, falls der Baum privat ist).
+Du hast ein Problem gefunden, vor allem bei der Platzierung der Personen auf der Karte? Bitte [eröffne ein Issue](https://github.com/john3sobieski/family-tree/issues) und hänge, wenn möglich, eine kleine `.famtree`-Datei an, die das Problem reproduziert (ohne echte personenbezogene Daten, falls der Baum privat ist). Bei der Android-App gib bitte auch Android-Version und Gerätemodell an.
 
 ## Lizenz
 

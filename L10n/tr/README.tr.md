@@ -1,12 +1,12 @@
-[English](README.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [Português (BR)](README.pt-BR.md) | [日本語](README.ja.md) | [Русский](README.ru.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [한국어](README.ko.md) | **Türkçe** | [Bahasa Indonesia](README.id.md)
+[English](../../README.md) | [简体中文](../zh-cn/README_zh-CN.md) | [Español](../es/README_es.md) | [Português (BR)](../pt-BR/README_pt-BR.md) | [日本語](../ja/README_ja.md) | [Русский](../ru/README_ru.md) | [Français](../fr/README_fr.md) | [Deutsch](../de/README_de.md) | [한국어](../ko/README_ko.md) | **Türkçe** | [Bahasa Indonesia](../id/README.id.md)
 
 # FamTree
 
 **[john3sobieski](https://github.com/john3sobieski)** tarafından oluşturuldu ve sürdürülüyor. Depo: <https://github.com/john3sobieski/family-tree>
 
-Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüstü uygulaması. Her şey tek bir `.famtree` dosyasında durur: kişiler, ilişkiler ve tüm fotoğraflar.
+Aile ağacınızı oluşturmak, düzenlemek ve incelemek için bir Windows masaüstü uygulaması ve ağacı telefonda görüntülemek için bir Android uygulaması. Her şey tek bir `.famtree` dosyasında durur: kişiler, ilişkiler ve tüm fotoğraflar.
 
-> **Durum:** erken geliştirme aşamasında. Yükleyiciyi [Releases](https://github.com/john3sobieski/family-tree/releases) sayfasından indirin ([Kurulum](#kurulum) bölümüne bakın).
+> **Durum:** kullanıma hazır. Proje tamamlanmış sayılır: bundan sonra yalnızca küçük düzeltmeler beklenir. Windows yükleyicisini veya Android APK'sını [Releases](https://github.com/john3sobieski/family-tree/releases) sayfasından indirin ([Kurulum](#kurulum) bölümüne bakın).
 
 ## Özellikler
 
@@ -27,8 +27,11 @@ Aile ağacınızı oluşturmak, düzenlemek ve incelemek için Windows masaüst�
 - **Dışa aktarma.** **File → Export…** tüm ağacı kenar boşluklarıyla PNG veya vektör PDF olarak kaydeder. PNG için arka plan (şeffaf, beyaz veya siyah) ve koyu ya da açık renkler seçilir; boyut her şeyin net kalması için otomatik belirlenir (en fazla ×2). PDF kalite kaybı olmadan yakınlaştırılabilir. Çok büyük ağaçları PDF olarak dışa aktarmak daha iyidir.
 - **Çift tıklayarak açma.** **Dosya** (*File*) menüsünden `.famtree` dosyalarını uygulamayla ilişkilendirebilirsiniz.
 - **Koyu ve açık tema.** Durum çubuğunun sağındaki güneş/ay düğmesiyle değiştirilir; seçim hatırlanır.
+- **Android uygulaması (yalnızca görüntüleme).** Aynı `.famtree` dosyasını telefonunuzda veya tabletinizde açın. Harita bilgisayardakiyle birebir aynı görünür (aynı yerleşim, kartlar, bayraklar ve çizgiler); sürükleme ve iki parmakla yakınlaştırma, kameranın kişiye uçtuğu arama, fotoğraflar ve akraba bağlantılarıyla tam ekran kişi sayfası, *Fit to view* ve açık/koyu tema desteklenir. Dosya asla değiştirilmez: düzenleme, Liste modu ve dışa aktarma bilgisayarda kalır. Arayüz telefonun dilini izler (aynı yedi dil, aksi halde İngilizce). Bkz. [Kurulum → Android](#android).
 
 ## Kurulum
+
+### Windows
 
 Uygulama Windows 10 ve Windows 11'de çalışır. İkisi için de aynı yükleyici ve aynı exe kullanılır.
 
@@ -43,9 +46,24 @@ Notlar:
 - Kaldırmak için *Ayarlar → Uygulamalar* bölümünü kullanın. `.famtree` dosyalarınız asla silinmez.
 - Taşınabilir exe'yi kullanıp taşırsanız, **Dosya** menüsündeki `.famtree` ilişkilendirme düğmesine yeniden basın.
 
+### Android
+
+Android uygulaması ağaçları yalnızca gösterir ve dosyanızı asla değiştirmez. 64 bit ARM'li bir cihazda Android 10 veya üstü gerekir (güncel telefon ve tabletlerin neredeyse tamamı).
+
+1. **`FamTree-<sürüm>.apk`** dosyasını [Releases](https://github.com/john3sobieski/family-tree/releases) sayfasından doğrudan cihazınıza indirin.
+2. Dosyayı açın. Android, bu kaynaktan (tarayıcınız veya dosya yöneticiniz) uygulama yüklenmesine izin vermenizi bir kez isteyecektir; onaylayın.
+3. `.famtree` dosyanızı cihaza aktarın (bulut depolama, mesajlaşma uygulaması, USB kablosu). Ardından dosya yöneticisinde dosyayı FamTree ile açın (*Open with*) veya FamTree'yi başlatıp *Open* düğmesine dokunarak dosyayı seçin. En son açılan dosya hatırlanır. Uygulama çalışırken başka bir `.famtree` açarsanız, yeniden başlatmadan yüklenir.
+
+Notlar:
+
+- Uygulama yalnızca APK olarak dağıtılır, Google Play'de yoktur. Play Protect, bilinmeyen bir geliştiricinin uygulaması için uyarabilir; yine de yüklemeyi seçin.
+- Yeniden açabilmek için uygulama, en son açılan dosyanın özel bir kopyasını tutar; orijinal dosya asla değiştirilmez.
+
 ### Kendiniz derleyin
 
 Yükleyiciyi hiçbir araç kurmadan GitHub Actions'tan alabilirsiniz (bir GitHub hesabı gerekir): [Depoyu](https://github.com/john3sobieski/family-tree) fork edin, **Actions → Build → Run workflow** yolunu izleyin ve tamamlanan çalıştırmadan **`famtree-setup`** çıktısını indirin (varsayılan olarak 90 gün saklanır).
+
+Android APK'sı da aynı şekilde elde edilir: **Actions → Android → Run workflow**, ardından **`famtree-android-<sürüm>`** çıktısını indirin.
 
 ## Hızlı başlangıç
 
@@ -54,6 +72,8 @@ Yükleyiciyi hiçbir araç kurmadan GitHub Actions'tan alabilirsiniz (bir GitHub
 3. Bir kişi seçin ve ağacı büyütmek için **＋ Ebeveyn**, **＋ Partner**, **＋ Çocuk** veya **＋ Kardeş** (*＋ Parent*, *＋ Partner*, *＋ Child*, *＋ Sibling*) düğmelerini kullanın. Ad, tarih, fotoğraf ve notları sağ tarafta doldurun.
 4. **Farklı kaydet…** seçeneğini seçin ve bir ad verin. Bundan sonra değişiklikler otomatik kaydedilir.
 5. Haritayı keşfetmek için **Görüntüleme**'ye geçin: kaydırmak için sürükleyin, yakınlaştırmak için tekerleği çevirin, her şeyi görmek için **Sığdır** (*Fit to view*) düğmesine basın, ayrıntılar için bir karta tıklayın.
+
+**Android'de:** bir `.famtree` dosyası açın ([Kurulum → Android](#android) bölümüne bakın), kaydırmak için sürükleyin, yakınlaştırmak için iki parmağınızla sıkıştırıp açın. *Fit to view* her şeyi tek seferde gösterir, büyüteç kişi aramasını açar, bir karta dokunmak kişi sayfasını açar (bir akrabaya dokunarak ona geçebilirsiniz). Sistemin Geri düğmesi veya hareketi sayfayı ya da aramayı adım adım kapatır; haritada ise uygulamayı arka plana gönderir. Güneş/ay düğmesi temayı değiştirir (varsayılan olarak uygulama sistem temasını izler).
 
 ## `.famtree` dosyası
 
@@ -79,12 +99,12 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Karttaki küçük resim ortadan kırpılmış bir görüntüdür ve kırpma alanını henüz seçemezsiniz.
 - Çok büyük ailelerde yerleşim hâlâ kişileri tuhaf yerlere koyabilir veya dallar arasındaki çizgileri kesiştirebilir (yol haritasına bakın).
 - Uyruklar Liste modunda gösterilmez.
+- Android: yalnızca görüntüleme (düzenleme, Liste modu ve dışa aktarma yok), Android 10 veya üstü 64 bit ARM cihazlar, yalnızca APK (Google Play'de yok).
+- Android: fotoğraflar henüz iki parmak hareketiyle büyütülemez ve dil menüsü yoktur: uygulama sistem dilini izler.
 
 ## Yol haritası
 
-Planlanan iyileştirmeler, belirli bir sırayla değil:
-
-- [ ] **Yerleşim hatalarının düzeltilmesi**: kişiler zaman zaman haritada yanlış yere düşüyor.
+Proje tamamlandı: Windows uygulaması ve Android görüntüleyici hazır. Bundan sonra yalnızca küçük düzeltmeler planlanıyor; özellikle çok büyük ailelerde kişilerin garip yerlere yerleşmesi gibi nadir yerleşim hataları.
 
 ## Kaynaktan derleme
 
@@ -97,9 +117,11 @@ cargo build --release
 
 Sonuç `target/release/famtree.exe` olur. Proje arayüz için [egui/eframe](https://github.com/emilk/egui) kullanır.
 
+Android uygulaması (`android/`) yalnızca `.github/workflows/android.yml` GitHub Actions iş akışıyla derlenir (cargo-apk, Android SDK/NDK, küçük bir Java katmanı ve imzalama). `src/` içindeki masaüstü kodunu (`model`, `container`, `layout`, `view`, `flags` ve diğerleri) derlediği için harita iki platformda da aynıdır. APK'yı kendi anahtarınızla imzalamak için `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` ve farklıysa `ANDROID_KEY_PASSWORD` depo gizli anahtarlarını (secrets) ekleyin; eklemezseniz iş akışı geçici bir anahtar kullanır.
+
 ## Hata bildirimi
 
-Bir sorun mu buldunuz, özellikle kişilerin haritada nasıl yerleştirildiğiyle ilgili? Lütfen [bir issue açın](https://github.com/john3sobieski/family-tree/issues) ve mümkünse sorunu yeniden üreten küçük bir `.famtree` dosyası ekleyin (ağaç özelse gerçek kişisel veriler olmadan).
+Bir sorun mu buldunuz, özellikle kişilerin haritada nasıl yerleştirildiğiyle ilgili? Lütfen [bir issue açın](https://github.com/john3sobieski/family-tree/issues) ve mümkünse sorunu yeniden üreten küçük bir `.famtree` dosyası ekleyin (ağaç özelse gerçek kişisel veriler olmadan). Android uygulamasında Android sürümünüzü ve cihaz modelinizi de belirtin.
 
 ## Lisans
 

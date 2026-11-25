@@ -1,12 +1,12 @@
-[English](README.md) | [简体中文](README.zh-CN.md) | [Español](README.es.md) | [Português (BR)](README.pt-BR.md) | **日本語** | [Русский](README.ru.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Bahasa Indonesia](README.id.md)
+[English](../../README.md) | [简体中文](../zh-cn/README_zh-CN.md) | [Español](../es/README_es.md) | [Português (BR)](../pt-BR/README_pt-BR.md) | **日本語** | [Русский](../ru/README_ru.md) | [Français](../fr/README_fr.md) | [Deutsch](../de/README_de.md) | [한국어](../ko/README_ko.md) | [Türkçe](../tr/README.tr.md) | [Bahasa Indonesia](../id/README.id.md)
 
 # FamTree
 
 作成・メンテナンス：**[john3sobieski](https://github.com/john3sobieski)**。リポジトリ：<https://github.com/john3sobieski/family-tree>
 
-家系図の作成、編集、閲覧ができる Windows 用デスクトップアプリです。人物、関係、すべての写真が、1 つの `.famtree` ファイルにまとまります。
+家系図の作成、編集、閲覧ができる Windows 用デスクトップアプリと、スマートフォンで閲覧できる Android アプリです。人物、関係、すべての写真が、1 つの `.famtree` ファイルにまとまります。
 
-> **ステータス：** 開発初期段階です。インストーラーは [Releases](https://github.com/john3sobieski/family-tree/releases) からダウンロードできます（[インストール](#インストール)を参照）。
+> **ステータス：** すぐに使えます。プロジェクトは完成したものとみなしており、今後は小さな修正のみを予定しています。Windows 用インストーラーと Android 用 APK は [Releases](https://github.com/john3sobieski/family-tree/releases) からダウンロードできます（[インストール](#インストール)を参照）。
 
 ## 機能
 
@@ -27,8 +27,11 @@
 - **エクスポート。** **File → Export…** で、ツリー全体を PNG またはベクター PDF として余白付きで保存できます。PNG では背景（透明・白・黒）とダーク/ライトの配色を選べ、サイズは鮮明さを保つよう自動で決まります（最大 ×2）。PDF は画質を落とさず拡大できます。非常に大きなツリーは PDF での書き出しがおすすめです。
 - **ダブルクリックで開く。** **ファイル**（*File*）メニューで、`.famtree` ファイルをアプリに関連付けられます。
 - **ダークテーマとライトテーマ。** ステータスバー右端の太陽/月ボタンで切り替えます。選択は記憶されます。
+- **Android アプリ（閲覧専用）。** 同じ `.famtree` ファイルをスマートフォンやタブレットで開けます。マップは PC とまったく同じ見た目（同じレイアウト、カード、国旗、線）で、ドラッグとピンチズーム、人物へカメラが飛んでいく検索、写真と親族へのリンクを備えた全画面の人物ページ、*Fit to view*、ライト/ダークテーマに対応します。ファイルが変更されることはありません。編集、リストモード、エクスポートは PC で行います。インターフェースは端末の言語に従います（同じ 7 言語に対応し、それ以外は英語）。[インストール → Android](#android)を参照してください。
 
 ## インストール
+
+### Windows
 
 Windows 10 と Windows 11 の両方で動作します。インストーラーも exe も両方で同じものです。
 
@@ -43,9 +46,24 @@ Windows 10 と Windows 11 の両方で動作します。インストーラーも
 - アンインストールは *設定 → アプリ* から行います。`.famtree` ファイルが削除されることはありません。
 - ポータブル版の exe を使っていて移動した場合は、**ファイル**メニューの `.famtree` 関連付けボタンをもう一度押してください。
 
+### Android
+
+Android アプリは家系図を表示するだけで、ファイルを変更することはありません。Android 10 以降の 64 ビット ARM 端末が必要です（現行のスマートフォンやタブレットのほぼすべてが該当します）。
+
+1. [Releases](https://github.com/john3sobieski/family-tree/releases) ページから **`FamTree-<バージョン>.apk`** を端末に直接ダウンロードします。
+2. ファイルを開きます。Android から、この提供元（ブラウザーやファイルマネージャー）からのアプリのインストールを許可するよう一度だけ求められるので、許可します。
+3. `.famtree` ファイルを端末に入れます（クラウドストレージ、メッセンジャー、USB ケーブルなど）。そのあと、ファイルマネージャーから「アプリで開く」で FamTree を選ぶか、FamTree を起動して *Open* をタップしてファイルを選びます。最後に開いたファイルは記憶されます。アプリの起動中に別の `.famtree` を開いた場合も、再起動せずに読み込まれます。
+
+補足：
+
+- アプリは APK としてのみ配布しており、Google Play には掲載していません。Play Protect が未知の開発元のアプリについて警告することがありますが、「そのままインストール」を選んでください。
+- 再度開けるように、アプリは最後に開いたファイルの非公開コピーを保持します。元のファイルが変更されることはありません。
+
 ### 自分でビルドする
 
 ツールをインストールしなくても、GitHub Actions からインストーラーを入手できます（GitHub アカウントが必要です）。[リポジトリ](https://github.com/john3sobieski/family-tree)を Fork し、**Actions → Build → Run workflow** を実行して、完了した実行から **`famtree-setup`** アーティファクトをダウンロードします（デフォルトで 90 日間保持されます）。
+
+Android 用 APK も同じ方法で入手できます。**Actions → Android → Run workflow** を実行し、**`famtree-android-<バージョン>`** アーティファクトをダウンロードしてください。
 
 ## クイックスタート
 
@@ -54,6 +72,8 @@ Windows 10 と Windows 11 の両方で動作します。インストーラーも
 3. 人物を選択し、**＋ 親**、**＋ パートナー**、**＋ 子**、**＋ きょうだい**（*＋ Parent*、*＋ Partner*、*＋ Child*、*＋ Sibling*）を使って家系図を広げていきます。右側で名前、日付、写真、メモを入力します。
 4. **名前を付けて保存…**を選んで名前を付けます。それ以降、変更は自動的に保存されます。
 5. **閲覧**に切り替えてマップを見て回ります。ドラッグでパン、スクロールでズーム、**全体表示**（*Fit to view*）ですべてを表示、カードをクリックで詳細を表示できます。
+
+**Android の場合：** `.famtree` ファイルを開き（[インストール → Android](#android)を参照）、ドラッグで移動、2 本指のピンチでズームします。*Fit to view* で全体が見え、虫眼鏡で人物を検索でき、カードをタップすると人物ページが開きます（親族をタップするとその人へ移動）。システムの戻るボタンまたはジェスチャーは、ページや検索を 1 つずつ閉じます。マップ上ではアプリがバックグラウンドに移ります。太陽/月のボタンでテーマを切り替えます（既定ではシステムのテーマに従います）。
 
 ## `.famtree` ファイル
 
@@ -79,12 +99,12 @@ thumb/<hash>.jpg     small thumbnails for cards
 - カードのサムネイルは中央でのトリミングで、トリミング範囲はまだ選べません。
 - 非常に大きな家族では、人物が不自然な位置に配置されたり、枝同士の線が交差したりすることがあります（ロードマップを参照）。
 - 国籍はリストモードでは表示されません。
+- Android：閲覧専用（編集、リストモード、エクスポートなし）。Android 10 以降の 64 ビット ARM 端末向けで、配布は APK のみ（Google Play にはありません）。
+- Android：写真はまだピンチで拡大できず、言語メニューもありません。アプリは端末の言語に従います。
 
 ## ロードマップ
 
-予定している改善です（順不同）。
-
-- [ ] **レイアウトのバグ修正**：人物がマップ上で誤った位置に配置されることがある。
+プロジェクトは完成しています。Windows アプリと Android ビューアーはどちらも完成版です。今後は小さな修正のみを予定しており、主にまれなレイアウトの不具合（非常に大きな家系で人物が不自然な位置に置かれる）が対象です。
 
 ## ソースからのビルド
 
@@ -97,9 +117,11 @@ cargo build --release
 
 成果物は `target/release/famtree.exe` です。このプロジェクトでは、インターフェースに [egui/eframe](https://github.com/emilk/egui) を使用しています。
 
+Android アプリ（`android/`）は、GitHub Actions のワークフロー `.github/workflows/android.yml` だけでビルドされます（cargo-apk、Android SDK/NDK、小さな Java レイヤー、署名）。`src/` のデスクトップ用コード（`model`、`container`、`layout`、`view`、`flags` など）をそのままコンパイルするため、マップは両プラットフォームで同一になります。APK を自分の鍵で署名するには、リポジトリのシークレット `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、および（異なる場合は）`ANDROID_KEY_PASSWORD` を追加してください。未設定の場合、ワークフローは一時的な鍵を使います。
+
 ## バグ報告
 
-問題を見つけましたか？特にマップ上の人物の配置についてであれば、[issue を作成](https://github.com/john3sobieski/family-tree/issues)してください。可能であれば、問題を再現できる小さな `.famtree` ファイルを添付してください（家系図が非公開の場合は、実在の個人情報を含めないでください）。
+問題を見つけましたか？特にマップ上の人物の配置についてであれば、[issue を作成](https://github.com/john3sobieski/family-tree/issues)してください。可能であれば、問題を再現できる小さな `.famtree` ファイルを添付してください（家系図が非公開の場合は、実在の個人情報を含めないでください）。Android アプリの問題の場合は、Android のバージョンと端末の機種も添えてください。
 
 ## ライセンス
 
