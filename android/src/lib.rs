@@ -214,8 +214,10 @@ mod app {
         pub fn new(android: AndroidApp, ctx: egui::Context) -> Self {
             let _ = CTX.set(ctx.clone());
             // System theme (dark if Java cannot tell); `update` follows later changes.
-            let dark = source::is_night(&android).unwrap_or(true);
-            crate::sysenv::init_dark(dark);
+            let sys = source::is_night(&android).unwrap_or(true);
+            crate::sysenv::init_dark(sys);
+            // A theme chosen by hand with the button wins until the system theme changes.
+            let dark = source::load_theme(&android).unwrap_or(sys);
             crate::theme::set_dark(&ctx, dark);
             crate::theme::apply(&ctx);
             if crate::i18n::current() == crate::i18n::Lang::Zh {
@@ -231,7 +233,7 @@ mod app {
                 person: None,
                 history: Vec::new(),
                 person_screen: PersonScreen::default(),
-                sys_dark: dark,
+                sys_dark: sys,
                 searching: false,
                 search_text: String::new(),
                 search_hits: Vec::new(),
@@ -310,6 +312,8 @@ mod app {
             if sys != self.sys_dark {
                 self.sys_dark = sys;
                 crate::theme::set_dark(ctx, sys);
+                // The system decides again: forget the manual choice.
+                source::save_theme(&self.android, None);
             }
             crate::sysenv::show_insets(ctx);
 
@@ -461,7 +465,9 @@ mod app {
                 self.open_search();
             }
             if theme_clicked {
-                crate::theme::set_dark(ctx, !crate::theme::is_dark());
+                let dark = !crate::theme::is_dark();
+                crate::theme::set_dark(ctx, dark);
+                source::save_theme(&self.android, Some(dark));
             }
             // Navigation: tap on a card opens the page; "Back" returns to the previous person, then to the tree.
             if let Some(id) = tapped {

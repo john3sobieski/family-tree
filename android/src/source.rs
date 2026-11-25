@@ -13,6 +13,7 @@ use winit::platform::android::activity::AndroidApp;
 const LAST_FILE: &str = "last.famtree";
 const LAST_NAME: &str = "last_name.txt";
 const INCOMING_FILE: &str = "incoming.famtree";
+const THEME_FILE: &str = "theme.txt";
 
 pub struct Opened {
     pub path: PathBuf,
@@ -83,6 +84,30 @@ pub fn hide_keyboard(app: &AndroidApp) -> Result<(), String> {
         env.call_method(activity, "hideKeyboard", "()V", &[])?;
         Ok(())
     })
+}
+
+/// Theme chosen by hand with the sun/moon button: `Some(true)` dark, `Some(false)` light, `None` — follow the system.
+pub fn load_theme(app: &AndroidApp) -> Option<bool> {
+    let dir = app.internal_data_path()?;
+    match fs::read_to_string(dir.join(THEME_FILE)).ok()?.trim() {
+        "dark" => Some(true),
+        "light" => Some(false),
+        _ => None,
+    }
+}
+
+/// Remembers the manual choice (`None` forgets it). Errors are ignored: the theme is a convenience.
+pub fn save_theme(app: &AndroidApp, dark: Option<bool>) {
+    let Some(dir) = app.internal_data_path() else { return };
+    let file = dir.join(THEME_FILE);
+    match dark {
+        Some(d) => {
+            let _ = fs::write(file, if d { "dark" } else { "light" });
+        }
+        None => {
+            let _ = fs::remove_file(file);
+        }
+    }
 }
 
 /// System UI languages in priority order, comma separated (Java `FamActivity.languages`), e.g. "ru,en".
