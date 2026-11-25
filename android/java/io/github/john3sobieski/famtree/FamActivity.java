@@ -130,8 +130,7 @@ public class FamActivity extends NativeActivity {
     private void pushEnv(boolean force) {
         int l = 0, t = 0, r = 0, b = 0;
         View decor = getWindow().getDecorView();
-        View content = decor.findViewById(android.R.id.content);
-        if (content != null && decor.getWidth() > 0) {
+        if (decor.getWidth() > 0) {
             int il = 0, it = 0, ir = 0, ib = 0;
             WindowInsets wi = decor.getRootWindowInsets();
             if (wi != null) {
@@ -164,15 +163,15 @@ public class FamActivity extends NativeActivity {
             if (ib == 0 && il == 0 && ir == 0) {
                 ib = barSize("navigation_bar_height");
             }
-            // If the system already places our view away from an edge, there is nothing to add there.
-            int[] loc = new int[2];
-            content.getLocationInWindow(loc);
-            int gapR = decor.getWidth() - (loc[0] + content.getWidth());
-            int gapB = decor.getHeight() - (loc[1] + content.getHeight());
-            l = Math.max(0, il - loc[0]);
-            t = Math.max(0, it - loc[1]);
-            r = Math.max(0, ir - gapR);
-            b = Math.max(0, ib - gapB);
+            // NativeActivity draws on the window surface itself, which covers the whole screen whatever the decor
+            // view does, so the full bar sizes overlap us. With the keyboard up the window is already resized.
+            if (Build.VERSION.SDK_INT >= 30 && wi != null && wi.isVisible(WindowInsets.Type.ime())) {
+                ib = 0;
+            }
+            l = il;
+            t = it;
+            r = ir;
+            b = ib;
         }
         boolean dark = isNight();
         String key = dark + ":" + l + ":" + t + ":" + r + ":" + b;
