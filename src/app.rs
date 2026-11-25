@@ -10,6 +10,7 @@ use crate::i18n::{self, tr, trf, Lang};
 use crate::layout::{self, Layout, LayoutConfig};
 use crate::list::{self, ListState};
 use crate::model::{PersonId, Tree};
+use crate::platform;
 use crate::person_window::{PersonWindow, WindowEvent};
 use crate::search::{self, SearchState};
 use crate::view::ViewState;
@@ -21,6 +22,31 @@ use std::time::{Duration, Instant};
 const AUTOSAVE_DELAY: Duration = Duration::from_millis(1500);
 /// Через сколько пробуем снова, если автосохранение не удалось.
 const AUTOSAVE_RETRY: Duration = Duration::from_secs(5);
+
+/// Файл с путём к последнему открытому дереву (лежит рядом с `language.txt`).
+fn last_file_store() -> Option<PathBuf> {
+    Some(i18n::settings_dir()?.join("last_file.txt"))
+}
+
+/// Запомнить файл, чтобы открыть его при следующем запуске.
+fn remember_last_file(p: &std::path::Path) {
+    let (Some(store), Some(text)) = (last_file_store(), p.to_str()) else { return };
+    if let Some(dir) = store.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let _ = std::fs::write(store, text);
+}
+
+/// Последний открытый файл, если он ещё существует.
+fn recall_last_file() -> Option<PathBuf> {
+    let text = std::fs::read_to_string(last_file_store()?).ok()?;
+    let text = text.trim_matches(|c: char| c == '\r' || c == '\n');
+    if text.is_empty() {
+        return None;
+    }
+    let p = PathBuf::from(text);
+    p.is_file().then_some(p)
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Mode {
@@ -94,7 +120,8 @@ impl FamTreeApp {
             allow_close: false,
             last_title: String::new(),
         };
-        if let Some(p) = path {
+        // Нет аргумента запуска — открываем то, что было открыто в прошлый раз.
+        if let Some(p) = path.or_else(recall_last_file) {
             app.open_file(p);
         }
         app
@@ -116,6 +143,9 @@ impl FamTreeApp {
     }
 
     pub fn set_tree(&mut self, tree: Tree, store: MediaStore, path: Option<PathBuf>) {
+        if let Some(p) = &path {
+            remember_last_file(p);
+        }
         self.tree = tree;
         self.store = store;
         self.path = path;
@@ -292,6 +322,7 @@ impl FamTreeApp {
     fn save_to(&mut self, p: PathBuf) {
         match container::save(&p, &self.tree, &mut self.store) {
             Ok(()) => {
+                remember_last_file(&p);
                 self.path = Some(p);
                 self.dirty = false;
                 self.status.clear();
@@ -322,6 +353,8 @@ impl FamTreeApp {
 
 impl eframe::App for FamTreeApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // AltGr-символы (польские ł, ą, ę…): добавляем текст, если egui его не прислал.
+        platform::fix_altgr(ctx);
         // Закрытие окна: если файл есть, последние правки (ещё не дождавшиеся автосохранения)
         // сохраняем молча.
         if ctx.input(|i| i.viewport().close_requested()) && self.dirty && self.path.is_some() {

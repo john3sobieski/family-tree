@@ -173,7 +173,9 @@ fn num_field(ui: &mut egui::Ui, key: egui::Id, val: &mut Option<i64>, lo: i64, h
     let mut buf: String = ui
         .data(|d| d.get_temp::<String>(key))
         .unwrap_or_else(|| val.map(|v| v.to_string()).unwrap_or_default());
-    let resp = ui.add(egui::TextEdit::singleline(&mut buf).hint_text(hint).desired_width(width));
+    // Explicit id: an auto id would change whenever a widget above appears/disappears,
+    // and the field would lose focus after the first typed digit.
+    let resp = ui.add(egui::TextEdit::singleline(&mut buf).id(key.with("edit")).hint_text(hint).desired_width(width));
     if resp.changed() {
         let t = buf.trim();
         if t.is_empty() {
@@ -195,17 +197,17 @@ fn date_row(ui: &mut egui::Ui, id: PersonId, tag: &str, d: &mut PartialDate, wid
     ui.horizontal(|ui| {
         // The three fields together are exactly as wide as the text fields below/above.
         let free = (width - 2.0 * ui.spacing().item_spacing.x).max(90.0);
-        let k = ui.id().with((id, tag, "day"));
+        let k = egui::Id::new(("date-field", id, tag, "day"));
         let mut day = d.day.map(i64::from);
         num_field(ui, k, &mut day, 1, 31, tr("день"), free * 0.26);
         d.day = day.map(|v| v as u8);
 
-        let k = ui.id().with((id, tag, "month"));
+        let k = egui::Id::new(("date-field", id, tag, "month"));
         let mut month = d.month.map(i64::from);
         num_field(ui, k, &mut month, 1, 12, tr("месяц"), free * 0.34);
         d.month = month.map(|v| v as u8);
 
-        let k = ui.id().with((id, tag, "year"));
+        let k = egui::Id::new(("date-field", id, tag, "year"));
         let mut year = d.year.map(i64::from);
         num_field(ui, k, &mut year, 1, 2999, tr("год"), free * 0.40);
         d.year = year.map(|v| v as i32);
@@ -254,6 +256,79 @@ fn field_label(ui: &mut egui::Ui, text: &str) {
     );
 }
 
+/// Выпадающий список стран с поиском. Свой popup вместо `ComboBox`: у `ComboBox` любой клик внутри
+/// списка (в том числе по полю поиска) закрывает его. Закрывается: выбор страны, клик мимо, Esc.
+fn country_picker(ui: &mut egui::Ui, list: &[String], width: f32) -> Option<&'static str> {
+    let open_id = egui::Id::new("nationality-open");
+    let filter_id = egui::Id::new("nationality-filter");
+    let edit_id = egui::Id::new("nationality-filter-edit");
+    let mut open: bool = ui.data(|d| d.get_temp(open_id)).unwrap_or(false);
+    let mut picked: Option<&'static str> = None;
+
+    let btn = ui.add(egui::Button::new(tr("Добавить страну…")).min_size(egui::vec2(width, ui.spacing().interact_size.y)));
+    if btn.clicked() {
+        open = !open;
+        if open {
+            ui.data_mut(|d| d.insert_temp(filter_id, String::new()));
+            ui.ctx().memory_mut(|m| m.request_focus(edit_id));
+        }
+    }
+
+    if open {
+        let area = egui::Area::new(egui::Id::new("nationality-popup"))
+            .order(egui::Order::Foreground)
+            .fixed_pos(btn.rect.left_bottom() + egui::vec2(0.0, 2.0))
+            .show(ui.ctx(), |ui| {
+                egui::Frame::popup(ui.style()).show(ui, |ui| {
+                    ui.set_min_width((width - 16.0).max(180.0));
+                    // Search box: the list has ~200 countries.
+                    let mut filter: String = ui.data_mut(|d| d.get_temp(filter_id)).unwrap_or_default();
+                    ui.add(
+                        egui::TextEdit::singleline(&mut filter)
+                            .id(edit_id)
+                            .hint_text(tr("Поиск…"))
+                            .desired_width(f32::INFINITY),
+                    );
+                    ui.data_mut(|d| d.insert_temp(filter_id, filter.clone()));
+                    let query = filter.trim().to_lowercase();
+                    egui::ScrollArea::vertical().max_height(260.0).auto_shrink([true, true]).show(ui, |ui| {
+                        for (code, name) in crate::flags::sorted(crate::i18n::current()) {
+                            if list.iter().any(|c| c.as_str() == code) {
+                                continue;
+                            }
+                            // Match the name in the current language or the English one.
+                            let english = crate::flags::name_in(crate::i18n::Lang::En, code).unwrap_or("");
+                            if !query.is_empty()
+                                && !name.to_lowercase().contains(&query)
+                                && !english.to_lowercase().contains(&query)
+                            {
+                                continue;
+                            }
+                            ui.horizontal(|ui| {
+                                crate::flags::icon(ui, code, 14.0);
+                                if ui.selectable_label(false, name).clicked() {
+                                    picked = Some(code);
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+        let (pressed_at, esc) = ui.ctx().input(|i| {
+            (
+                if i.pointer.any_pressed() { i.pointer.interact_pos() } else { None },
+                i.key_pressed(egui::Key::Escape),
+            )
+        });
+        let outside = pressed_at.map_or(false, |pos| !area.response.rect.contains(pos) && !btn.rect.contains(pos));
+        if picked.is_some() || outside || esc {
+            open = false;
+        }
+    }
+    ui.data_mut(|d| d.insert_temp(open_id, open));
+    picked
+}
+
 /// Выбор национальностей (до двух, все страны мира).
 fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>, width: f32) {
     ui.vertical(|ui| {
@@ -273,38 +348,7 @@ fn nationality_row(ui: &mut egui::Ui, list: &mut Vec<String>, width: f32) {
             list.remove(i);
         }
         if list.len() < crate::flags::MAX_PER_PERSON {
-            let mut add: Option<&'static str> = None;
-            egui::ComboBox::from_id_salt("nationality-add")
-                .width(width)
-                .selected_text(tr("Добавить страну…"))
-                .show_ui(ui, |ui| {
-                    // Search box: the list has ~200 countries.
-                    let fid = egui::Id::new("nationality-filter");
-                    let mut filter: String = ui.data_mut(|d| d.get_temp(fid)).unwrap_or_default();
-                    ui.add(egui::TextEdit::singleline(&mut filter).hint_text(tr("Поиск…")));
-                    ui.data_mut(|d| d.insert_temp(fid, filter.clone()));
-                    let query = filter.trim().to_lowercase();
-                    for (code, name) in crate::flags::sorted(crate::i18n::current()) {
-                        if list.iter().any(|c| c.as_str() == code) {
-                            continue;
-                        }
-                        // Match the name in the current language or the English one.
-                        let english = crate::flags::name_in(crate::i18n::Lang::En, code).unwrap_or("");
-                        if !query.is_empty()
-                            && !name.to_lowercase().contains(&query)
-                            && !english.to_lowercase().contains(&query)
-                        {
-                            continue;
-                        }
-                        ui.horizontal(|ui| {
-                            crate::flags::icon(ui, code, 14.0);
-                            if ui.selectable_label(false, name).clicked() {
-                                add = Some(code);
-                            }
-                        });
-                    }
-                });
-            if let Some(code) = add {
+            if let Some(code) = country_picker(ui, list, width) {
                 list.push(code.to_string());
             }
         }
@@ -341,10 +385,10 @@ pub fn editor(
     egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
         ui.add_space(2.0);
         ui.heading(full_name(&orig));
+        // Always drawn (a space when empty): otherwise the form jumps down when the first digit
+        // of the birth year appears here.
         let years = format_years(&orig);
-        if !years.is_empty() {
-            ui.label(RichText::new(years).color(muted));
-        }
+        ui.label(RichText::new(if years.is_empty() { " ".to_string() } else { years }).color(muted));
         if !placed {
             ui.add_space(4.0);
             ui.colored_label(
