@@ -280,14 +280,17 @@ fn country_picker(ui: &mut egui::Ui, list: &[String], width: f32) -> Option<&'st
             .fixed_pos(btn.rect.left_bottom() + egui::vec2(0.0, 2.0))
             .show(ui.ctx(), |ui| {
                 egui::Frame::popup(ui.style()).show(ui, |ui| {
-                    ui.set_min_width((width - 16.0).max(180.0));
+                    // Фиксированная ширина: Area не ограничена по ширине, а `f32::INFINITY` в поле
+                    // поиска растягивал попап на весь экран.
+                    let inner_w = (width - 16.0).max(180.0);
+                    ui.set_width(inner_w);
                     // Search box: the list has ~200 countries.
                     let mut filter: String = ui.data_mut(|d| d.get_temp(filter_id)).unwrap_or_default();
                     ui.add(
                         egui::TextEdit::singleline(&mut filter)
                             .id(edit_id)
                             .hint_text(tr("Поиск…"))
-                            .desired_width(f32::INFINITY),
+                            .desired_width(inner_w),
                     );
                     ui.data_mut(|d| d.insert_temp(filter_id, filter.clone()));
                     let query = filter.trim().to_lowercase();
