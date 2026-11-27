@@ -94,7 +94,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Les dates s'affichent toujours au format `JJ.MM.AAAA`, quelle que soit la langue.
 - Pas encore d'annulation.
 - L'importation d'un grand lot de photos d'un coup peut figer la fenêtre un instant.
-- Les photos HEIC ne sont pas prises en charge (JPEG, PNG, WebP et BMP le sont).
+- Les photos HEIC ne sont pas prises en charge (JPEG/JFIF, PNG, WebP et BMP le sont).
 - La miniature d'une carte est un recadrage centré, et vous ne pouvez pas encore choisir la zone recadrée.
 - Dans les très grandes familles, la disposition peut encore placer des personnes à des endroits curieux ou faire se croiser des lignes entre branches (voir la feuille de route).
 - Les nationalités ne sont pas affichées en mode Liste.

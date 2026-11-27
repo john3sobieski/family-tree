@@ -94,7 +94,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Dates are always shown as `DD.MM.YYYY`, whatever the language.
 - No undo yet.
 - Importing a large batch of photos at once can freeze the window for a moment.
-- HEIC photos are not supported (JPEG, PNG, WebP and BMP are).
+- HEIC photos are not supported (JPEG/JFIF, PNG, WebP and BMP are).
 - The thumbnail on a card is a centered crop, and you can't choose the crop area yet.
 - In very large families the layout can still place people in odd spots or cross lines between branches (see the roadmap).
 - Nationalities are not shown in List mode.

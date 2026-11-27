@@ -239,7 +239,7 @@ fn thumb_image(ui: &mut egui::Ui, st: &mut EditState, store: &MediaStore, hash: 
 
 /// Диалог выбора фото + импорт. Возвращает hash успешно импортированных.
 fn import_dialog(store: &mut MediaStore, multiple: bool, errors: &mut Vec<String>) -> Vec<String> {
-    let dlg = rfd::FileDialog::new().add_filter(tr("Изображения"), &["jpg", "jpeg", "png", "webp", "bmp"]);
+    let dlg = rfd::FileDialog::new().add_filter(tr("Изображения"), &["jpg", "jpeg", "jfif", "png", "webp", "bmp"]);
     let files: Vec<std::path::PathBuf> = if multiple {
         dlg.pick_files().unwrap_or_default()
     } else {
@@ -257,7 +257,7 @@ fn import_dialog(store: &mut MediaStore, multiple: bool, errors: &mut Vec<String
 
 /// Диалог выбора файла и открытие окна выбора области (в хранилище пока ничего не попадает).
 fn open_crop_from_file(ctx: &egui::Context, st: &mut EditState, person: PersonId, errors: &mut Vec<String>) {
-    let dlg = rfd::FileDialog::new().add_filter(tr("Изображения"), &["jpg", "jpeg", "png", "webp", "bmp"]);
+    let dlg = rfd::FileDialog::new().add_filter(tr("Изображения"), &["jpg", "jpeg", "jfif", "png", "webp", "bmp"]);
     let Some(f) = dlg.pick_file() else { return };
     let img = std::fs::read(&f)
         .map_err(media::MediaError::from)

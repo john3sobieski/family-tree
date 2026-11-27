@@ -95,7 +95,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 - 无论使用哪种语言，日期始终显示为 `DD.MM.YYYY` 格式。
 - 暂无撤销功能。
 - 一次性导入大量照片时，窗口可能会短暂卡住。
-- 不支持 HEIC 照片（支持 JPEG、PNG、WebP 和 BMP）。
+- 不支持 HEIC 照片（支持 JPEG/JFIF、PNG、WebP 和 BMP）。
 - 卡片上的缩略图是居中裁剪，暂时无法选择裁剪区域。
 - 在非常大的家族中，布局仍可能把人物放到奇怪的位置，或使不同分支之间的连线交叉（见路线图）。
 - 列表模式下不显示国籍。

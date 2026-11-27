@@ -95,7 +95,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Tanggal selalu ditampilkan dalam format `DD.MM.YYYY`, apa pun bahasanya.
 - Belum ada undo.
 - Mengimpor banyak foto sekaligus bisa membuat jendela membeku sesaat.
-- Foto HEIC tidak didukung (JPEG, PNG, WebP, dan BMP didukung).
+- Foto HEIC tidak didukung (JPEG/JFIF, PNG, WebP, dan BMP didukung).
 - Thumbnail pada kartu adalah potongan di bagian tengah, dan area potongan belum bisa dipilih.
 - Pada keluarga yang sangat besar, tata letak masih bisa menempatkan orang di posisi yang aneh atau membuat garis antarcabang saling bersilangan (lihat peta jalan).
 - Kewarganegaraan tidak ditampilkan di mode Daftar.

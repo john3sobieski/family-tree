@@ -95,7 +95,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Tarihler dilden bağımsız olarak her zaman `GG.AA.YYYY` biçiminde gösterilir.
 - Henüz geri alma yok.
 - Çok sayıda fotoğrafı bir anda içe aktarmak pencereyi kısa süreliğine dondurabilir.
-- HEIC fotoğraflar desteklenmez (JPEG, PNG, WebP ve BMP desteklenir).
+- HEIC fotoğraflar desteklenmez (JPEG/JFIF, PNG, WebP ve BMP desteklenir).
 - Karttaki küçük resim ortadan kırpılmış bir görüntüdür ve kırpma alanını henüz seçemezsiniz.
 - Çok büyük ailelerde yerleşim hâlâ kişileri tuhaf yerlere koyabilir veya dallar arasındaki çizgileri kesiştirebilir (yol haritasına bakın).
 - Uyruklar Liste modunda gösterilmez.

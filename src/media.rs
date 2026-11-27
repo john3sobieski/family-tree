@@ -258,4 +258,16 @@ mod tests {
         // Тот же фрагмент — тот же hash.
         assert_eq!(import_cropped(&mut store, &img, crop).unwrap(), hash);
     }
+
+    #[test]
+    fn jfif_jpeg_is_imported() {
+        // JFIF — это обычный JPEG с заголовком JFIF; формат определяется по содержимому, не по расширению.
+        let img = DynamicImage::ImageRgb8(RgbImage::from_fn(300, 200, |x, y| Rgb([(x % 256) as u8, (y % 256) as u8, 7])));
+        let jfif = encode_jpeg(&img).unwrap();
+        assert_eq!(&jfif[..2], &[0xFF, 0xD8]);
+        assert_eq!(&jfif[6..10], b"JFIF");
+        let mut store = MediaStore::new();
+        let hash = import_photo(&mut store, &jfif).unwrap();
+        assert_eq!(dims(&store.get(MediaKind::Full, &hash).unwrap()), (300, 200));
+    }
 }

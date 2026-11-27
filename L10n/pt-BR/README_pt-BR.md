@@ -95,7 +95,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 - As datas são sempre exibidas como `DD.MM.AAAA`, em qualquer idioma.
 - Ainda não há desfazer.
 - Importar muitas fotos de uma vez pode travar a janela por um instante.
-- Fotos HEIC não são compatíveis (JPEG, PNG, WebP e BMP são).
+- Fotos HEIC não são compatíveis (JPEG/JFIF, PNG, WebP e BMP são).
 - A miniatura de um cartão é um recorte centralizado, e ainda não dá para escolher a área do recorte.
 - Em famílias muito grandes, o layout ainda pode posicionar pessoas em lugares estranhos ou cruzar linhas entre ramos (veja o roteiro).
 - As nacionalidades não aparecem no modo Lista.

@@ -94,7 +94,7 @@ thumb/<hash>.jpg     small thumbnails for cards
 - Datumsangaben werden unabhängig von der Sprache immer als `TT.MM.JJJJ` angezeigt.
 - Noch kein Rückgängig.
 - Der Import vieler Fotos auf einmal kann das Fenster kurz einfrieren lassen.
-- HEIC-Fotos werden nicht unterstützt (JPEG, PNG, WebP und BMP schon).
+- HEIC-Fotos werden nicht unterstützt (JPEG/JFIF, PNG, WebP und BMP schon).
 - Das Vorschaubild auf einer Karte ist ein zentrierter Ausschnitt, und den Ausschnitt kann man noch nicht selbst wählen.
 - In sehr großen Familien kann das Layout Personen immer noch an merkwürdigen Stellen platzieren oder Linien zwischen Zweigen kreuzen (siehe Roadmap).
 - Staatsangehörigkeiten werden im Listenmodus nicht angezeigt.
