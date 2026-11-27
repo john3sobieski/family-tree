@@ -204,6 +204,12 @@ pub fn init() {
 
 /// (Russian key, [en, zh, es, fr, de, pl]).
 const TABLE: &[(&str, [&str; 6])] = &[
+    ("Область фото на карточке", ["Photo area for the card", "卡片照片区域", "Zona de la foto en la tarjeta", "Zone de la photo sur la carte", "Fotobereich für die Karte", "Obszar zdjęcia na karcie"]),
+    ("Перетаскивайте рамку; масштаб — колесо мыши или ползунок", ["Drag the frame; zoom with the mouse wheel or the slider", "拖动方框；用鼠标滚轮或滑块缩放", "Arrastra el marco; zoom con la rueda del ratón o el control deslizante", "Faites glisser le cadre ; zoom avec la molette ou le curseur", "Rahmen ziehen; Zoom mit Mausrad oder Schieberegler", "Przeciągaj ramkę; powiększenie kółkiem myszy lub suwakiem"]),
+    ("Карточка", ["Card", "卡片", "Tarjeta", "Carte", "Karte", "Karta"]),
+    ("Масштаб", ["Zoom", "缩放", "Zoom", "Zoom", "Zoom", "Powiększenie"]),
+    ("Сбросить", ["Reset", "重置", "Restablecer", "Réinitialiser", "Zurücksetzen", "Resetuj"]),
+    ("Готово", ["Done", "完成", "Listo", "Terminé", "Fertig", "Gotowe"]),
     ("Семейное дерево", ["Family Tree", "家谱", "Árbol genealógico", "Arbre généalogique", "Stammbaum", "Drzewo genealogiczne"]),
     ("Новое дерево", ["New tree", "新家谱", "Árbol nuevo", "Nouvel arbre", "Neuer Stammbaum", "Nowe drzewo"]),
     ("Светлая тема", ["Light theme", "浅色主题", "Tema claro", "Thème clair", "Helles Design", "Jasny motyw"]),
@@ -433,6 +439,7 @@ mod tests {
             ("list.rs", include_str!("list.rs")),
             ("model.rs", include_str!("model.rs")),
             ("container.rs", include_str!("container.rs")),
+            ("crop.rs", include_str!("crop.rs")),
             ("media.rs", include_str!("media.rs")),
             ("assoc.rs", include_str!("assoc.rs")),
             ("person_window.rs", include_str!("person_window.rs")),

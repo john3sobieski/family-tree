@@ -2,6 +2,7 @@
 //! (данные, фото, связи, удаление). Схема посередине — обычный `view`.
 
 use crate::container::{MediaKind, MediaStore};
+use crate::crop::{CropDialog, CropOutcome};
 use crate::i18n::{tr, trf};
 use crate::media;
 use crate::model::{Gender, PartialDate, Person, PersonId, Photo, Tree};
@@ -18,12 +19,21 @@ const MAX_REL_RESULTS: usize = 8;
 const LABEL_W: f32 = 132.0;
 const GRID_GAP: f32 = 10.0;
 
+/// Открытое окно выбора области главного фото.
+struct CropSession {
+    person: PersonId,
+    dlg: CropDialog,
+    /// Фото взято из «Фото в заметках» («Сделать главным»): прежнее главное фото уходит в заметки.
+    from_gallery: bool,
+}
+
 #[derive(Default)]
 pub struct EditState {
     pub list_search: String,
     rel_search: String,
     confirm_delete: Option<PersonId>,
     thumbs: HashMap<String, Option<TextureHandle>>,
+    crop: Option<CropSession>,
 }
 
 impl EditState {
@@ -31,6 +41,7 @@ impl EditState {
         self.rel_search.clear();
         self.confirm_delete = None;
         self.thumbs.clear();
+        self.crop = None;
     }
 
     fn thumb(&mut self, ctx: &egui::Context, store: &MediaStore, hash: &str) -> Option<egui::TextureId> {
@@ -242,6 +253,19 @@ fn import_dialog(store: &mut MediaStore, multiple: bool, errors: &mut Vec<String
         }
     }
     hashes
+}
+
+/// Диалог выбора файла и открытие окна выбора области (в хранилище пока ничего не попадает).
+fn open_crop_from_file(ctx: &egui::Context, st: &mut EditState, person: PersonId, errors: &mut Vec<String>) {
+    let dlg = rfd::FileDialog::new().add_filter(tr("Изображения"), &["jpg", "jpeg", "png", "webp", "bmp"]);
+    let Some(f) = dlg.pick_file() else { return };
+    let img = std::fs::read(&f)
+        .map_err(media::MediaError::from)
+        .and_then(|bytes| media::decode(&bytes));
+    match img {
+        Ok(img) => st.crop = Some(CropSession { person, dlg: CropDialog::new(ctx, img), from_gallery: false }),
+        Err(e) => errors.push(format!("{}: {e}", f.display())),
+    }
 }
 
 /// Name of a field in the label column of a form: muted, one line, cut with an ellipsis if too long.
@@ -497,9 +521,8 @@ pub fn editor(
                 }
                 ui.vertical(|ui| {
                     if ui.button(tr("Выбрать…")).clicked() {
-                        if let Some(h) = import_dialog(store, false, &mut errors).into_iter().next() {
-                            p.main_photo = Some(h);
-                        }
+                        let ctx = ui.ctx().clone();
+                        open_crop_from_file(&ctx, st, id, &mut errors);
                     }
                     if p.main_photo.is_some() && icon_text_button(ui, Icon::Cross, tr("Убрать"), None).clicked() {
                         p.main_photo = None;
@@ -546,11 +569,18 @@ pub fn editor(
                 });
             }
             if let Some(i) = make_main {
+                // Фото из заметок тоже сначала показываем в окне выбора области.
                 let hash = p.photos[i].hash.clone();
-                if let Some(old) = p.main_photo.replace(hash) {
-                    if !p.photos.iter().any(|ph| ph.hash == old) {
-                        p.photos.push(Photo { hash: old, caption: String::new() });
+                let img = store
+                    .get(MediaKind::Full, &hash)
+                    .map_err(|e| e.to_string())
+                    .and_then(|bytes| media::decode(&bytes).map_err(|e| e.to_string()));
+                match img {
+                    Ok(img) => {
+                        let ctx = ui.ctx().clone();
+                        st.crop = Some(CropSession { person: id, dlg: CropDialog::new(&ctx, img), from_gallery: true });
                     }
+                    Err(e) => errors.push(e),
                 }
             }
             if let Some(i) = remove_photo {
@@ -695,6 +725,30 @@ pub fn editor(
         });
         ui.add_space(12.0);
     });
+
+    // Окно выбора области главного фото. Если выбрали другого человека — окно закрывается.
+    if st.crop.as_ref().is_some_and(|c| c.person != id) {
+        st.crop = None;
+    }
+    if let Some(mut session) = st.crop.take() {
+        match session.dlg.show(ui.ctx()) {
+            CropOutcome::Open => st.crop = Some(session),
+            CropOutcome::Cancel => {}
+            CropOutcome::Done(rect) => match media::import_cropped(store, session.dlg.image(), rect) {
+                Ok(h) => {
+                    if session.from_gallery {
+                        if let Some(old) = p.main_photo.take() {
+                            if old != h && !p.photos.iter().any(|ph| ph.hash == old) {
+                                p.photos.push(Photo { hash: old, caption: String::new() });
+                            }
+                        }
+                    }
+                    p.main_photo = Some(h);
+                }
+                Err(e) => errors.push(e.to_string()),
+            },
+        }
+    }
 
     // Правки полей.
     if p != orig {

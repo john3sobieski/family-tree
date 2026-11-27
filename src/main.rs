@@ -7,6 +7,7 @@ mod chrome;
 #[allow(dead_code)]
 mod container;
 mod countries;
+mod crop;
 #[cfg(test)]
 mod demo; // test data only
 mod edit;
