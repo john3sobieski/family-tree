@@ -382,24 +382,21 @@ impl ViewState {
             // Имя, фамилия (у женщин с фамилией при рождении — «Иванова (Петрова)»), отчество.
             let clip = painter.with_clip_rect(card);
             let cx = card.center().x;
-            let y1 = photo.max.y + 3.0 * zoom;
-            let size = 12.5 * zoom;
+            let ppp = ctx.pixels_per_point();
+            // Размер шрифта и шаг строк — целые физические пиксели, иначе текст «желейный».
+            let size = (12.5 * zoom * ppp).round().max(1.0) / ppp;
+            let pitch = (size * ppp * 1.2).round() / ppp;
+            let y1 = snap_px(photo.max.y + 3.0 * zoom, ppp);
             let max_w = card.width() - 2.0 * pad;
             let first = person.first_name.trim();
             let last = person.surname_display();
             let patr = person.patronymic.trim();
             if first.is_empty() && last.is_empty() && patr.is_empty() {
-                clip.text(
-                    Pos2::new(cx, y1),
-                    Align2::CENTER_TOP,
-                    "—",
-                    FontId::proportional(size),
-                    text_color,
-                );
+                draw_fitted(&clip, cx, y1, "—", size, max_w, text_color);
             } else {
                 draw_fitted(&clip, cx, y1, first, size, max_w, text_color);
-                draw_fitted(&clip, cx, y1 + 15.0 * zoom, &last, size, max_w, text_color);
-                draw_fitted(&clip, cx, y1 + 30.0 * zoom, patr, size, max_w, text_color);
+                draw_fitted(&clip, cx, y1 + pitch, &last, size, max_w, text_color);
+                draw_fitted(&clip, cx, y1 + 2.0 * pitch, patr, size, max_w, text_color);
             }
         }
 
@@ -446,23 +443,28 @@ impl ViewState {
     }
 }
 
+/// Округление до целого физического пикселя.
+fn snap_px(v: f32, ppp: f32) -> f32 {
+    (v * ppp).round() / ppp
+}
+
 /// Строка по центру; если шире `max_w`, шрифт уменьшается (не меньше 70%).
+/// Размер шрифта и позиция привязаны к целым пикселям, чтобы текст не дрожал при zoom.
 fn draw_fitted(painter: &Painter, cx: f32, y: f32, text: &str, size: f32, max_w: f32, color: Color32) {
     if text.is_empty() {
         return;
     }
-    let w = painter
-        .layout_no_wrap(text.to_string(), FontId::proportional(size), color)
-        .size()
-        .x;
-    let k = if w > max_w && w > 0.0 { (max_w / w).max(0.7) } else { 1.0 };
-    painter.text(
-        Pos2::new(cx, y),
-        Align2::CENTER_TOP,
-        text,
-        FontId::proportional(size * k),
-        color,
-    );
+    let ppp = painter.ctx().pixels_per_point();
+    let px = (size * ppp).round().max(1.0);
+    let mut galley = painter.layout_no_wrap(text.to_string(), FontId::proportional(px / ppp), color);
+    let w = galley.size().x;
+    if w > max_w && w > 0.0 {
+        let k = (max_w / w).max(0.7);
+        let px2 = (px * k + 1e-3).floor().max(1.0);
+        galley = painter.layout_no_wrap(text.to_string(), FontId::proportional(px2 / ppp), color);
+    }
+    let pos = Pos2::new(snap_px(cx - galley.size().x / 2.0, ppp), snap_px(y, ppp));
+    painter.galley(pos, galley, color);
 }
 
 /// Фон карточки. Если задан цвет полосы — нижняя часть (`strip`) окрашена им
